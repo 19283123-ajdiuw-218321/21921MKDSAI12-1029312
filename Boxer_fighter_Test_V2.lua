@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V18T: A04 autonomous Watchman Street; A03 preserved")
+print("[Boxer_fighter_Test V2] V18U: A04 prompts, oil, threat response and exclusive navigation")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -89,7 +89,7 @@ end
 -- V18S: no emulador a transferencia de texto pode truncar perto de 16 KB.
 -- Copiar log prioriza os eventos MAIS RECENTES; Salvar TXT mantem o historico integral.
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V18S | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V18U | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -2561,6 +2561,7 @@ end
 -- V16 A04: percurso CONTINUO (sem instancias/telas), acender 3 lanternas e
 -- usar esconderijos em caso de Watchman/procissao. Travessia por piso verificado.
 MURIM_A04={
+    responses={},needOil=true,processionUntil=0,searchIndex=1,
     phase="aguardando",lamps={},seenEnabled={},lampCount=0,attempts=setmetatable({},{__mode="k"}),
     lastTick=0,lastMove=0,lastNotice=0,pending=nil,firstHideDone=false,
     lastHideAt=0,hideUntil=0,hidePrompt=nil,hideAttempt=0,
@@ -2579,6 +2580,11 @@ MURIM_A04={
     comeOutVisible=false,comeOutAwaiting=false,comeOutAttempts=0,comeOutAttemptAt=0,
 }
 function MURIM_A04.reset()
+    if MURIM_A04.cancelHold then MURIM_A04.cancelHold() end
+    MURIM_A04.responses={}; MURIM_A04.needOil=true
+    MURIM_A04.processionUntil=0; MURIM_A04.safeSince=nil; MURIM_A04.searchIndex=1
+    MURIM_A04.raid=nil; MURIM_A04.character=nil
+    MURIM_A04.route=nil; MURIM_A04.routeAt=0
     MURIM_A04.phase="procurando 3 lanternas"
     MURIM_A04.lamps={}; MURIM_A04.seenEnabled={}; MURIM_A04.lampCount=0
     MURIM_A04.attempts=setmetatable({},{__mode="k"})
@@ -2656,7 +2662,7 @@ end
 -- acima de um teto, e a 2a (safeWarp) repetia a sondagem no teto.
 -- Sondar abaixo do teto e mover APENAS sobre piso validado, sem reentrar
 -- na safeWarp da A01. Nao altera os movimentos das A01-A03.
-function MURIM_A04.advance(root,dest,why)
+function MURIM_A04.advance(root,dest,why,validateLanding)
     if not root or not root.Parent or not dest then return false end
     local delta=Vector3.new(dest.X-root.Position.X,0,dest.Z-root.Position.Z)
     if delta.Magnitude<2.8 then return true end
@@ -2734,7 +2740,7 @@ function MURIM_A04.advance(root,dest,why)
             end
             if surface then break end
         end
-        if surface then
+        if surface and (not validateLanding or validateLanding(surface.landing)) then
             selected=surface
             whySelected=candidate.tag
             break
@@ -2824,10 +2830,8 @@ function MURIM_A04.ensureComeOut(root,now)
     MURIM_A04.debugDecision="BLOQUEIO: Come out visivel; nao mover nem acionar lanternas"
     if now-(MURIM_A04.comeOutAttemptAt or 0)<2.5 then return true end
     if (MURIM_A04.comeOutAttempts or 0)>=4 then
-        MURIM_TRACE.add("AVISO","A04ComeOut",
-            "Come out continua visivel apos tentativas automaticas. "..
-            "TOQUE MANUALMENTE no Come out do jogo; o Auto A04 nao usara Hide novamente.",9)
-        return true
+        if now-MURIM_A04.comeOutAttemptAt<8 then return true end
+        MURIM_A04.comeOutAttempts=0
     end
     MURIM_A04.comeOutAttempts+=1
     MURIM_A04.comeOutAttemptAt=now
@@ -2901,261 +2905,407 @@ function MURIM_A04.logSnapshot(root,origin,lamps,threatDist,threatName,now,reaso
     end
 end
 
-function MURIM_A04.tick(root,raid,origin)
-    if not MURIM_A04.firstTickLogged then
-        MURIM_A04.firstTickLogged=true
-        MURIM_TRACE.add("INFO","A04Inicio",string.format(
-            "Controlador A04 chamado; root=%s; raid=%s; origem=%s. Nao comprova lanternas.",
-            tostring(root~=nil),raid and raid.Name or "nil",tostring(origin~=nil)))
+-- A04 observes live objects on every tick; disabled prompts alone are not completion.
+function MURIM_A04.promptPosition(prompt)
+    local parent=prompt.Parent
+    if not parent then return nil end
+    if parent:IsA("Attachment") then return parent.WorldPosition end
+    if parent:IsA("BasePart") then return parent.Position end
+    if parent:IsA("Model") then return parent:GetPivot().Position end
+    local part=prompt:FindFirstAncestorWhichIsA("BasePart")
+    return part and part.Position
+end
+
+function MURIM_A04.lit(prompt,area)
+    local node=prompt
+    while node and node~=area do
+        local value=node:GetAttribute("Lit")
+        if value~=nil then return value==true end
+        node=node.Parent
     end
-    if not root or not raid or not origin then return true end
-    local now=os.clock()
-    if now-MURIM_A04.lastTick<0.85 then return true end
-    MURIM_A04.lastTick=now
-    MURIM_A04.navOrigin=origin
-    MURIM_A04.checkLastMove(root)
-    -- Se Come out ainda aparece, NENHUMA rotina de navegacao roda.
-    if MURIM_A04.ensureComeOut(root,now) then
-        MURIM_A04.debugStatus="A04 BLOQUEADA: Come out VISIVEL; tentativa="..
-            tostring(MURIM_A04.comeOutAttempts or 0).."/4; sem esconder automaticamente"
-        return true
-    end
+    return false
+end
+
+function MURIM_A04.readWorld(root,raid,origin)
     local area=raid:FindFirstChild("A04_WatchmanStreet",true)
-    if not area then
-        MURIM_TRACE.add("AVISO","Watchman","A04 nao carregada. Sem teleporte cego.",12)
-        return true
-    end
-    local lamps={}
-    -- V18R: a porta efetivamente aberta e evidência mais forte do que o
-    -- contador em memoria, pois o jogador pode ter concluido as lanternas
-    -- manualmente enquanto Auto Raid estava OFF.
-    local gateOpenNow=false
-    local gateZNow=nil
+    local world={area=area,lamps={},oil={},pickup={},hides={},gate=nil,count=0}
+    if not area then return world end
     for _,obj in ipairs(area:GetDescendants()) do
-        if obj:IsA("Model") and obj.Name=="HallowDoor"
-            and obj:GetAttribute("Open")==true then
-            local part=obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart",true)
-            local rel=part and part.Position.Z-origin.Z
-            if rel and rel>=850 and rel<=955
-                and (not gateZNow or math.abs(rel-898)<math.abs(gateZNow-898)) then
-                gateZNow=rel
-                gateOpenNow=true
-            end
-        end
         if obj:IsA("ProximityPrompt") then
-            local action=(obj.ActionText or ""):lower()
-            local parent=obj:FindFirstAncestor("HallowStreetShrine")
-            if action:find("light the shrine lamp",1,true) or (parent and action:find("light",1,true)) then
-                local anchor=obj:FindFirstAncestorWhichIsA("BasePart")
-                if anchor then
-                    local pos=anchor.Position
-                    local key=tostring(math.floor(pos.Z-origin.Z+0.5))
-                    lamps[#lamps+1]={prompt=obj,pos=pos,key=key,d=(root.Position-pos).Magnitude}
-                    if obj.Enabled then MURIM_A04.seenEnabled[key]=true end
-                    local shrine=parent or obj:FindFirstAncestor("HallowStreetShrine")
-                    local litAttr=shrine and shrine:GetAttribute("Lit")
-                    -- V18N: no log V18M a Z+620 ficou Enabled=false e
-                    -- voltou a Enabled=true. Nao manter 1/3 para sempre se
-                    -- o servidor reabrir o mesmo prompt de modo persistente.
-                    if MURIM_A04.lamps[key] and obj.Enabled and litAttr~=true then
-                        local since=MURIM_A04.reenabledSince[key]
-                        if not since then
-                            MURIM_A04.reenabledSince[key]=now
-                        elseif now-since>=5 then
-                            MURIM_A04.lamps[key]=nil
-                            MURIM_A04.lampCount=math.max(0,MURIM_A04.lampCount-1)
-                            MURIM_A04.reenabledSince[key]=nil
-                            MURIM_TRACE.add("AVISO","Watchman",string.format(
-                                "Santuario Z=%s REABRIU Enabled=true por >=5s. Revisando contagem para %d/3; nao assumir conclusao permanente.",
-                                key,MURIM_A04.lampCount),5)
-                        end
-                    else
-                        MURIM_A04.reenabledSince[key]=nil
+            local pos=MURIM_A04.promptPosition(obj)
+            if pos then
+                local action=(obj.ActionText or ""):lower()
+                local object=(obj.ObjectText or ""):lower()
+                local item={prompt=obj,pos=pos,d=(pos-root.Position).Magnitude,
+                    key=string.format("%.0f:%.0f:%.0f",pos.X-origin.X,pos.Y-origin.Y,pos.Z-origin.Z)}
+                if action:find("light the shrine lamp",1,true)
+                    or (object:find("street shrine",1,true) and action:find("light",1,true)) then
+                    item.lit=MURIM_A04.lit(obj,area)
+                    if item.lit then world.count+=1 end
+                    table.insert(world.lamps,item)
+                elseif action:find("refill your lantern",1,true) then
+                    table.insert(world.oil,item)
+                elseif (action:find("take",1,true) or action:find("pick",1,true))
+                    and (action.." "..object):find("lantern",1,true) then
+                    table.insert(world.pickup,item)
+                elseif action=="hide" then
+                    table.insert(world.hides,item)
+                end
+            end
+        elseif obj:IsA("Model") and obj.Name=="HallowDoor" then
+            local part=obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart",true)
+            local z=part and part.Position.Z-origin.Z
+            if z and z>=850 and z<=955 and (not world.gate or z>world.gate.z) then
+                world.gate={model=obj,z=z,open=obj:GetAttribute("Open")==true}
+            end
+        end
+    end
+    for _,list in ipairs({world.lamps,world.oil,world.pickup,world.hides}) do
+        table.sort(list,function(a,b) return a.d<b.d end)
+    end
+    return world
+end
+
+function MURIM_A04.threats(raid,origin)
+    local result,seen={},{}
+    local folders={raid}
+    local npcs=workspace:FindFirstChild("Murim_NPCs")
+    if npcs then table.insert(folders,npcs) end
+    for _,folder in ipairs(folders) do
+        for _,npc in ipairs(folder:GetDescendants()) do
+            if npc:IsA("Model") and not seen[npc] then
+                seen[npc]=true
+                local name=npc.Name:lower()
+                local procession=name:find("sedan",1,true) or name:find("procession",1,true)
+                if procession or name:find("watchman",1,true) or name:find("faceless",1,true) then
+                    local part=npc:FindFirstChild("HumanoidRootPart") or npc.PrimaryPart
+                        or npc:FindFirstChildWhichIsA("BasePart",true)
+                    if part and math.abs(part.Position.X-origin.X)<180
+                        and part.Position.Z-origin.Z>=500 and part.Position.Z-origin.Z<=1020 then
+                        table.insert(result,{model=npc,part=part,procession=not not procession})
                     end
-                    if not obj.Enabled and not MURIM_A04.lamps[key]
-                        and (MURIM_A04.seenEnabled[key] or litAttr==true) then
-                        MURIM_A04.lamps[key]=true
-                        MURIM_A04.lampCount+=1
-                        MURIM_TRACE.add("EVIDENCIA","Watchman","Lampada Z relativo="..key.." mudou de Enabled=true para false, ou Lit=true. "..MURIM_A04.lampCount.."/3. Confirmar HUD.")
-                    end
                 end
             end
         end
     end
-    table.sort(lamps,function(a,b) return a.pos.Z<b.pos.Z end)
-    if gateOpenNow then
-        if not MURIM_A04.exitSeenOpen then
-            MURIM_TRACE.add("EVIDENCIA","A04Porta",string.format(
-                "Porta real A04 Z+%.0f com Open=true; pode haver santuarios "..
-                "concluidos manualmente. Priorizar a passagem; nunca voltar "..
-                "a uma lampada distante so porque o cache foi reiniciado.",gateZNow))
-        end
-        MURIM_A04.exitSeenOpen=true
-        MURIM_A04.exitDoorZ=gateZNow
-        -- Conciliar apenas 3 prompts PRESENTES e desabilitados + porta aberta.
-        -- Um Enabled=false isolado NAO e prova de que uma lampada foi acesa.
-        local closed=0
-        for _,item in ipairs(lamps) do
-            if not item.prompt.Enabled then closed+=1 end
-        end
-        if #lamps>=3 and closed>=3 then
-            local newly=0
-            for _,item in ipairs(lamps) do
-                if not item.prompt.Enabled and not MURIM_A04.lamps[item.key] then
-                    MURIM_A04.lamps[item.key]=true
-                    newly+=1
-                end
-            end
-            if newly>0 then
-                MURIM_A04.lampCount=math.min(3,MURIM_A04.lampCount+newly)
-                MURIM_TRACE.add("EVIDENCIA","A04Manual",string.format(
-                    "Retomada: %d prompts Shrine desabilitados e porta Open=true. "..
-                    "Cache reconciliado para %d/3; nao atribuir os acionamentos ao Auto.",
-                    closed,MURIM_A04.lampCount),4)
+    return result
+end
+
+-- Distances are conservative navigation margins, not claims about server detection rules.
+function MURIM_A04.riskAt(pos,root,threats,holding)
+    local worst,nearest=0,math.huge
+    for _,t in ipairs(threats) do
+        local offset=pos-t.part.Position
+        local dist=offset.Magnitude
+        nearest=math.min(nearest,dist)
+        local radius=t.procession and 100 or (holding and 100 or 75)
+        local facing=dist>0 and t.part.CFrame.LookVector:Dot(offset.Unit) or 1
+        if dist<radius and (t.procession or facing>0.05 or dist<32) then
+            local params=RaycastParams.new()
+            params.FilterType=Enum.RaycastFilterType.Exclude
+            params.FilterDescendantsInstances={root.Parent,t.model}
+            pcall(function() params.RespectCanCollide=true end)
+            local hit=workspace:Raycast(t.part.Position,offset,params)
+            if not hit or (hit.Position-pos).Magnitude<2 then
+                worst=math.max(worst,1-dist/radius)
             end
         end
     end
-    if MURIM_A04.pending then
-        local p=MURIM_A04.pending
-        MURIM_A04.debugDecision="AGUARDANDO_PROMPT_LAMPADA_Z+"..tostring(p.key)
-        MURIM_A04.debugStatus=string.format(
-            "posZ+%.0f; Hide=%s; decisao=%s; elapsed=%.1fs; promptEnabled=%s; lamps=%d/3",
-            root.Position.Z-origin.Z,tostring(MURIM_A04.hideState),
-            MURIM_A04.debugDecision,now-p.at,tostring(p.prompt.Enabled),MURIM_A04.lampCount)
-        if not p.prompt.Parent or not p.prompt.Enabled then
-            if not MURIM_A04.lamps[p.key] then
-                MURIM_A04.lamps[p.key]=true; MURIM_A04.lampCount+=1
-            end
-            MURIM_TRACE.add("EVIDENCIA","Watchman","Lampada do santuario Z="..p.key.." mudou para desabilitada/removida. "..MURIM_A04.lampCount.."/3 observadas; nao e prova de derrota do Watchman.")
-            MURIM_A04.pending=nil
-        elseif now-p.at>5.5 then
-            MURIM_TRACE.add("AVISO","Watchman","Lampada Z="..p.key.." nao mudou de estado em 5s. Tentativa nao confirmada.",5)
-            MURIM_A04.pending=nil
-        else return true end
+    return worst,nearest
+end
+
+function MURIM_A04.move(root,dest,why,threats,escape)
+    local offset=Vector3.new(dest.X-root.Position.X,0,dest.Z-root.Position.Z)
+    if offset.Magnitude<2 then return true end
+    local nextPos=root.Position+offset.Unit*math.min(12,offset.Magnitude)
+    local currentRisk=MURIM_A04.riskAt(root.Position,root,threats,false)
+    local nextRisk=MURIM_A04.riskAt(nextPos,root,threats,false)
+    local midRisk=MURIM_A04.riskAt((nextPos+root.Position)*0.5,root,threats,false)
+    if escape then
+        if nextRisk>currentRisk+0.02 or midRisk>currentRisk+0.02 then return false end
+    elseif nextRisk>0 or midRisk>0 then
+        return false
     end
-    local threat,threatDist,threatName=MURIM_A04.scanThreat(root,origin)
-    -- V18P: considerar o Watchman passando ao se afastar por leituras
-    -- sucessivas, nao exigir 125 studs depois de ja ter passado bem perto.
-    local oldDist=MURIM_A04.lastThreatDist
-    if threatDist==math.huge then
-        MURIM_A04.recedingTicks=5
-    elseif oldDist<math.huge and threatDist>oldDist+1.5 then
-        MURIM_A04.recedingTicks=math.min(12,MURIM_A04.recedingTicks+1)
-    elseif oldDist<math.huge and threatDist<oldDist-1.5 then
-        MURIM_A04.recedingTicks=0
+    local function validLanding(landing)
+        local landingRisk=MURIM_A04.riskAt(landing,root,threats,false)
+        if landingRisk>(escape and currentRisk+0.02 or 0) then return false end
+        local params=RaycastParams.new()
+        params.FilterType=Enum.RaycastFilterType.Exclude
+        params.FilterDescendantsInstances={root.Parent}
+        pcall(function() params.RespectCanCollide=true end)
+        local hit=workspace:Raycast(root.Position,landing-root.Position,params)
+        return not hit or (hit.Position-landing).Magnitude<1
     end
-    MURIM_A04.lastThreatDist=threatDist
-    local leaving=threatDist==math.huge or MURIM_A04.recedingTicks>=4
-    -- V18R: PROIBIDO iniciar Hide. Nao e requisito para os 3 Street Shrines.
-    -- Esperar Watchman se afastar; nao teletransportar durante risco.
-    if threatDist<80 then
-        MURIM_A04.phase="esperando Watchman afastar; SEM Hide"
-        MURIM_A04.logSnapshot(root,origin,lamps,threatDist,threatName,now,
-            "PAUSA_WATCHMAN_"..tostring(math.floor(threatDist)).."_STUDS; NUNCA_HIDE")
-        MURIM_TRACE.add("INFO","A04SemHide",string.format(
-            "Watchman a %.0f studs; esperando distancia >=80. "..
-            "NAO acionar Hide. Lanternas observadas=%d/3.",threatDist,MURIM_A04.lampCount),9)
+    if MURIM_A04.advance(root,nextPos,why,validLanding) then
+        MURIM_A04.route=nil
         return true
     end
-    -- V18R: se a porta da A04 esta aberta, avancar para a A05 em vez de
-    -- revisitar lanternas. O Watchman ja foi avaliado pelos blocos acima,
-    -- inclusive a espera no Hide quando realmente se aproxima.
-    local relA04=root.Position.Z-origin.Z
-    local doorWasPassed=MURIM_A04.exitDoorZ and relA04>=MURIM_A04.exitDoorZ+8
-    if MURIM_A04.exitSeenOpen and (gateOpenNow or doorWasPassed) then
-        MURIM_A04.phase="porta A04 Open=true; avancando A05 sem retroceder"
-        MURIM_A04.logSnapshot(root,origin,lamps,threatDist,threatName,now,
-            "A04_PORTA_ABERTA; retomada manual; continuar ate Z+960")
-        if relA04<965 and now-MURIM_A04.lastMove>2 then
-            MURIM_A04.lastMove=now
-            MURIM_A04.advance(root,
-                Vector3.new(origin.X,root.Position.Y,origin.Z+970),
-                "passagem A04 aberta para A05")
+    -- A wall/room entrance needs a path around it, not repeated straight-line probes.
+    local now=os.clock()
+    local route=MURIM_A04.route
+    if not route or (route.dest-dest).Magnitude>5 then
+        if now-(MURIM_A04.routeAt or 0)<1 then return false end
+        MURIM_A04.routeAt=now
+        local ok,path=pcall(function()
+            local p=game:GetService("PathfindingService"):CreatePath({AgentRadius=2,AgentHeight=5,AgentCanJump=true})
+            p:ComputeAsync(root.Position,dest)
+            return p
+        end)
+        if not ok or path.Status~=Enum.PathStatus.Success then return false end
+        route={dest=dest,points=path:GetWaypoints(),index=2}
+        MURIM_A04.route=route
+    end
+    while route.points[route.index] and (route.points[route.index].Position-root.Position).Magnitude<4 do
+        route.index+=1
+    end
+    local point=route.points[route.index]
+    if not point then MURIM_A04.route=nil; return false end
+    local delta=point.Position-root.Position
+    local target=root.Position+delta.Unit*math.min(10,delta.Magnitude)
+    if not validLanding(target) then MURIM_A04.route=nil; return false end
+    return MURIM_A04.advance(root,target,why.." via caminho",validLanding)
+end
+
+function MURIM_A04.cancelHold()
+    local pending=MURIM_A04.pending
+    if pending and pending.holding and pending.prompt.Parent then
+        pcall(function() pending.prompt:InputHoldEnd() end)
+    end
+    MURIM_A04.pending=nil
+end
+
+function MURIM_A04.startPrompt(item,kind,now)
+    local prompt=item.prompt
+    if not prompt.Parent or not prompt.Enabled then return end
+    local count=(MURIM_A04.attempts[prompt] or 0)+1
+    MURIM_A04.attempts[prompt]=count
+    MURIM_A04.lastPromptAttempt[prompt]=now
+    local ok,err=pcall(function() prompt:InputHoldBegin() end)
+    if not ok then
+        MURIM_TRACE.add("ERRO","A04Prompt",tostring(err),5)
+    end
+    MURIM_A04.pending={prompt=prompt,key=item.key,kind=kind,at=now,
+        holding=true,hold=math.max(0,prompt.HoldDuration)+0.2,attempt=count}
+    MURIM_A04.phase="segurando prompt: "..kind
+end
+
+function MURIM_A04.updatePrompt(root,world,now)
+    local p=MURIM_A04.pending
+    if not p then return false end
+    if not p.prompt.Parent then
+        -- Streaming/removal is not evidence of completing an objective.
+        MURIM_A04.cancelHold()
+        return false
+    end
+    local pos=MURIM_A04.promptPosition(p.prompt)
+    if p.holding and (not pos or (root.Position-pos).Magnitude>p.prompt.MaxActivationDistance) then
+        MURIM_A04.cancelHold()
+        return false
+    end
+    if p.holding then
+        if now-p.at<p.hold and p.prompt.Enabled then return true end
+        pcall(function() p.prompt:InputHoldEnd() end)
+        p.holding=false
+        p.releasedAt=now
+        -- Alternate after a full real hold if the previous InputHold did not work.
+        -- The required duration has already elapsed; never leave a background
+        -- hold running after cancellation, toggle-off, death, or a new threat.
+        if p.attempt%2==0 and p.prompt.Enabled and typeof(fireproximityprompt)=="function" then
+            local ok,err=pcall(function() fireproximityprompt(p.prompt,0) end)
+            if not ok then MURIM_TRACE.add("ERRO","A04Prompt",tostring(err),5) end
         end
+        MURIM_TRACE.add("ACAO","A04Prompt",p.kind.." hold completo; tentativa "..p.attempt.."; aguardando efeito")
         return true
     end
-    -- Prioridade exclusiva das tres lampadas, nunca atacar Watchman.
-    local chosen=nil
-    for _,item in ipairs(lamps) do
-        if item.prompt.Enabled and not MURIM_A04.lamps[item.key] then
-            local count=MURIM_A04.attempts[item.prompt] or 0
-            local elapsed=now-(MURIM_A04.lastPromptAttempt[item.prompt] or 0)
-            if count<2 or elapsed>=20 then
-                if count>=2 then MURIM_A04.attempts[item.prompt]=0 end
-                chosen=item;break
-            end
+    local lit=p.kind=="Street Shrine" and MURIM_A04.lit(p.prompt,world.area)
+    local disabled=not p.prompt.Enabled
+    if lit or disabled then
+        -- Record response separately from confirmed Lit/exit door.
+        MURIM_A04.responses[p.key]={at=now,kind=p.kind}
+        if p.kind=="Oil Jar" then MURIM_A04.needOil=false end
+        if p.kind=="Street Shrine" and not MURIM_A04.firstHideDone then
+            MURIM_A04.firstHideDone=true
+            MURIM_A04.processionUntil=now+12
         end
+        MURIM_TRACE.add("EVIDENCIA","A04Prompt",p.kind..": "..
+            (lit and "Lit=true" or "Enabled=false; resposta observada, conclusao ainda nao confirmada"))
+        MURIM_A04.pending=nil
+        return false
     end
-    if chosen then
-        MURIM_A04.phase="acender santuario "..tostring(MURIM_A04.lampCount+1).."/3"
-        MURIM_A04.logSnapshot(root,origin,lamps,threatDist,threatName,now,
-            "LAMPADA_Z+"..tostring(chosen.key).."; tentativa="..tostring(MURIM_A04.attempts[chosen.prompt] or 0))
-        local reach=math.max(2,(chosen.prompt.MaxActivationDistance or 9)-2)
-        if chosen.d>reach then
-            if now-MURIM_A04.lastMove>1.75 then
-                MURIM_A04.lastMove=now
-                if not MURIM_A04.advance(root,chosen.pos,"lampada sagrada") then
-                    MURIM_TRACE.add("AVISO","Watchman","Piso do caminho ao santuario nao confirmado; sem salto.",8)
-                end
-            end
-        else
-            if threatDist<100 then
-                MURIM_A04.phase="aguardando Watchman >=100 para acender (4s)"
-                MURIM_A04.logSnapshot(root,origin,lamps,threatDist,threatName,now,
-                    "LAMPADA_Z+"..tostring(chosen.key).."; esperar Watchman afastar")
-                return true
-            end
-            local count=MURIM_A04.attempts[chosen.prompt] or 0
-            local ok,via
-            if count>=1 then
-                -- Primeira tentativa por fireproximityprompt ignorada? A segunda
-                -- simula o hold real de 4s requerido pelo santuário.
-                ok=pcall(function()
-                    chosen.prompt:InputHoldBegin()
-                    task.wait(math.max(0.1,chosen.prompt.HoldDuration or 0)+0.18)
-                    chosen.prompt:InputHoldEnd()
-                end)
-                via=ok and "InputHoldBegin/End hold completo" or "falha InputHold"
-            else
-                ok,via=tryHallowGuestPrompt(chosen.prompt)
-            end
-            MURIM_A04.attempts[chosen.prompt]=count+1
-            MURIM_A04.lastPromptAttempt[chosen.prompt]=os.clock()
-            MURIM_A04.pending={prompt=chosen.prompt,key=chosen.key,at=os.clock()}
-            MURIM_TRACE.add(ok and "ACAO" or "AVISO","Watchman",string.format(
-                "Light the shrine lamp Z relativo=%s, tentativa=%d/2 via %s; pcall=%s; dist3D=%.1f/max=%.1f, Hold=%.1fs. Nao prova aceite.",
-                chosen.key,MURIM_A04.attempts[chosen.prompt],tostring(via),tostring(ok),
-                chosen.d,chosen.prompt.MaxActivationDistance or 9,chosen.prompt.HoldDuration or 0))
-        end
-        return true
-    end
-    if MURIM_A04.lampCount>=3 then
-        MURIM_A04.phase="3 lampadas observadas; avancando com cautela"
-        MURIM_A04.logSnapshot(root,origin,lamps,threatDist,threatName,now,"3_PROMPTS_DESABILITADOS; A05")
-        MURIM_TRACE.add("EVIDENCIA","Watchman","Tres prompts de lampada observados como desabilitados. Guiado ate passagem A05; conclusao depende do HUD/servidor.",20)
-        -- A05 comeca em Z relativo 960: caminhar em trechos curtos, sempre verificando o piso.
-        if root.Position.Z-origin.Z < 965 and now-MURIM_A04.lastMove>2 then
-            MURIM_A04.lastMove=now
-            MURIM_A04.advance(root,Vector3.new(origin.X,root.Position.Y,origin.Z+970),"saida para A05")
-        end
-    else
-        MURIM_A04.phase="procurando proxima lampada ("..tostring(MURIM_A04.lampCount).."/3)"
-        MURIM_A04.logSnapshot(root,origin,lamps,threatDist,threatName,now,
-            "NAVEGACAO; procurar lampada habilitada")
-        if now-MURIM_A04.lastMove>2.2 then
-            MURIM_A04.lastMove=now
-            -- Pontos baseados nas 3 coordenadas vistas no mapa, nunca concluem objetivos.
-            local rel=root.Position.Z-origin.Z
-            local nextRel=rel<612 and 620 or (rel<692 and 700 or (rel<772 and 780 or nil))
-            if nextRel then
-                MURIM_A04.advance(root,Vector3.new(origin.X,root.Position.Y,origin.Z+nextRel),"busca de lampada")
-            end
-        end
-        MURIM_TRACE.add("DIAGNOSTICO","Watchman",string.format("Lampadas alteradas=%d/3; prompts carregados=%d; perigo mais proximo=%s dist=%.0f. Progresso so por estado observado.",MURIM_A04.lampCount,#lamps,tostring(threatName or "nenhum"),threatDist==math.huge and -1 or threatDist),14)
-        MURIM_TRACE.suggest("A04: acender 3 Street Shrine lamps, esperar Watchman afastar (sem Hide). Se Come out aparecer, sair pela GUI.")
+    if now-p.releasedAt>=3 then
+        MURIM_TRACE.add("AVISO","A04Prompt",p.kind.." sem efeito; reagendar tentativa e verificar Oil Jar",5)
+        if p.kind=="Street Shrine" or p.kind=="Oil Jar" then MURIM_A04.needOil=true end
+        MURIM_A04.pending=nil
+        return false
     end
     return true
 end
+
+function MURIM_A04.shelter(root,world,threats,now)
+    for _,item in ipairs(world.hides) do
+        if item.prompt.Enabled then
+            local reach=math.max(1,item.prompt.MaxActivationDistance-1)
+            if item.d<=reach then
+                if now-(MURIM_A04.lastPromptAttempt[item.prompt] or -100)>=3 then
+                    MURIM_A04.startPrompt(item,"Hide",now)
+                end
+                return true
+            end
+            if MURIM_A04.move(root,item.pos,"abrigo por ameaca",threats,true) then return true end
+        end
+    end
+    -- No reachable hide: retreat along grounded positions away from the closest threat.
+    local nearest=nil
+    for _,t in ipairs(threats) do
+        if not nearest or (t.part.Position-root.Position).Magnitude<
+            (nearest.part.Position-root.Position).Magnitude then nearest=t end
+    end
+    if nearest then
+        local away=Vector3.new(root.Position.X-nearest.part.Position.X,0,root.Position.Z-nearest.part.Position.Z)
+        if away.Magnitude>0 then
+            local dest=root.Position+away.Unit*10
+            dest=Vector3.new(math.clamp(dest.X,MURIM_A04.navOrigin.X-45,MURIM_A04.navOrigin.X+45),
+                dest.Y,math.clamp(dest.Z,MURIM_A04.navOrigin.Z+535,MURIM_A04.navOrigin.Z+955))
+            return MURIM_A04.move(root,dest,"recuar da ameaca",threats,true)
+        end
+    end
+    return false
+end
+
+function MURIM_A04.tick(root,raid,origin)
+    if not root or not root.Parent or not raid or not origin then return true end
+    local humanoid=root.Parent:FindFirstChildWhichIsA("Humanoid")
+    if humanoid and humanoid.Health<=0 then MURIM_A04.cancelHold(); return true end
+    local now=os.clock()
+    if now-MURIM_A04.lastTick<0.15 then return true end
+    MURIM_A04.lastTick=now
+    if MURIM_A04.raid~=raid or MURIM_A04.character~=root.Parent then
+        MURIM_A04.cancelHold()
+        MURIM_A04.reset()
+        MURIM_A04.raid=raid; MURIM_A04.character=root.Parent
+    end
+    MURIM_A04.navOrigin=origin
+    local world=MURIM_A04.readWorld(root,raid,origin)
+    if not world.area then MURIM_A04.phase="aguardando streaming A04"; return true end
+    local threats=MURIM_A04.threats(raid,origin)
+    local risk,dist=MURIM_A04.riskAt(root.Position,root,threats,MURIM_A04.pending~=nil)
+    local procession=false
+    for _,t in ipairs(threats) do
+        if t.procession and (t.part.Position-root.Position).Magnitude<120 then procession=true end
+    end
+    local precaution=now<(MURIM_A04.processionUntil or 0)
+    local danger=risk>0 or procession or precaution
+    local hidden=MURIM_A04.findComeOut()~=nil
+    MURIM_A04.comeOutVisible=hidden
+    MURIM_A04.lampCount=world.count
+    MURIM_A04.lamps={}
+    for _,item in ipairs(world.lamps) do if item.lit then MURIM_A04.lamps[item.key]=true end end
+    MURIM_A04.checkLastMove(root)
+    MURIM_A04.debugStatus=string.format("santuarios=%d; Lit=%d/3; ameacas=%d; risco=%.2f; oculto=%s; acao=%s",
+        #world.lamps,world.count,#threats,risk,tostring(hidden),MURIM_A04.phase)
+    if now-MURIM_A04.lastDebugAt>7 then
+        MURIM_A04.lastDebugAt=now
+        MURIM_TRACE.add("INFO","A04Estado",MURIM_A04.debugStatus)
+    end
+    if hidden then
+        MURIM_A04.cancelHold()
+        if danger or dist<85 then
+            MURIM_A04.safeSince=nil
+            MURIM_A04.phase="no abrigo: aguardando ameacas passarem"
+            return true
+        end
+        MURIM_A04.safeSince=MURIM_A04.safeSince or now
+        if now-MURIM_A04.safeSince<2 then return true end
+        MURIM_A04.ensureComeOut(root,now)
+        return true
+    end
+    MURIM_A04.safeSince=nil
+    MURIM_A04.comeOutAttempts=0
+    if danger then
+        if MURIM_A04.pending and MURIM_A04.pending.kind=="Hide" then
+            MURIM_A04.updatePrompt(root,world,now)
+        else
+            MURIM_A04.cancelHold()
+            MURIM_A04.phase=precaution and "protecao apos primeira lanterna" or "evitando Watchman/procissao"
+            if now-MURIM_A04.lastMove>=0.4 then
+                MURIM_A04.lastMove=now
+                MURIM_A04.shelter(root,world,threats,now)
+            end
+        end
+        return true
+    end
+    if MURIM_A04.updatePrompt(root,world,now) then return true end
+    if now<(MURIM_A04.processionUntil or 0) then return true end
+    -- Door state is read again after every reload; no cache is required to resume.
+    if world.gate and world.gate.open then
+        MURIM_A04.phase="porta Open=true: atravessando saida A04"
+        if now-MURIM_A04.lastMove>=0.4 then
+            MURIM_A04.lastMove=now
+            MURIM_A04.move(root,Vector3.new(origin.X,root.Position.Y,origin.Z+970),"saida A04",threats,false)
+        end
+        return true
+    end
+    local chosen,kind=nil,nil
+    local function available(item)
+        return item.prompt.Enabled and now-(MURIM_A04.lastPromptAttempt[item.prompt] or -100)>4
+    end
+    for _,item in ipairs(world.pickup) do
+        if available(item) then chosen=item;kind="Take lantern";break end
+    end
+    -- Refill at entry or when a shrine attempt has no observable effect.
+    if not chosen and MURIM_A04.needOil then
+        for _,item in ipairs(world.oil) do
+            local response=MURIM_A04.responses[item.key]
+            if available(item) and (not response or now-response.at>25) then
+                chosen=item;kind="Oil Jar";break
+            end
+        end
+    end
+    if not chosen then
+        for _,item in ipairs(world.lamps) do
+            if not item.lit and available(item) then chosen=item;kind="Street Shrine";break end
+        end
+    end
+    if chosen then
+        MURIM_A04.phase="aproximando: "..kind.." "..chosen.key
+        local reach=math.max(1,chosen.prompt.MaxActivationDistance-1.5)
+        if chosen.d<=reach then
+            if MURIM_A04.riskAt(root.Position,root,threats,true)==0 then
+                MURIM_A04.startPrompt(chosen,kind,now)
+            end
+        elseif now-MURIM_A04.lastMove>=0.4 then
+            MURIM_A04.lastMove=now
+            if not MURIM_A04.move(root,chosen.pos,kind,threats,false) then
+                MURIM_A04.phase="caminho ao prompt ameacado/bloqueado; procurando abrigo"
+                MURIM_A04.shelter(root,world,threats,now)
+            end
+        end
+        return true
+    end
+    for _,item in ipairs(world.lamps) do
+        if item.prompt.Enabled and not item.lit then
+            MURIM_A04.phase="intervalo entre tentativas do santuario"
+            return true
+        end
+    end
+    -- Disabled/streamed-out lamps never create a fabricated 3/3.
+    -- Keep surveying the whole street instead of stopping forever at Z+780.
+    MURIM_A04.phase="inspecionando santuarios/saida; conclusao nao confirmada"
+    if now-MURIM_A04.lastMove>=0.6 then
+        MURIM_A04.lastMove=now
+        local targets={610,690,770,895}
+        local index=MURIM_A04.searchIndex or 1
+        local dest=Vector3.new(origin.X,root.Position.Y,origin.Z+targets[index])
+        if (Vector3.new(dest.X,0,dest.Z)-Vector3.new(root.Position.X,0,root.Position.Z)).Magnitude<8 then
+            MURIM_A04.searchIndex=index%#targets+1
+            MURIM_A04.needOil=true
+        else
+            MURIM_A04.move(root,dest,"varredura A04",threats,false)
+        end
+    end
+    return true
+end
+
 
 -- V18M: A05-A10. O mapa identifica modelos e objetos, NAO confirma as
 -- condicoes dos objetivos posteriores. Em vez de ficar inerte, localizar
@@ -5860,6 +6010,7 @@ toggleHallowRaidBtn.MouseButton1Click:Connect(function()
         return
     end
     isAutoHallowRaid = not isAutoHallowRaid
+    if not isAutoHallowRaid then MURIM_A04.cancelHold() end
     MURIM_TRACE.active = isAutoHallowRaid
     MURIM_TRACE.stageTo(isAutoHallowRaid and ("Ativado: " .. hallowDifficulty) or "Desativado")
     if isAutoHallowRaid then
@@ -7475,7 +7626,7 @@ local hallowRaidTask = task.spawn(function()
                             hallowStatusLabel.Text="🛡️ Recuperacao A03: ataque pausado ate HP alvo; evitando intervalo longo"
                         end
                     else
-                    if isHallowPacifySeen and os.clock() - lastSeenPacifyTime >= 0.5 then
+                    if currentRaidRoomIndex~=4 and isHallowPacifySeen and os.clock() - lastSeenPacifyTime >= 0.5 then
                         lastSeenPacifyTime = os.clock()
                         pcall(function()
                             local seenRemote = ReplicatedStorage:FindFirstChild("HallowGateSeen")
@@ -7503,7 +7654,17 @@ local hallowRaidTask = task.spawn(function()
                     end
                     -- A04 e etapa de furtividade, nao depende da varredura de inimigos/loot.
                     if currentRaidRoomIndex==4 then
-                        MURIM_A04.tick(hrp,activeRaidModel,raidOrigin)
+                        currentTarget=nil
+                        local ok,err=xpcall(function()
+                            MURIM_A04.tick(hrp,activeRaidModel,raidOrigin)
+                        end,function(e) return debug.traceback(tostring(e),2) end)
+                        if not ok then
+                            MURIM_A04.cancelHold()
+                            MURIM_TRACE.add("ERRO","A04Tick",err,5)
+                        end
+                        if hallowStatusLabel then hallowStatusLabel.Text="A04: "..MURIM_A04.phase end
+                        task.wait(0.04)
+                        continue -- A04 owns movement: no loot/combat may override this tick.
                     end
                     -- Check for drops or boss chest in raid
                     local dropsFolder = Workspace:FindFirstChild("Murim_Drops")
@@ -7729,6 +7890,7 @@ local hallowRaidTask = task.spawn(function()
             end
             task.wait(0.04)
         else
+            MURIM_A04.cancelHold()
             if hallowStatusLabel and hallowStatusLabel.Text ~= "💤 Automação de Halloween desativada"
                 and not isAutoHallowRaid and MURIM_TRACE.stage ~= "Pausado: queda detectada" then
                 hallowStatusLabel.Text = "💤 Automação de Halloween desativada"
@@ -7784,6 +7946,7 @@ end)
 local function cleanup()
     if destroyed then return end
     destroyed = true
+    MURIM_A04.cancelHold()
     MURIM_TRACE.active = false
     MURIM_TRACE.add("INFO", "Fim", "Interface destruida: automacoes encerradas.")
     stopAll()
