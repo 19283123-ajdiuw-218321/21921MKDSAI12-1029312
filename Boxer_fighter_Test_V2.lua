@@ -84,14 +84,29 @@ function MURIM_TRACE.suggest(message)
     MURIM_TRACE.nextAction = message
     MURIM_TRACE.add("ORIENTACAO", "Proximo teste", message)
 end
-function MURIM_TRACE.dump()
-    return "Boxer_fighter_Test V2 | Diagnostico V18R | " .. os.date("%Y-%m-%d %H:%M:%S")
+-- V18S: no emulador a transferencia de texto pode truncar perto de 16 KB.
+-- Copiar log prioriza os eventos MAIS RECENTES; Salvar TXT mantem o historico integral.
+function MURIM_TRACE.dump(maxBytes)
+    local header = "Boxer_fighter_Test V2 | Diagnostico V18S | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
         .. "\nLog local; nao inclui keys, tokens, HWID nem URLs.\n\n"
-        .. table.concat(MURIM_TRACE.entries, "\n")
-        .. (type(MURIM_TRACE.surveyDump)=="function" and MURIM_TRACE.surveyDump() or "")
+    if type(maxBytes) ~= "number" then
+        return header .. table.concat(MURIM_TRACE.entries, "\n")
+            .. (type(MURIM_TRACE.surveyDump)=="function" and MURIM_TRACE.surveyDump() or "")
+    end
+    local remaining=math.max(1000,math.floor(maxBytes)-#header-130)
+    local recent,used={},0
+    for i=#MURIM_TRACE.entries,1,-1 do
+        local line=MURIM_TRACE.entries[i]
+        if used+#line+1>remaining then break end
+        table.insert(recent,1,line)
+        used=used+#line+1
+    end
+    return header .. string.format(
+        "[ULTIMOS EVENTOS: %d/%d; demais omitidos PARA EVITAR CORTE NO BLUESTACKS]\n",
+        #recent,#MURIM_TRACE.entries) .. table.concat(recent,"\n")
 end
 function MURIM_TRACE.tail(count)
     local out = {}
@@ -954,7 +969,12 @@ MURIM_TRACE.extraStatus = function()
     local a04Live="indisponivel"
     if MURIM_A04 and type(MURIM_A04.observeWorld)=="function" then
         local ok,value=pcall(MURIM_A04.observeWorld)
-        if ok then a04Live=tostring(value) else a04Live="erro de leitura" end
+        if ok then
+            a04Live=tostring(value)
+        else
+            -- Registrar a falha REAL, sem presumir que a sala ou os shrines falharam.
+            a04Live="ERRO OBSERVEWORLD: "..tostring(value):gsub("[\r\n]+"," "):sub(1,190)
+        end
     end
     return "Auto A01: " .. (MURIM_A01.enabled and "ON" or "OFF")
         .. " | fase=" .. tostring(MURIM_A01.phase)
@@ -2570,7 +2590,8 @@ function MURIM_A04.reset()
     MURIM_A04.hideEntryAt=0;MURIM_A04.hideClosestDist=math.huge
     MURIM_A04.hideExitAt=0;MURIM_A04.hideExitPrompt=nil
     MURIM_A04.hideAnchorPos=nil;MURIM_A04.hideExitRetries=0
-    MURIM_A04.debugStatus="A04 reiniciada";MURIM_A04.debugDecision="aguardando"
+    MURIM_A04.debugStatus="A04 reiniciada; tick ainda nao observado";MURIM_A04.debugDecision="aguardando"
+    MURIM_A04.firstTickLogged=false
     MURIM_A04.hideState="nao acionado";MURIM_A04.lastDebugAt=0
     MURIM_A04.exitStartPos=nil;MURIM_A04.exitCheckAt=0;MURIM_A04.exitReportAt=0
     MURIM_A04.navOrigin=nil; MURIM_A04.pendingMove=nil; MURIM_A04.lastFloorFailure=0
@@ -2879,6 +2900,12 @@ function MURIM_A04.logSnapshot(root,origin,lamps,threatDist,threatName,now,reaso
 end
 
 function MURIM_A04.tick(root,raid,origin)
+    if not MURIM_A04.firstTickLogged then
+        MURIM_A04.firstTickLogged=true
+        MURIM_TRACE.add("INFO","A04Inicio",string.format(
+            "Controlador A04 chamado; root=%s; raid=%s; origem=%s. Nao comprova lanternas.",
+            tostring(root~=nil),raid and raid.Name or "nil",tostring(origin~=nil)))
+    end
     if not root or not raid or not origin then return true end
     local now=os.clock()
     if now-MURIM_A04.lastTick<0.85 then return true end
@@ -7797,7 +7824,7 @@ local function installMurimDiagnostics(host)
     header.Font = Enum.Font.GothamBold
     header.TextXAlignment = Enum.TextXAlignment.Left
     local help = textNode("TextLabel", "Help", 37, 55,
-        "V18R: A04 sem Hide automatico; detecta Come out; acende shrines quando Watchman distante; demais areas iguais.", page)
+        "V18S: A04 sem Hide automatico; diagnostico recente <12 KB, erro A04 detalhado; demais areas iguais.", page)
     help.TextXAlignment = Enum.TextXAlignment.Left
     help.TextSize = 11
 
@@ -7904,11 +7931,11 @@ local function installMurimDiagnostics(host)
     redraw()
 
     copyBtn.Activated:Connect(function()
-        local content = MURIM_TRACE.dump()
+        local content = MURIM_TRACE.dump(12000)
         local copy = setclipboard or toclipboard
         if type(copy) == "function" then
             local ok, err = pcall(copy, content)
-            feedback.Text = ok and "✅ Log copiado; cole na conversa." or ("⚠️ Copia falhou: " .. tostring(err))
+            feedback.Text = ok and "✅ Log RECENTE copiado (<12 KB); cole na conversa. Salvar TXT guarda o historico completo." or ("⚠️ Copia falhou: " .. tostring(err))
         else
             feedback.Text = "⚠️ Executor sem setclipboard. Tente Salvar TXT."
         end
