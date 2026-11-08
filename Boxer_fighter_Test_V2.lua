@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V19A: A04/A05 teleport; open exit before Speak; Cerberus and HP retained")
+print("[Boxer_fighter_Test V2] V19B: A04/A05 teleport; open exit before Speak; Cerberus and HP retained")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -58,9 +58,9 @@ local MURIM_TRACE = {
     lastA01Action = nil,
     extraStatus = nil,
 }
-function MURIM_TRACE.add(level, area, message, minInterval)
+function MURIM_TRACE.add(level, area, message, minInterval, eventKey)
     local safeMessage = tostring(message or ""):gsub("[\r\n]+", " "):sub(1, 280)
-    local key = tostring(level) .. "|" .. tostring(area) .. "|" .. safeMessage
+    local key = tostring(level) .. "|" .. tostring(area) .. "|" .. (eventKey or safeMessage)
     local now = os.clock()
     if now - (MURIM_TRACE.lastSeen[key] or -1e9) < (minInterval or 0) then return end
     MURIM_TRACE.lastSeen[key] = now
@@ -89,11 +89,12 @@ end
 -- V18S: no emulador a transferencia de texto pode truncar perto de 16 KB.
 -- Copiar log prioriza os eventos MAIS RECENTES; Salvar TXT mantem o historico integral.
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V19A | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V19B | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
         .. "\nLog local; nao inclui keys, tokens, HWID nem URLs.\n\n"
+        .. (MURIM_TRACE.encounterDump and MURIM_TRACE.encounterDump() or "")
     if type(maxBytes) ~= "number" then
         return header .. table.concat(MURIM_TRACE.entries, "\n")
             .. (type(MURIM_TRACE.surveyDump)=="function" and MURIM_TRACE.surveyDump() or "")
@@ -2455,6 +2456,11 @@ function MURIM_RAID_DEFENSE.cerberusFallback(char,root,hp,maxHP)
     if not saved or saved.root~=root or not hover or not previous
         or previous-hp<maxHP*0.10 or os.clock()-(MURIM_RAID_DEFENSE.lastCerberusFallback or 0)<3 then return false end
     local delta=saved.pos-root.Position
+    if delta.Magnitude<12 then
+        MURIM_RAID_DEFENSE.cerberusRecovery=nil
+        MURIM_TRACE.add("AVISO","SegurancaHP","Ponto anterior recebeu golpe forte; descartado como destino de recuperacao.",3)
+        return false
+    end
     if delta.Magnitude<6 or delta.Magnitude>90 then return false end
     local params=RaycastParams.new()
     params.FilterType=Enum.RaycastFilterType.Exclude
@@ -2539,7 +2545,7 @@ function MURIM_RAID_DEFENSE.tick(char,root,tailorCenter,cerberus)
         MURIM_RAID_DEFENSE.damageHits+=1
         MURIM_TRACE.add("AVISO","SegurancaHP",string.format(
             "Dano persistiu durante recuo vertical (%.0f -> %.0f). Altura NAO assegura imunidade; suspensao continua.",
-            MURIM_RAID_DEFENSE.prevHP,hp),4)
+            MURIM_RAID_DEFENSE.prevHP,hp),4,"dano-durante-recuo")
         -- Tentar elevar mais um pouco SE houver teto livre; nao atravessar colisao.
         if MURIM_RAID_DEFENSE.tailorMode and MURIM_RAID_DEFENSE.damageHits>=3 then
             MURIM_RAID_DEFENSE.damageHits=0
@@ -3550,6 +3556,102 @@ function MURIM_LATE.stopWalk()
         walking.humanoid:Move(Vector3.zero,false)
         walking.humanoid:MoveTo(walking.root.Position)
     end
+end
+
+
+-- Independent of Auto Raid: manual actions are observations, never automation success.
+MURIM_LATE.encounter={registry=setmetatable({},{__mode="k"}),ids=setmetatable({},{__mode="k"}),
+    nextId=0,seen={},events={},snapshot="A06 ainda nao observada",lastPoll=-1e9}
+function MURIM_LATE.trackEncounterObject(obj)
+    if obj:IsA("Model") or ((obj:IsA("BasePart") or obj:IsA("Attachment"))
+        and obj.Name:lower():find("soul",1,true)) then
+        MURIM_LATE.encounter.registry[obj]=true
+    end
+end
+function MURIM_LATE.encounterEvent(message)
+    local e=MURIM_LATE.encounter
+    local line="["..os.date("%H:%M:%S").."] "..message:gsub("[\r\n]+"," "):sub(1,280)
+    table.insert(e.events,line)
+    if #e.events>16 then table.remove(e.events,1) end
+    MURIM_TRACE.add("OBSERVADO","ArenaA06",message)
+end
+function MURIM_TRACE.encounterDump()
+    local e=MURIM_LATE.encounter
+    return "[ARENA A06: observacao local; aparecimento nao prova invocador; ausencia nao prova morte]\n"
+        ..e.snapshot.."\n"..table.concat(e.events,"\n").."\n\n"
+end
+function MURIM_LATE.observeEncounter(root,origin,automatic)
+    local e=MURIM_LATE.encounter
+    if os.clock()-e.lastPoll<0.5 then return end
+    e.lastPoll=os.clock()
+    if not root or math.abs(root.Position.X-origin.X)>145
+        or root.Position.Z-origin.Z<1090 or root.Position.Z-origin.Z>1245 then
+        if e.active then
+            MURIM_LATE.encounterEvent("Observador saiu da A06; resumo abaixo e historico.")
+            e.snapshot="HISTORICO: "..e.snapshot
+            e.active=false;e.seen={}
+        end
+        return
+    end
+    if not e.active or e.originZ~=origin.Z then e.seen={};e.originZ=origin.Z;e.peakSouls=0 end
+    e.active=true
+    local seen,rows,souls,npcs={}, {},0,0
+    for obj in pairs(e.registry) do
+        if not obj.Parent or not obj:IsDescendantOf(workspace) then e.registry[obj]=nil;continue end
+        if obj:IsDescendantOf(root.Parent) then continue end
+        local soul=obj.Name:lower():find("soul",1,true)~=nil
+        local hum=obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid")
+        if not soul and not hum then continue end
+        -- A Soul model and its Soul-named parts are one observed object.
+        local ancestor=obj.Parent
+        local duplicate=false
+        while ancestor and ancestor~=workspace do
+            if ancestor.Name:lower():find("soul",1,true) and e.registry[ancestor] then
+                duplicate=true;break
+            end
+            ancestor=ancestor.Parent
+        end
+        if duplicate then continue end
+        local part=obj:IsA("BasePart") and obj or obj:FindFirstChildWhichIsA("BasePart",true)
+        local pos=obj:IsA("Attachment") and obj.WorldPosition or (part and part.Position)
+        if not pos or math.abs(pos.X-origin.X)>145 or math.abs(pos.Y-origin.Y)>130
+            or pos.Z-origin.Z<1090 or pos.Z-origin.Z>1245 then continue end
+        if not e.ids[obj] then e.nextId+=1;e.ids[obj]=e.nextId end
+        local id=e.ids[obj]
+        local health=hum and string.format("%.0f/%.0f",hum.Health,hum.MaxHealth) or "sem Humanoid"
+        local alive=not hum or hum.Health>0
+        if soul and alive then souls+=1 end
+        if hum and hum.Health>0 then npcs+=1 end
+        local row=string.format("#%d %s [%s] HP=%s dist=%.0f pos=(%.0f,%.0f,%.0f)",
+            id,obj.Name:sub(1,55),obj.ClassName,health,(pos-root.Position).Magnitude,pos.X,pos.Y,pos.Z)
+        seen[obj]={id=id,alive=alive,name=obj.Name}
+        rows[#rows+1]=row
+        local previous=e.seen[obj]
+        if not previous then
+            MURIM_LATE.encounterEvent("Presenca nova: "..row)
+        elseif previous.alive and not alive then
+            MURIM_LATE.encounterEvent("HP zero observado: #"..id.." "..obj.Name)
+        end
+    end
+    for obj,previous in pairs(e.seen) do
+        if not seen[obj] then
+            MURIM_LATE.encounterEvent("Nao observado nesta amostra: #"..previous.id.." "..previous.name.."; streaming/remocao/fora de alcance, morte nao confirmada")
+        end
+    end
+    e.seen=seen
+    table.sort(rows)
+    local hum=root.Parent:FindFirstChildOfClass("Humanoid")
+    local hp=hum and hum.Health or 0
+    if e.lastRoot==root and e.lastHP and hp<e.lastHP then
+        if e.lastHP-hp>= (hum and hum.MaxHealth or 1)*0.10 then
+            MURIM_LATE.encounterEvent(string.format("Dano ao jogador %.0f->%.0f; objetos nome Soul=%d; origem do dano desconhecida",e.lastHP,hp,souls))
+        end
+    end
+    e.lastRoot=root;e.lastHP=hp
+    e.peakSouls=math.max(e.peakSouls or 0,souls)
+    e.snapshot=string.format("%s Auto=%s jogadorHP=%.0f NPCs vivos=%d objetos nome Soul=%d maximo observado=%d (nao comprova inimigos); %d listados\n",
+        os.date("%H:%M:%S"),tostring(automatic),hp,npcs,souls,e.peakSouls,math.min(#rows,12))
+        ..table.concat(rows,"\n",1,math.min(#rows,12))
 end
 
 function MURIM_LATE.liveCerberus(root,raid,origin)
@@ -7732,6 +7834,30 @@ end)
 --------------------------------------------------------------------------------
 -- 🎃 Sistema de raid automático The Hungry Ghost Gate
 --------------------------------------------------------------------------------
+
+-- Passive diagnostics remain active with Auto disabled, and are cleaned up with the UI.
+externalConnections[#externalConnections+1]=Workspace.DescendantAdded:Connect(MURIM_LATE.trackEncounterObject)
+externalConnections[#externalConnections+1]=RunService.Heartbeat:Connect(function()
+    if destroyed then return end
+    local e=MURIM_LATE.encounter
+    if os.clock()-e.lastPoll<0.5 then return end
+    local ok,err=pcall(function()
+        local char=player.Character
+        local root=char and char:FindFirstChild("HumanoidRootPart")
+        local _,origin=getActiveRaidInfo(player)
+        if root and math.abs(root.Position.X-origin.X)<145
+            and root.Position.Z-origin.Z>=1090 and root.Position.Z-origin.Z<=1245 and not e.initialized then
+            e.initialized=true
+            for _,obj in ipairs(Workspace:GetDescendants()) do MURIM_LATE.trackEncounterObject(obj) end
+        end
+        MURIM_LATE.observeEncounter(root,origin,isAutoHallowRaid)
+    end)
+    if not ok then
+        e.lastPoll=os.clock()
+        MURIM_TRACE.add("ERRO","ArenaA06",tostring(err),10,"observador")
+    end
+end)
+
 local hallowRaidTask = task.spawn(function()
     while not destroyed do
         if isAutoHallowRaid and not (hubUI.isBusy and hubUI.isBusy()) then
