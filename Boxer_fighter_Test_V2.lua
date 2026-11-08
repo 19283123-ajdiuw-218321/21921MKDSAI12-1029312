@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V19D: verified navigation surfaces; Three Souls parry; retained HUD/input evidence")
+print("[Boxer_fighter_Test V2] V19E: A06 timeline log (attacks, damage, new objects, ms); no behavior change")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -67,7 +67,7 @@ function MURIM_TRACE.add(level, area, message, minInterval, eventKey)
     local timestamp = os.date("%H:%M:%S")
     local entry = string.format("[%s] [%s] [%s] %s", timestamp, tostring(level), tostring(area), safeMessage)
     table.insert(MURIM_TRACE.entries, entry)
-    if #MURIM_TRACE.entries > 240 then table.remove(MURIM_TRACE.entries, 1) end
+    if #MURIM_TRACE.entries > 20000 then table.remove(MURIM_TRACE.entries, 1) end
     for _, handler in ipairs(MURIM_TRACE.listeners) do
         task.defer(handler)
     end
@@ -97,16 +97,17 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V19D | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V19E | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
         .. "\nLog local; nao inclui keys, tokens, HWID nem URLs.\n\n"
-        .. (MURIM_TRACE.encounterDump and MURIM_TRACE.encounterDump() or "")
+        .. (MURIM_TRACE.encounterDump and MURIM_TRACE.encounterDump(type(maxBytes)~="number") or "")
     if type(maxBytes) ~= "number" then
-        return header .. table.concat(MURIM_TRACE.entries, "\n")
+        return header .. (MURIM_TRACE.timelineDump and MURIM_TRACE.timelineDump() or "") .. table.concat(MURIM_TRACE.entries, "\n")
             .. (type(MURIM_TRACE.surveyDump)=="function" and MURIM_TRACE.surveyDump() or "")
     end
+    header=header..(MURIM_TRACE.timelineDump and MURIM_TRACE.timelineDump(math.clamp(math.floor(maxBytes)-#header-1130,1200,4200)) or "")
     local remaining=math.max(1000,math.floor(maxBytes)-#header-130)
     local recent,used={},0
     for i=#MURIM_TRACE.entries,1,-1 do
@@ -2121,7 +2122,7 @@ end
 MURIM_RAID_NAV={failed=setmetatable({},{__mode="k"}),events={}}
 function MURIM_RAID_NAV.note(message)
     table.insert(MURIM_RAID_NAV.events,"["..os.date("%H:%M:%S").."] "..message:sub(1,260))
-    if #MURIM_RAID_NAV.events>6 then table.remove(MURIM_RAID_NAV.events,1) end
+    if #MURIM_RAID_NAV.events>2000 then table.remove(MURIM_RAID_NAV.events,1) end
     MURIM_TRACE.add("NAVEGACAO","Destino",message,2)
 end
 function MURIM_RAID_NAV.reject(root,pos)
@@ -3665,18 +3666,18 @@ function MURIM_LATE.encounterEvent(message)
     local e=MURIM_LATE.encounter
     local line="["..os.date("%H:%M:%S").."] "..message:gsub("[\r\n]+"," "):sub(1,280)
     table.insert(e.events,line)
-    if #e.events>16 then table.remove(e.events,1) end
+    if #e.events>2000 then table.remove(e.events,1) end
     MURIM_TRACE.add("OBSERVADO","ArenaA06",message)
 end
-function MURIM_TRACE.encounterDump()
+function MURIM_TRACE.encounterDump(full)
     local e=MURIM_LATE.encounter
     return "[ARENA A06: observacao local; aparecimento nao prova invocador; ausencia nao prova morte]\n"
-        ..e.snapshot.."\n"..MURIM_TRACE.section(e.events,1800).."\n\n"
+        ..e.snapshot.."\n"..MURIM_TRACE.section(e.events,full and math.huge or 1800).."\n\n"
         .. "[SALINHA A05: movimentos observados, autoria nao inferida]\n"
-        ..MURIM_TRACE.section(MURIM_LATE.teahouseEvents or {},1200).."\n\n"
-        .."[TELEPORTES: destinos e falhas]\n"..MURIM_TRACE.section(MURIM_RAID_NAV.events,1200).."\n\n"
+        ..MURIM_TRACE.section(MURIM_LATE.teahouseEvents or {},full and math.huge or 1200).."\n\n"
+        .."[TELEPORTES: destinos e falhas]\n"..MURIM_TRACE.section(MURIM_RAID_NAV.events,full and math.huge or 1200).."\n\n"
         .."[CERBERUS: HUD / PARRY]\n"..tostring(MURIM_LATE.lastSoulHUD or "Aviso Three Souls ainda nao observado")
-        .."\n"..MURIM_TRACE.section(MURIM_LATE.soulEvents or {},2400).."\n\n"
+        .."\n"..MURIM_TRACE.section(MURIM_LATE.soulEvents or {},full and math.huge or 2400).."\n\n"
 end
 function MURIM_LATE.observeEncounter(root,origin,automatic)
     local e=MURIM_LATE.encounter
@@ -3781,15 +3782,253 @@ function MURIM_LATE.observeTeahouse(root,raid,origin,automatic)
         local line=string.format("[%s] Auto=%s pos=(%.0f,%.0f,%.0f) %s",os.date("%H:%M:%S"),tostring(automatic),
             root.Position.X,root.Position.Y,root.Position.Z,state):sub(1,360)
         local events=MURIM_LATE.teahouseEvents or {};MURIM_LATE.teahouseEvents=events
-        table.insert(events,line);if #events>8 then table.remove(events,1) end
+        table.insert(events,line);if #events>2000 then table.remove(events,1) end
     end
 end
 
 MURIM_LATE.soulState={samples=setmetatable({},{__mode="k"}),effects=setmetatable({},{__mode="k"}),hud={},lastHudAt=-1e9,lastTick=-1e9}
+-- V19E: linha do tempo SOMENTE de log. Nada aqui envia input, move o personagem ou decide ataque/parry.
+MURIM_LATE.timeline={lines={},lastTick=-1e9,lastAttr=-1e9}
+MURIM_LATE.timelineKeys={"Stance","ParryReadyAt","Knocked","Ragdoll","Busy"}
+MURIM_LATE.timelineClasses={"BasePart","Attachment","Beam","ParticleEmitter","Decal","SurfaceGui","BillboardGui","Highlight"}
+function MURIM_LATE.serverTime()
+    local ok,t=pcall(function() return workspace:GetServerTimeNow() end)
+    return ok and type(t)=="number" and t or nil
+end
+function MURIM_LATE.stamp()
+    local t=MURIM_LATE.serverTime()
+    if not t then return os.date("%H:%M:%S") end
+    return os.date("%H:%M:%S",math.floor(t))..string.format(".%03d",math.floor((t%1)*1000))
+end
+function MURIM_LATE.mark(message,secondary)
+    local lines=MURIM_LATE.timeline.lines
+    lines[#lines+1]={text="["..MURIM_LATE.stamp().."] "..tostring(message):gsub("[\r\n]+"," "),secondary=secondary or false}
+    if #lines>20000 then table.remove(lines,1) end
+end
+function MURIM_LATE.attrText(value)
+    return type(value)=="number" and string.format("%.3f",value) or tostring(value)
+end
+-- Salvar TXT recebe tudo, sem corte. So o Copiar log tem limite: prioriza golpes, dano e parry; linhas "txt" ficam so no arquivo.
+function MURIM_TRACE.timelineDump(budget)
+    local lines=MURIM_LATE.timeline.lines
+    if #lines==0 then return "" end
+    local title="[CERBERUS: LINHA DO TEMPO em ms no relogio do servidor; candidato de golpe nao prova origem do dano]\n"
+    local out={}
+    if not budget then
+        for i,row in ipairs(lines) do out[i]=row.text end
+        return title..table.concat(out,"\n").."\n\n"
+    end
+    local keep,used={},#title+2
+    local function take(secondary,limit)
+        for i=#lines,1,-1 do
+            local row=lines[i]
+            if row.secondary==secondary and not keep[i] then
+                local size=math.min(#row.text,360)+1
+                if used+size>limit then break end
+                keep[i]=true;used+=size
+            end
+        end
+    end
+    take(false,math.floor(budget*0.65))
+    take(true,budget)
+    take(false,budget)
+    for i,row in ipairs(lines) do
+        if keep[i] then out[#out+1]=row.text:sub(1,360) end
+    end
+    return title..table.concat(out,"\n").."\n\n"
+end
+function MURIM_LATE.timelineBegin(tl,root,char,hum)
+    tl.root=root;tl.refHP=hum and hum.Health or 0
+    tl.attacks=setmetatable({},{__mode="k"});tl.attrs=setmetatable({},{__mode="k"})
+    tl.attrCount={};tl.objects={}
+    tl.endings={};tl.recentAttacks={};tl.player={};tl.souls=0;tl.nearestSoul=nil;tl.lastObject=nil
+    for _,key in ipairs(MURIM_LATE.timelineKeys) do tl.player[key]=char:GetAttribute(key) end
+    MURIM_LATE.mark(string.format("INICIO observacao A06: HP=%.0f Stance=%s",tl.refHP,tostring(tl.player.Stance)))
+end
+function MURIM_LATE.timelineDamage(tl,char)
+    local hum=char and char:FindFirstChildOfClass("Humanoid")
+    if not hum or not tl.refHP then return end
+    local hp=hum.Health
+    if hp>=tl.refHP then tl.refHP=hp;return end
+    local lost=tl.refHP-hp
+    -- Dano pequeno acumula ate 2% do HP, para veneno e sangramento aparecerem sem encher o log.
+    if hp>0 and lost<math.max(1,hum.MaxHealth*0.02) then return end
+    local serverNow=MURIM_LATE.serverTime()
+    local candidate,gap=nil,0.6
+    if serverNow then
+        for _,attack in ipairs(tl.recentAttacks) do
+            local distance=math.abs(serverNow-attack.impact)
+            if distance<=gap then candidate,gap=attack,distance end
+        end
+    end
+    local object=tl.lastObject and string.format("%s ha %.2fs",tl.lastObject.name,os.clock()-tl.lastObject.at) or "nenhum"
+    MURIM_LATE.mark(string.format("DANO %.0f->%.0f (-%.0f) Stance=%s souls=%d soulMaisProxima=%s candidato=%s ultimoObjeto=%s",
+        tl.refHP,hp,lost,tostring(char:GetAttribute("Stance")),tl.souls or 0,
+        tl.nearestSoul and string.format("%.1f",tl.nearestSoul) or "nenhuma",
+        candidate and string.format("%s Act=%s impacto %+.2fs",candidate.name,candidate.act,serverNow-candidate.impact) or "sem ataque com impacto a menos de 0.6s",
+        object))
+    tl.refHP=hp
+end
+function MURIM_LATE.timelineEnd(tl)
+    local char=tl.root.Parent
+    -- soulTick limpa o estado assim que o HP zera; o golpe final precisa ser lido aqui.
+    MURIM_LATE.timelineDamage(tl,char)
+    local hum=char and char:FindFirstChildOfClass("Humanoid")
+    MURIM_LATE.mark(string.format("FIM observacao A06: HP=%.0f",hum and hum.Health or 0))
+    for _,connection in ipairs(tl.endings) do connection:Disconnect() end
+    tl.endings={};tl.root=nil;tl.refHP=nil
+end
+function MURIM_LATE.timelineAttrs(tl,obj,label)
+    local current=obj:GetAttributes()
+    local previous=tl.attrs[obj]
+    tl.attrs[obj]=current
+    if not previous then
+        local parts={}
+        for key,value in pairs(current) do parts[#parts+1]=key.."="..MURIM_LATE.attrText(value) end
+        table.sort(parts)
+        MURIM_LATE.mark(label.." atributos: "..table.concat(parts," "),true)
+        return
+    end
+    for key,value in pairs(current) do
+        if previous[key]~=value and key~="Act" and key~="ActT" and key~="ActW" then
+            local countKey=label.."|"..key
+            tl.attrCount[countKey]=(tl.attrCount[countKey] or 0)+1
+            -- Atributo que muda sem parar (medidor) fica completo no TXT e nao ocupa o Copiar log.
+            MURIM_LATE.mark(label.." "..key..": "..MURIM_LATE.attrText(previous[key]).." -> "..MURIM_LATE.attrText(value),tl.attrCount[countKey]<=6 and true or "txt")
+        end
+    end
+end
+function MURIM_LATE.timelineTick(char)
+    local tl=MURIM_LATE.timeline
+    local now=os.clock()
+    if now-tl.lastTick<0.03 then return end
+    tl.lastTick=now
+    local state=MURIM_LATE.soulState
+    local root=state.root
+    if not root or not char or root.Parent~=char then
+        if tl.root then MURIM_LATE.timelineEnd(tl) end
+        return
+    end
+    local hum=char:FindFirstChildOfClass("Humanoid")
+    if tl.root~=root then
+        if tl.root then MURIM_LATE.timelineEnd(tl) end
+        MURIM_LATE.timelineBegin(tl,root,char,hum)
+    end
+    local count,nearest=0,nil
+    for obj in pairs(state.samples) do
+        if obj.Parent then
+            count+=1
+            local distance=(obj.Position-root.Position).Magnitude
+            if not nearest or distance<nearest then nearest=distance end
+        end
+    end
+    tl.souls=count;tl.nearestSoul=nearest
+    local seen=MURIM_LATE.encounter.seen
+    local serverNow=MURIM_LATE.serverTime()
+    for obj,info in pairs(seen) do
+        if obj.Parent and obj:IsA("Model") then
+            local act=obj:GetAttribute("Act")
+            local actT=obj:GetAttribute("ActT")
+            local key=tostring(act).."|"..tostring(actT)
+            if act~=nil and type(actT)=="number" and tl.attacks[obj]~=key then
+                tl.attacks[obj]=key
+                local actW=obj:GetAttribute("ActW")
+                local impact=type(actW)=="number" and actT+actW or nil
+                local part=obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart",true)
+                MURIM_LATE.mark(string.format("ATAQUE #%d %s Act=%s W=%s impacto em %s dist=%s",info.id,info.name,tostring(act),
+                    MURIM_LATE.attrText(actW),
+                    impact and serverNow and string.format("%.3fs",impact-serverNow) or "?",
+                    part and string.format("%.1f",(part.Position-root.Position).Magnitude) or "?"))
+                if impact then
+                    table.insert(tl.recentAttacks,{name=info.name,act=tostring(act),impact=impact})
+                    if #tl.recentAttacks>12 then table.remove(tl.recentAttacks,1) end
+                end
+            end
+        end
+    end
+    if now-tl.lastAttr>=0.2 then
+        tl.lastAttr=now
+        for obj,info in pairs(seen) do
+            if obj.Parent then MURIM_LATE.timelineAttrs(tl,obj,"#"..tostring(info.id).." "..info.name) end
+        end
+    end
+    for _,key in ipairs(MURIM_LATE.timelineKeys) do
+        local value=char:GetAttribute(key)
+        if tl.player[key]~=value then
+            MURIM_LATE.mark("PERSONAGEM "..key..": "..MURIM_LATE.attrText(tl.player[key]).." -> "..MURIM_LATE.attrText(value))
+            tl.player[key]=value
+        end
+    end
+    MURIM_LATE.timelineDamage(tl,char)
+end
+function MURIM_LATE.timelineObject(obj,char)
+    local tl=MURIM_LATE.timeline
+    local root=MURIM_LATE.soulState.root
+    if not root or tl.root~=root or not obj.Parent then return end
+    local accepted=false
+    for _,class in ipairs(MURIM_LATE.timelineClasses) do
+        if obj:IsA(class) then accepted=true;break end
+    end
+    if not accepted then return end
+    local parent=obj.Parent
+    local pos
+    if obj:IsA("BasePart") then pos=obj.Position
+    elseif obj:IsA("Attachment") then pos=obj.WorldPosition
+    elseif obj:IsA("Beam") and obj.Attachment0 then pos=obj.Attachment0.WorldPosition
+    elseif parent:IsA("BasePart") then pos=parent.Position
+    elseif parent:IsA("Attachment") then pos=parent.WorldPosition
+    elseif (obj:IsA("SurfaceGui") or obj:IsA("BillboardGui")) and obj.Adornee and obj.Adornee:IsA("BasePart") then pos=obj.Adornee.Position
+    end
+    local distance=pos and (pos-root.Position).Magnitude
+    if distance and distance>150 then return end
+    local path=obj:GetFullName()
+    -- Cenario carregado por streaming nao e efeito de combate.
+    if path:find(".Dress.",1,true) or path:find(".Static.",1,true) then return end
+    local key=obj.ClassName.."|"..obj.Name
+    local now=os.clock()
+    local record=tl.objects[key]
+    local repeated=record~=nil and now-record.at<1
+    local repeats=0
+    if repeated then
+        record.suppressed+=1
+    else
+        repeats=record and record.suppressed or 0
+        tl.objects[key]={at=now,suppressed=0}
+    end
+    tl.lastObject={name=obj.Name,at=now}
+    local detail,big="",false
+    if obj:IsA("BasePart") then
+        local size,color=obj.Size,obj.Color
+        big=not obj.CanCollide and math.max(size.X,size.Y,size.Z)>=12
+        detail=string.format(" tam=(%.1f,%.1f,%.1f) transp=%.2f cor=(%d,%d,%d) colide=%s",size.X,size.Y,size.Z,obj.Transparency,
+            math.floor(color.R*255+0.5),math.floor(color.G*255+0.5),math.floor(color.B*255+0.5),tostring(obj.CanCollide))
+    end
+    local attributes={}
+    for name,value in pairs(obj:GetAttributes()) do attributes[#attributes+1]=name.."="..MURIM_LATE.attrText(value) end
+    table.sort(attributes)
+    MURIM_LATE.mark(string.format("OBJETO %s %s dist=%s%s%s%s caminho=%s%s",obj.ClassName,obj.Name,
+        distance and string.format("%.1f",distance) or "?",detail,
+        #attributes>0 and " attrs="..table.concat(attributes,",") or "",
+        repeats>0 and string.format(" (+%d iguais so no TXT)",repeats) or "",
+        char and obj:IsDescendantOf(char) and "[meu personagem] " or "",path),repeated and "txt" or not big)
+    -- Quanto tempo o objeto dura mostra a janela real do efeito (ex.: anel que fecha).
+    local connection
+    connection=obj.AncestryChanged:Connect(function(_,newParent)
+        if newParent~=nil or not connection then return end
+        connection:Disconnect();connection=nil
+        pcall(function()
+            local final=""
+            if obj:IsA("BasePart") then final=string.format(" tamFinal=(%.1f,%.1f,%.1f)",obj.Size.X,obj.Size.Y,obj.Size.Z) end
+            MURIM_LATE.mark(string.format("OBJETO sumiu %s viveu %.3fs%s",obj.Name,os.clock()-now,final),repeated and "txt" or true)
+        end)
+    end)
+    tl.endings[#tl.endings+1]=connection
+end
 function MURIM_LATE.soulNote(message)
     local events=MURIM_LATE.soulEvents or {};MURIM_LATE.soulEvents=events
-    table.insert(events,"["..os.date("%H:%M:%S").."] "..message:sub(1,300))
-    if #events>16 then table.remove(events,1) end
+    table.insert(events,"["..MURIM_LATE.stamp().."] "..message:sub(1,300))
+    if #events>2000 then table.remove(events,1) end
+    pcall(MURIM_LATE.mark,message)
     MURIM_TRACE.add("CERBERUS","Parry",message)
 end
 function MURIM_LATE.soulBlocking(root)
@@ -8152,6 +8391,20 @@ externalConnections[#externalConnections+1]=RunService.Heartbeat:Connect(functio
         e.lastPoll=os.clock()
         MURIM_TRACE.add("ERRO","ArenaA06",tostring(err),10,"observador")
     end
+end)
+
+-- V19E: observadores somente de log, separados do parry.
+externalConnections[#externalConnections+1]=Workspace.DescendantAdded:Connect(function(obj)
+    if destroyed or not MURIM_LATE.soulState.root then return end
+    task.defer(function()
+        local ok,err=pcall(MURIM_LATE.timelineObject,obj,player.Character)
+        if not ok then MURIM_TRACE.add("ERRO","LinhaTempoA06",tostring(err),5,"objeto") end
+    end)
+end)
+externalConnections[#externalConnections+1]=RunService.Heartbeat:Connect(function()
+    if destroyed then return end
+    local ok,err=pcall(MURIM_LATE.timelineTick,player.Character)
+    if not ok then MURIM_TRACE.add("ERRO","LinhaTempoA06",tostring(err),5,"tick") end
 end)
 
 local hallowRaidTask = task.spawn(function()
