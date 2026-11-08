@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V18Z: A04 escape by verified CFrame landings; A05/Cerberus fixes retained")
+print("[Boxer_fighter_Test V2] V19A: A04/A05 teleport; open exit before Speak; Cerberus and HP retained")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -89,7 +89,7 @@ end
 -- V18S: no emulador a transferencia de texto pode truncar perto de 16 KB.
 -- Copiar log prioriza os eventos MAIS RECENTES; Salvar TXT mantem o historico integral.
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V18Z | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V19A | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -3580,14 +3580,18 @@ function MURIM_LATE.liveCerberus(root,raid,origin)
     return nil
 end
 
-function MURIM_LATE.walkA05(root,dest)
+function MURIM_LATE.teleportA05(root,dest)
     local humanoid=root.Parent and root.Parent:FindFirstChildWhichIsA("Humanoid")
     if not humanoid or humanoid.Health<=0 or root.Anchored then return false end
-    MURIM_LATE.walking={root=root,humanoid=humanoid}
-    -- Physical walking cannot teleport through a closed door. The entrance
-    -- at Z+994 is not the exit to Cerberus at the far end of this room.
-    humanoid:MoveTo(dest)
-    return true
+    -- Cancel any prior physical walking before using the verified CFrame mover.
+    MURIM_LATE.stopWalk()
+    humanoid:Move(Vector3.zero,false)
+    MURIM_A04.navOrigin=MURIM_LATE.origin
+    local moved=MURIM_A04.move(root,dest,"A05 teleporte",{},false)
+    if not moved then
+        MURIM_LATE.phase="A05: teleporte aguardando piso/passagem livre"
+    end
+    return moved
 end
 
 function MURIM_LATE.objects(area,raid,origin,index)
@@ -3641,6 +3645,7 @@ function MURIM_LATE.tick(root,raid,origin,index)
         MURIM_LATE.phase="Cerberus vivo: navegacao e oferendas suspensas"
         return true
     end
+    MURIM_LATE.origin=origin
     local now=os.clock()
     if now-MURIM_LATE.lastTick<(index==5 and 0.25 or 1.1) then return true end
     MURIM_LATE.lastTick=now
@@ -3658,6 +3663,24 @@ function MURIM_LATE.tick(root,raid,origin,index)
         return true
     end
     local objects=MURIM_LATE.objects(area,raid,origin,index)
+    if index==5 then
+        -- A real open exit overrides optional conversation and stale prompt waits.
+        for _,obj in ipairs(objects) do
+            if obj:IsA("Model") and obj.Name=="HallowDoor" and obj:GetAttribute("Open")==true then
+                local part=obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart",true)
+                local z=part and part.Position.Z-origin.Z
+                if z and z>=HALLOW_AREA_Z[6]-50 and z<=HALLOW_AREA_Z[6]+15 then
+                    MURIM_LATE.pending=nil
+                    MURIM_LATE.phase="A05: saida aberta; teleporte para A06"
+                    if now-MURIM_LATE.lastMove>=0.3 then
+                        MURIM_LATE.lastMove=now
+                        MURIM_LATE.teleportA05(root,Vector3.new(origin.X,root.Position.Y,origin.Z+1102))
+                    end
+                    return true
+                end
+            end
+        end
+    end
     if MURIM_LATE.pending then
         local p=MURIM_LATE.pending
         if not p.prompt.Parent or not p.prompt.Enabled then
@@ -3703,13 +3726,15 @@ function MURIM_LATE.tick(root,raid,origin,index)
     -- Nao tentar prompts de uma sala adiante sem entrar nela.
     for _,c in ipairs(candidates) do
         local record=MURIM_LATE.attempts[c.prompt]
-        if not record or record.count<2 or now-record.at>20 then
+        local speech=index==5 and (c.action:lower()=="speak" or c.action:lower()=="talk")
+        local allowed=not speech or (not record and c.part.Position.Z>=root.Position.Z-8)
+        if allowed and (not record or record.count<2 or now-record.at>20) then
             MURIM_LATE.phase="A"..index.." interagir: "..c.action
             local reach=math.max(2,(c.prompt.MaxActivationDistance or 7)-1.5)
             if c.dist>reach then
                 if now-MURIM_LATE.lastMove>(index==5 and 0.4 or 2) then
                     MURIM_LATE.lastMove=now
-                    if index==5 then MURIM_LATE.walkA05(root,c.part.Position)
+                    if index==5 then MURIM_LATE.teleportA05(root,c.part.Position)
                     else MURIM_A04.advance(root,c.part.Position,"A"..index.." prompt: "..c.action) end
                 end
             else
@@ -3734,7 +3759,7 @@ function MURIM_LATE.tick(root,raid,origin,index)
             if now-MURIM_LATE.lastMove>(index==5 and 0.4 or 2) then
                 MURIM_LATE.lastMove=now
                 local target=Vector3.new(origin.X,root.Position.Y,origin.Z+p.goal)
-                if index==5 then MURIM_LATE.walkA05(root,target)
+                if index==5 then MURIM_LATE.teleportA05(root,target)
                 else MURIM_A04.advance(root,target,"A"..index.." travessia confirmada") end
             end
             return true
@@ -3768,7 +3793,7 @@ function MURIM_LATE.tick(root,raid,origin,index)
         if rel<goal-3 and now-MURIM_LATE.lastMove>(index==5 and 0.4 or 2) then
             MURIM_LATE.lastMove=now
             local target=Vector3.new(origin.X,root.Position.Y,origin.Z+goal)
-            if index==5 then MURIM_LATE.walkA05(root,target)
+            if index==5 then MURIM_LATE.teleportA05(root,target)
             else MURIM_A04.advance(root,target,"A"..index.." porta observada") end
         end
         MURIM_TRACE.add("INFO","AutoFases",string.format(
@@ -3777,10 +3802,9 @@ function MURIM_LATE.tick(root,raid,origin,index)
         return true
     end
     if index==5 then
-        -- User-observed passage: Z+1079 -> A06 Z+1101. Use physical locomotion,
-        -- which stops against collision if the door is still closed/unidentified.
-        MURIM_LATE.phase="A05: seguindo corredor para a porta do Cerberus"
-        MURIM_LATE.walkA05(root,Vector3.new(origin.X,root.Position.Y,origin.Z+1102))
+        -- Continue toward the observed boundary through collision-checked teleports.
+        MURIM_LATE.phase="A05: teleporte pelo corredor para a porta do Cerberus"
+        MURIM_LATE.teleportA05(root,Vector3.new(origin.X,root.Position.Y,origin.Z+1102))
         return true
     end
     MURIM_LATE.phase="A"..index.." sem prompt/porta liberada; aguardando estado real"
