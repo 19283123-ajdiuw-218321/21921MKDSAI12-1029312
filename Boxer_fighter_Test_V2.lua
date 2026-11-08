@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V18W: A04 local grounded routes; shrine hold retained; inspection scope fixed")
+print("[Boxer_fighter_Test V2] V18X: A04 continuous escape after open gate; shrine logic preserved")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -89,7 +89,7 @@ end
 -- V18S: no emulador a transferencia de texto pode truncar perto de 16 KB.
 -- Copiar log prioriza os eventos MAIS RECENTES; Salvar TXT mantem o historico integral.
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V18W | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V18X | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -2581,6 +2581,7 @@ MURIM_A04={
     comeOutVisible=false,comeOutAwaiting=false,comeOutAttempts=0,comeOutAttemptAt=0,
 }
 function MURIM_A04.reset()
+    if MURIM_A04.stopRun then MURIM_A04.stopRun() end
     if MURIM_A04.cancelHold then MURIM_A04.cancelHold() end
     MURIM_A04.responses={}
     MURIM_A04.processionUntil=0; MURIM_A04.safeSince=nil; MURIM_A04.searchIndex=1
@@ -3253,10 +3254,79 @@ function MURIM_A04.avoidThreat(root,world,threats,now)
     return false
 end
 
+function MURIM_A04.stopRun()
+    local run=MURIM_A04.running
+    MURIM_A04.running=nil
+    if not run or not run.humanoid.Parent then return end
+    if run.humanoid.WalkSpeed==run.speed then run.humanoid.WalkSpeed=run.originalSpeed end
+    -- Stop only the movement owned by this controller.
+    run.humanoid:Move(Vector3.zero,false)
+    if run.root.Parent then run.humanoid:MoveTo(run.root.Position) end
+end
+
+function MURIM_A04.houndNear(root,origin)
+    if root.Position.Z-origin.Z<850 then return false end
+    local folder=workspace:FindFirstChild("Murim_NPCs")
+    if not folder then return false end
+    for _,npc in ipairs(folder:GetChildren()) do
+        if npc:IsA("Model") and npc.Name:lower()=="the hound" then
+            local part=npc:FindFirstChild("HumanoidRootPart") or npc.PrimaryPart
+            if part and (part.Position-root.Position).Magnitude<120 then return true end
+        end
+    end
+    return false
+end
+
+function MURIM_A04.runExit(root,origin,now)
+    local humanoid=root.Parent and root.Parent:FindFirstChildWhichIsA("Humanoid")
+    if not humanoid or humanoid.Health<=0 then MURIM_A04.stopRun();return true end
+    if root.Position.Z-origin.Z>=960 then
+        MURIM_A04.stopRun()
+        MURIM_A04.phase="fuga A04 concluida; transicao para A05"
+        return true
+    end
+    if root.Anchored then
+        MURIM_A04.phase="fuga bloqueada: personagem ancorado pelo jogo"
+        return true
+    end
+    local run=MURIM_A04.running
+    if not run then
+        run={root=root,humanoid=humanoid,originalSpeed=humanoid.WalkSpeed,
+            speed=math.max(humanoid.WalkSpeed,32),lastJump=-100,origin=origin}
+        MURIM_A04.running=run
+        MURIM_A04.route=nil
+        MURIM_TRACE.add("ACAO","A04Fuga","Corrida continua apos a porta; sem espera por grade de piso/rotas locais.")
+    end
+    humanoid.WalkSpeed=run.speed
+    -- Use the character's continuous locomotion over stairs and pits rather
+    -- than repeatedly teleporting it onto Pit parts or four-stud grid nodes.
+    humanoid:MoveTo(Vector3.new(origin.X,root.Position.Y,origin.Z+970))
+    MURIM_A04.phase="fuga: correndo para A05"
+    MURIM_A04.debugStatus=string.format("FUGA; Z+%.0f; velocidade solicitada=%.0f; sem Hide/loot/combate",
+        root.Position.Z-origin.Z,run.speed)
+    local params=RaycastParams.new()
+    params.FilterType=Enum.RaycastFilterType.Exclude
+    params.FilterDescendantsInstances={root.Parent}
+    params.IgnoreWater=true
+    pcall(function() params.RespectCanCollide=true end)
+    local ahead=root.Position+Vector3.new(0,0,5)
+    local floor=workspace:Raycast(ahead,Vector3.new(0,-9,0),params)
+    local obstacle=workspace:Raycast(root.Position,Vector3.new(0,0,4),params)
+    if (not floor or obstacle) and now-run.lastJump>=0.8 then
+        local landing=workspace:Raycast(root.Position+Vector3.new(0,4,10),Vector3.new(0,-20,0),params)
+        if landing and landing.Instance.CanCollide and landing.Normal.Y>=0.7
+            and humanoid.FloorMaterial~=Enum.Material.Air then
+            humanoid.Jump=true
+            run.lastJump=now
+        end
+    end
+    return true
+end
+
 function MURIM_A04.tick(root,raid,origin)
     if not root or not root.Parent or not raid or not origin then return true end
     local humanoid=root.Parent:FindFirstChildWhichIsA("Humanoid")
-    if humanoid and humanoid.Health<=0 then MURIM_A04.cancelHold(); return true end
+    if humanoid and humanoid.Health<=0 then MURIM_A04.cancelHold(); MURIM_A04.stopRun(); return true end
     local now=os.clock()
     if now-MURIM_A04.lastTick<0.15 then return true end
     MURIM_A04.lastTick=now
@@ -3266,6 +3336,8 @@ function MURIM_A04.tick(root,raid,origin)
         MURIM_A04.raid=raid; MURIM_A04.character=root.Parent
     end
     MURIM_A04.navOrigin=origin
+    -- A latched chase does not rescan thousands of props or stop for streaming.
+    if MURIM_A04.running then return MURIM_A04.runExit(root,origin,now) end
     local world=MURIM_A04.readWorld(root,raid,origin)
     if not world.area then MURIM_A04.phase="aguardando streaming A04"; return true end
     local threats=MURIM_A04.threats(raid,origin)
@@ -3305,6 +3377,9 @@ function MURIM_A04.tick(root,raid,origin)
     -- A completed street resumes at its open exit before considering retreat.
     if world.gate and world.gate.open then
         MURIM_A04.cancelHold()
+        if root.Position.Z-origin.Z>=world.gate.z-4 or MURIM_A04.houndNear(root,origin) then
+            return MURIM_A04.runExit(root,origin,now)
+        end
         MURIM_A04.phase="porta Open=true: atravessando saida A04"
         if now-MURIM_A04.lastMove>=0.4 then
             MURIM_A04.lastMove=now
@@ -6076,7 +6151,7 @@ toggleHallowRaidBtn.MouseButton1Click:Connect(function()
         return
     end
     isAutoHallowRaid = not isAutoHallowRaid
-    if not isAutoHallowRaid then MURIM_A04.cancelHold() end
+    if not isAutoHallowRaid then MURIM_A04.cancelHold(); MURIM_A04.stopRun() end
     MURIM_TRACE.active = isAutoHallowRaid
     MURIM_TRACE.stageTo(isAutoHallowRaid and ("Ativado: " .. hallowDifficulty) or "Desativado")
     if isAutoHallowRaid then
@@ -7451,6 +7526,7 @@ local hallowRaidTask = task.spawn(function()
                 if not isInsideRaid then
                     if HallowEntryState.wasInsideRaid then
                         MURIM_TRACE.add("INFO", "Raid", "Personagem saiu da regiao da arena; estado de salas reiniciado.")
+                        MURIM_A04.stopRun()
                         HallowEntryState.wasInsideRaid = false
                         HallowEntryState.verifiedRoomIndex = nil
                         HallowEntryState.sawCombatInRoom = false
@@ -7671,6 +7747,7 @@ local hallowRaidTask = task.spawn(function()
                     end
 
 
+                    if currentRaidRoomIndex~=4 then MURIM_A04.stopRun() end
                     local tailorCenter=nil
                     if currentRaidRoomIndex==3 and MURIM_RAID_HIT.yardObjective
                         and hrp.Position.Z-raidOrigin.Z>=488 and hrp.Position.Z-raidOrigin.Z<=538 then
@@ -7726,6 +7803,7 @@ local hallowRaidTask = task.spawn(function()
                         end,function(e) return debug.traceback(tostring(e),2) end)
                         if not ok then
                             MURIM_A04.cancelHold()
+                            MURIM_A04.stopRun()
                             MURIM_TRACE.add("ERRO","A04Tick",err,5)
                         end
                         if hallowStatusLabel then hallowStatusLabel.Text="A04: "..MURIM_A04.phase end
@@ -7957,6 +8035,7 @@ local hallowRaidTask = task.spawn(function()
             task.wait(0.04)
         else
             MURIM_A04.cancelHold()
+            MURIM_A04.stopRun()
             if hallowStatusLabel and hallowStatusLabel.Text ~= "💤 Automação de Halloween desativada"
                 and not isAutoHallowRaid and MURIM_TRACE.stage ~= "Pausado: queda detectada" then
                 hallowStatusLabel.Text = "💤 Automação de Halloween desativada"
@@ -8013,6 +8092,7 @@ local function cleanup()
     if destroyed then return end
     destroyed = true
     MURIM_A04.cancelHold()
+    MURIM_A04.stopRun()
     MURIM_TRACE.active = false
     MURIM_TRACE.add("INFO", "Fim", "Interface destruida: automacoes encerradas.")
     stopAll()
