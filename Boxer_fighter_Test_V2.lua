@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V19C: current-room inspection; HBSoul lateral evasion; retained A05 observations")
+print("[Boxer_fighter_Test V2] V19D: verified navigation surfaces; Three Souls parry; retained HUD/input evidence")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -88,8 +88,16 @@ function MURIM_TRACE.suggest(message)
 end
 -- V18S: no emulador a transferencia de texto pode truncar perto de 16 KB.
 -- Copiar log prioriza os eventos MAIS RECENTES; Salvar TXT mantem o historico integral.
+function MURIM_TRACE.section(lines,budget)
+    local out,used={},0
+    for i=#lines,1,-1 do
+        if used+#lines[i]+1>budget then break end
+        table.insert(out,1,lines[i]);used+=#lines[i]+1
+    end
+    return table.concat(out,"\n")
+end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V19C | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V19D | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -2109,12 +2117,75 @@ function MURIM_A03.tailorCombatPosition(root, bossPart, origin, raid)
     end
     return CFrame.new(desired)*CFrame.Angles(math.rad(-90),0,0),canHit
 end
+-- Scoped to navigation in A03 onward; no combat or A01/A02 changes.
+MURIM_RAID_NAV={failed=setmetatable({},{__mode="k"}),events={}}
+function MURIM_RAID_NAV.note(message)
+    table.insert(MURIM_RAID_NAV.events,"["..os.date("%H:%M:%S").."] "..message:sub(1,260))
+    if #MURIM_RAID_NAV.events>6 then table.remove(MURIM_RAID_NAV.events,1) end
+    MURIM_TRACE.add("NAVEGACAO","Destino",message,2)
+end
+function MURIM_RAID_NAV.reject(root,pos)
+    if not pos then return end
+    local records=MURIM_RAID_NAV.failed[root] or {}
+    MURIM_RAID_NAV.failed[root]=records
+    table.insert(records,{pos=pos,untilAt=os.clock()+30})
+    if #records>20 then table.remove(records,1) end
+    MURIM_RAID_NAV.note(string.format("Destino falhou e fica excluido por 30s: (%.0f,%.0f,%.0f); atual=(%.0f,%.0f,%.0f)",
+        pos.X,pos.Y,pos.Z,root.Position.X,root.Position.Y,root.Position.Z))
+end
+function MURIM_RAID_NAV.allowed(root,pos)
+    for _,record in ipairs(MURIM_RAID_NAV.failed[root] or {}) do
+        if os.clock()<record.untilAt and (record.pos-pos).Magnitude<6 then return false end
+    end
+    return true
+end
+function MURIM_RAID_NAV.collisionBody(root)
+    if root.CanCollide then return root end
+    if root.Parent then
+        for _,part in ipairs(root.Parent:GetChildren()) do
+            if part:IsA("BasePart") and part.CanCollide then return part end
+        end
+    end
+    return nil
+end
+function MURIM_RAID_NAV.configure(root,params)
+    local body=MURIM_RAID_NAV.collisionBody(root)
+    params.CollisionGroup=(body or root).CollisionGroup
+    params.RespectCanCollide=true
+end
+function MURIM_RAID_NAV.surface(root,hit)
+    if not hit or not hit.Instance or not hit.Instance.CanCollide or hit.Normal.Y<0.7 then return false end
+    local part=hit.Instance
+    local body=MURIM_RAID_NAV.collisionBody(root)
+    if not body or not body:CanCollideWith(part) then return false end
+    local raid=getActiveRaidInfo()
+    if not raid or not part:IsDescendantOf(raid) then return false end
+    local name=part.Name:lower()
+    if name:find("roof",1,true) or name:find("ceiling",1,true) or name:find("spike",1,true)
+        or name=="pit" then return false end
+    return MURIM_RAID_NAV.allowed(root,hit.Position+Vector3.new(0,3.5,0))
+end
+function MURIM_RAID_NAV.support(root,hit,params)
+    if not MURIM_RAID_NAV.surface(root,hit) then return false end
+    for _,offset in ipairs({Vector3.new(1.2,0,0),Vector3.new(-1.2,0,0),Vector3.new(0,0,1.2),Vector3.new(0,0,-1.2)}) do
+        local edge=workspace:Raycast(hit.Position+offset+Vector3.new(0,3,0),Vector3.new(0,-6,0),params)
+        if not MURIM_RAID_NAV.surface(root,edge) or math.abs(edge.Position.Y-hit.Position.Y)>2 then return false end
+    end
+    return true
+end
+function MURIM_RAID_NAV.describe(hit)
+    return string.format("%s grupo=%s pos=(%.0f,%.0f,%.0f)",hit.Instance:GetFullName(),
+        hit.Instance.CollisionGroup,hit.Position.X,hit.Position.Y,hit.Position.Z)
+end
+
 function MURIM_A03.checkLastMove(root, origin)
     local previous=MURIM_A03.pendingMove
     if not previous or os.clock()-previous.at<0.65 then return end
     local actualZ=root.Position.Z-origin.Z
     local advanced=actualZ-previous.fromZ
-    if advanced<math.min(2.5,(previous.targetZ-previous.fromZ)*0.45) then
+    if advanced<math.min(2.5,(previous.targetZ-previous.fromZ)*0.45)
+        or (previous.to and root.Position.Y<previous.to.Y-8) then
+        MURIM_RAID_NAV.reject(root,previous.to)
         MURIM_A03.stageFailures=MURIM_A03.stageFailures+1
         MURIM_A03.lastStageReason="deslocamento nao persistiu no cliente/servidor"
         MURIM_TRACE.add("AVISO","AutoA03",string.format(
@@ -2138,12 +2209,12 @@ function MURIM_A03.findLanding(root, origin, relZ)
     rayParams.FilterType=Enum.RaycastFilterType.Exclude
     rayParams.FilterDescendantsInstances={char}
     rayParams.IgnoreWater=true
-    pcall(function() rayParams.RespectCanCollide=true end)
+    pcall(function() MURIM_RAID_NAV.configure(root,rayParams) end)
     local overlapParams=OverlapParams.new()
     overlapParams.FilterType=Enum.RaycastFilterType.Exclude
     overlapParams.FilterDescendantsInstances={char}
     overlapParams.MaxParts=50
-    pcall(function() overlapParams.RespectCanCollide=true end)
+    pcall(function() MURIM_RAID_NAV.configure(root,overlapParams) end)
     local xOffsets={0,-4,4,-8,8,-12,12}
     local zOffsets={0,-2,2}
     local heights={root.Position.Y+6,origin.Y+28,origin.Y+11}
@@ -2165,7 +2236,7 @@ function MURIM_A03.findLanding(root, origin, relZ)
                     local badName=n:find("roof",1,true) or n:find("ceiling",1,true)
                         or n:find("canopy",1,true) or n:find("overdoor",1,true)
                         or n:find("doorbeam",1,true) or n:find("seal",1,true)
-                    local good=obj and obj.CanCollide and hit.Normal.Y>=0.70 and not badName
+                    local good=not badName and MURIM_RAID_NAV.support(root,hit,rayParams)
                     local landing=hit.Position+Vector3.new(0,3.5,0)
                     local deltaY=landing.Y-root.Position.Y
                     if good and deltaY<=17 and deltaY>=-27
@@ -2186,7 +2257,10 @@ function MURIM_A03.findLanding(root, origin, relZ)
                                 end
                             end
                         end
-                        if not occupied then return landing,"piso="..obj.Name..", altura="..string.format("%.0f",hit.Position.Y) end
+                        if not occupied then
+                            MURIM_RAID_NAV.note("Pouso A03: "..MURIM_RAID_NAV.describe(hit))
+                            return landing,"piso="..obj.Name..", altura="..string.format("%.0f",hit.Position.Y)
+                        end
                     elseif good then
                         reason="diferenca vertical insegura na chegada"
                     end
@@ -2239,7 +2313,7 @@ function MURIM_A03.safeStage(root, origin, relGoal, label, innerOpen, finalOpen)
         root.CFrame=CFrame.new(landing)
         root.AssemblyLinearVelocity=Vector3.zero
         root.AssemblyAngularVelocity=Vector3.zero
-        MURIM_A03.pendingMove={fromZ=oldZ,targetZ=stepRel,at=now}
+        MURIM_A03.pendingMove={fromZ=oldZ,targetZ=stepRel,at=now,to=landing}
         MURIM_A03.lastStageReason=why
         MURIM_TRACE.add("MOVIMENTO","AutoA03",string.format(
             "A03 %s: Z +%.0f -> alvo +%.0f, pouso=(%.0f,%.0f,%.0f); %s; porta inter=%s, final=%s.",
@@ -2719,6 +2793,8 @@ end
 -- na safeWarp da A01. Nao altera os movimentos das A01-A03.
 function MURIM_A04.advance(root,dest,why,validateLanding)
     if not root or not root.Parent or not dest then return false end
+    MURIM_A04.checkLastMove(root)
+    if MURIM_A04.pendingMove then return true end
     local delta=Vector3.new(dest.X-root.Position.X,0,dest.Z-root.Position.Z)
     if delta.Magnitude<2.8 then return true end
     local origin=MURIM_A04.navOrigin
@@ -2727,7 +2803,7 @@ function MURIM_A04.advance(root,dest,why,validateLanding)
     params.FilterType=Enum.RaycastFilterType.Exclude
     params.FilterDescendantsInstances={root.Parent}
     params.IgnoreWater=true
-    pcall(function() params.RespectCanCollide=true end)
+    pcall(function() MURIM_RAID_NAV.configure(root,params) end)
 
     -- V18M parava se nao houvesse piso exatamente a 30 studs.
     -- Testar uma rota central de SAIDA do Hide e distancias menores antes de
@@ -2748,7 +2824,13 @@ function MURIM_A04.advance(root,dest,why,validateLanding)
     end
     for _,step in ipairs({30,20,12,7,4}) do
         local length=math.min(step,delta.Magnitude)
-        addProbe(original+delta.Unit*length,"passo "..tostring(step))
+        local forward=original+delta.Unit*length
+        addProbe(forward,"passo "..tostring(step))
+        if MURIM_RAID_NAV.failed[root] then
+            local side=Vector3.new(-delta.Unit.Z,0,delta.Unit.X)*7
+            addProbe(forward+side,"alternativa lateral +7")
+            addProbe(forward-side,"alternativa lateral -7")
+        end
     end
     local lastFailure="nenhuma superficie"
     local checked=0
@@ -2777,11 +2859,11 @@ function MURIM_A04.advance(root,dest,why,validateLanding)
                     or n:find("lantern",1,true) or n:find("lamp",1,true)
                     or n:find("doorbeam",1,true) or n:find("seal",1,true)
                 local landing=hit.Position+Vector3.new(0,3.5,0)
-                local good=part.CanCollide and hit.Normal.Y>=0.70
+                local good=MURIM_RAID_NAV.support(root,hit,params)
                     and not decorative and math.abs(landing.Y-original.Y)<=23
                     and (landing-original).Magnitude<=34
                 if good then
-                    surface={landing=landing,name=part.Name}
+                    surface={landing=landing,name=part.Name,hit=hit}
                     break
                 end
                 -- Nao parar na primeira decoracao/parede; procurar a camada
@@ -2808,6 +2890,7 @@ function MURIM_A04.advance(root,dest,why,validateLanding)
             tostring(why),checked,#probes,lastFailure),8)
         return false
     end
+    MURIM_RAID_NAV.note("Pouso "..tostring(why)..": "..MURIM_RAID_NAV.describe(selected.hit))
     local landing=selected.landing
     root.CFrame=CFrame.new(landing)
     root.AssemblyLinearVelocity=Vector3.zero
@@ -2825,10 +2908,11 @@ end
 -- NUNCA inferir saida a partir de root.CFrame. Nao invocar Hide como saida.
 function MURIM_A04.checkLastMove(root)
     local previous=MURIM_A04.pendingMove
-    if not previous or os.clock()-previous.at<0.75 then return end
+    if not previous or os.clock()-previous.at<0.35 then return end
     local d=(Vector3.new(root.Position.X,0,root.Position.Z)-
         Vector3.new(previous.to.X,0,previous.to.Z)).Magnitude
-    if d>9 then
+    if d>9 or root.Position.Y<previous.to.Y-8 then
+        MURIM_RAID_NAV.reject(root,previous.to)
         MURIM_TRACE.add("AVISO","AutoA04",string.format(
             "Movimento nao persistiu: desvio %.1f studs; jogo pode ter "..
             "corrigido a posicao. Nao contar deslocamento nem declarar saida do Hide.",d),5)
@@ -3086,10 +3170,10 @@ function MURIM_A04.localRoute(root,dest,validEdge)
     params.FilterType=Enum.RaycastFilterType.Exclude
     params.FilterDescendantsInstances={root.Parent}
     params.IgnoreWater=true
-    pcall(function() params.RespectCanCollide=true end)
+    pcall(function() MURIM_RAID_NAV.configure(root,params) end)
     local function ground(x,z,y)
         local hit=workspace:Raycast(Vector3.new(x,y+3,z),Vector3.new(0,-12,0),params)
-        if not hit or not hit.Instance.CanCollide or hit.Normal.Y<0.7 then return nil end
+        if not MURIM_RAID_NAV.surface(root,hit) then return nil end
         local n=hit.Instance.Name:lower()
         if n:find("roof",1,true) or n:find("ceiling",1,true)
             or n:find("lantern",1,true) or n:find("lamp",1,true) then return nil end
@@ -3137,7 +3221,7 @@ function MURIM_A04.move(root,dest,why,threats,escape)
     local params=RaycastParams.new()
     params.FilterType=Enum.RaycastFilterType.Exclude
     params.FilterDescendantsInstances={root.Parent}
-    pcall(function() params.RespectCanCollide=true end)
+    pcall(function() MURIM_RAID_NAV.configure(root,params) end)
     local function validEdge(from,to)
         for _,alpha in ipairs({0.5,1}) do
             local pos=from+(to-from)*alpha
@@ -3335,11 +3419,11 @@ function MURIM_A04.escapeLanding(root,origin)
     params.FilterType=Enum.RaycastFilterType.Exclude
     params.FilterDescendantsInstances={root.Parent}
     params.IgnoreWater=true
-    pcall(function() params.RespectCanCollide=true end)
+    pcall(function() MURIM_RAID_NAV.configure(root,params) end)
     local rayY=math.max(origin.Y-10,root.Position.Y+5)
     local function sample(x,z)
         local hit=workspace:Raycast(Vector3.new(x,rayY,z),Vector3.new(0,-65,0),params)
-        if not hit or not hit.Instance.CanCollide or hit.Normal.Y<0.7
+        if not MURIM_RAID_NAV.surface(root,hit)
             or hit.Position.Y<origin.Y-35 or hit.Position.Y>origin.Y+5 then return nil end
         local node=hit.Instance
         for _=1,8 do
@@ -3570,8 +3654,10 @@ end
 MURIM_LATE.encounter={registry=setmetatable({},{__mode="k"}),ids=setmetatable({},{__mode="k"}),
     nextId=0,seen={},events={},snapshot="A06 ainda nao observada",lastPoll=-1e9}
 function MURIM_LATE.trackEncounterObject(obj)
+    local name=obj.Name:lower()
     if obj:IsA("Model") or ((obj:IsA("BasePart") or obj:IsA("Attachment"))
-        and obj.Name:lower():find("soul",1,true)) then
+        and (name:find("soul",1,true) or name:find("ring",1,true)
+            or name:find("parry",1,true) or name:find("telegraph",1,true))) then
         MURIM_LATE.encounter.registry[obj]=true
     end
 end
@@ -3585,9 +3671,12 @@ end
 function MURIM_TRACE.encounterDump()
     local e=MURIM_LATE.encounter
     return "[ARENA A06: observacao local; aparecimento nao prova invocador; ausencia nao prova morte]\n"
-        ..e.snapshot.."\n"..table.concat(e.events,"\n").."\n\n"
+        ..e.snapshot.."\n"..MURIM_TRACE.section(e.events,1800).."\n\n"
         .. "[SALINHA A05: movimentos observados, autoria nao inferida]\n"
-        ..table.concat(MURIM_LATE.teahouseEvents or {},"\n").."\n\n"
+        ..MURIM_TRACE.section(MURIM_LATE.teahouseEvents or {},1200).."\n\n"
+        .."[TELEPORTES: destinos e falhas]\n"..MURIM_TRACE.section(MURIM_RAID_NAV.events,1200).."\n\n"
+        .."[CERBERUS: HUD / PARRY]\n"..tostring(MURIM_LATE.lastSoulHUD or "Aviso Three Souls ainda nao observado")
+        .."\n"..MURIM_TRACE.section(MURIM_LATE.soulEvents or {},2400).."\n\n"
 end
 function MURIM_LATE.observeEncounter(root,origin,automatic)
     local e=MURIM_LATE.encounter
@@ -3602,7 +3691,9 @@ function MURIM_LATE.observeEncounter(root,origin,automatic)
         end
         return
     end
-    if not e.active or e.originZ~=origin.Z then e.seen={};e.originZ=origin.Z;e.peakSouls=0 end
+    if not e.active or e.originZ~=origin.Z then
+        e.seen={};e.originZ=origin.Z;e.peakSouls=0;e.distinctSouls=0;e.soulIds={}
+    end
     e.active=true
     local seen,rows,souls,npcs={}, {},0,0
     for obj in pairs(e.registry) do
@@ -3627,6 +3718,7 @@ function MURIM_LATE.observeEncounter(root,origin,automatic)
             or pos.Z-origin.Z<1090 or pos.Z-origin.Z>1245 then continue end
         if not e.ids[obj] then e.nextId+=1;e.ids[obj]=e.nextId end
         local id=e.ids[obj]
+        if soul and not e.soulIds[id] then e.soulIds[id]=true;e.distinctSouls+=1 end
         local health=hum and string.format("%.0f/%.0f",hum.Health,hum.MaxHealth) or "sem Humanoid"
         local alive=not hum or hum.Health>0
         if soul and alive then souls+=1 end
@@ -3658,8 +3750,8 @@ function MURIM_LATE.observeEncounter(root,origin,automatic)
     end
     e.lastRoot=root;e.lastHP=hp
     e.peakSouls=math.max(e.peakSouls or 0,souls)
-    e.snapshot=string.format("%s Auto=%s jogadorHP=%.0f NPCs vivos=%d objetos nome Soul=%d maximo observado=%d (nao comprova inimigos); %d listados\n",
-        os.date("%H:%M:%S"),tostring(automatic),hp,npcs,souls,e.peakSouls,math.min(#rows,12))
+    e.snapshot=string.format("%s Auto=%s jogadorHP=%.0f NPCs vivos=%d objetos nome Soul=%d maximo simultaneo=%d distintos=%d (nao comprova inimigos); %d listados\n",
+        os.date("%H:%M:%S"),tostring(automatic),hp,npcs,souls,e.peakSouls,e.distinctSouls,math.min(#rows,12))
         ..table.concat(rows,"\n",1,math.min(#rows,12))
 end
 
@@ -3693,70 +3785,126 @@ function MURIM_LATE.observeTeahouse(root,raid,origin,automatic)
     end
 end
 
--- HBSoul is an observed non-Humanoid hazard, not an attackable NPC.
--- Horizontal clearance matters even during vertical HP recovery.
-function MURIM_LATE.evadeSouls(root,origin)
-    local hum=root and root.Parent and root.Parent:FindFirstChildOfClass("Humanoid")
-    if not hum or hum.Health<=0 or root.Anchored then return false end
+MURIM_LATE.soulState={samples=setmetatable({},{__mode="k"}),effects=setmetatable({},{__mode="k"}),hud={},lastHudAt=-1e9,lastTick=-1e9}
+function MURIM_LATE.soulNote(message)
+    local events=MURIM_LATE.soulEvents or {};MURIM_LATE.soulEvents=events
+    table.insert(events,"["..os.date("%H:%M:%S").."] "..message:sub(1,300))
+    if #events>16 then table.remove(events,1) end
+    MURIM_TRACE.add("CERBERUS","Parry",message)
+end
+function MURIM_LATE.soulBlocking(root)
+    return MURIM_LATE.soulState.root==root and os.clock()<(MURIM_LATE.soulUntil or 0)
+end
+function MURIM_LATE.soulImpact(relative,velocity)
+    local speed2=velocity:Dot(velocity)
+    if relative.Magnitude<=6 then return true,0,"proximidade <=6" end
+    if speed2<1 then return false,nil,"sem aproximacao mensuravel" end
+    local eta=-relative:Dot(velocity)/speed2
+    local miss=(relative+velocity*math.max(0,eta)).Magnitude
+    return eta>=0 and eta<=0.12 and miss<=6,eta,"trajetoria estimada"
+end
+function MURIM_LATE.soulTick(root,origin,automatic,gui,ownGui,sendParry)
+    local state=MURIM_LATE.soulState
     local now=os.clock()
-    local hazards={}
-    for obj in pairs(MURIM_LATE.encounter.registry) do
-        if obj.Name=="HBSoul" and obj:IsA("BasePart") and obj:IsDescendantOf(workspace)
-            and math.abs(obj.Position.X-origin.X)<145 and obj.Position.Z-origin.Z>=1090
-            and obj.Position.Z-origin.Z<=1245 and (obj.Position-root.Position).Magnitude<90 then
-            hazards[#hazards+1]=obj.Position
-        end
+    if now-state.lastTick<0.03 then return end
+    state.lastTick=now
+    local hum=root and root.Parent and root.Parent:FindFirstChildOfClass("Humanoid")
+    local inside=root and math.abs(root.Position.X-origin.X)<145
+        and root.Position.Z-origin.Z>=1097 and root.Position.Z-origin.Z<1236
+    if not inside or not hum or hum.Health<=0 then
+        if state.root then MURIM_LATE.soulNote("Observacao/parry encerrados: morte ou saida da A06.") end
+        state.root=nil;state.samples=setmetatable({},{__mode="k"});state.hud={}
+        MURIM_LATE.soulUntil=nil
+        return
     end
-    if #hazards==0 then return now<(MURIM_LATE.soulUntil or 0) end
-    MURIM_LATE.soulUntil=now+2
-    if now-(MURIM_LATE.lastSoulMove or -1e9)<0.6 then return true end
-    local function clearance(pos)
-        local distance=math.huge
-        for _,p in ipairs(hazards) do
-            distance=math.min(distance,Vector3.new(pos.X-p.X,0,pos.Z-p.Z).Magnitude)
-        end
-        return distance
+    if state.root~=root then
+        state.root=root;state.samples=setmetatable({},{__mode="k"});state.hud={}
+        MURIM_LATE.soulUntil=nil
     end
-    local current=clearance(root.Position)
-    if current>=35 then return true end
-    local params=RaycastParams.new()
-    params.FilterType=Enum.RaycastFilterType.Exclude
-    params.FilterDescendantsInstances={root.Parent}
-    params.IgnoreWater=true
-    pcall(function() params.RespectCanCollide=true end)
-    local best,bestDistance=nil,current+6
-    for _,step in ipairs({24,32}) do
-        for _,dir in ipairs({Vector3.new(1,0,0),Vector3.new(-1,0,0),Vector3.new(0,0,1),Vector3.new(0,0,-1),
-            Vector3.new(0.707,0,0.707),Vector3.new(-0.707,0,0.707),Vector3.new(0.707,0,-0.707),Vector3.new(-0.707,0,-0.707)}) do
-            local dest=root.Position+dir*step
-            local distance=clearance(dest)
-            if math.abs(dest.X-origin.X)>65 or dest.Z-origin.Z<1105 or dest.Z-origin.Z>1228
-                or distance<=bestDistance then continue end
-            local hit=workspace:Raycast(dest+Vector3.new(0,3,0),Vector3.new(0,-90,0),params)
-            if not hit or not hit.Instance.CanCollide or hit.Normal.Y<0.7
-                or math.abs(hit.Position.Y-(origin.Y-20))>20 then continue end
-            local floorName=hit.Instance.Name:lower()
-            if floorName:find("pit",1,true) or floorName:find("spike",1,true) then continue end
-            local blocked=false
-            for _,offset in ipairs({Vector3.zero,Vector3.new(0,2,0),Vector3.new(0,-2,0)}) do
-                if workspace:Raycast(root.Position+offset,dest-root.Position,params) then blocked=true;break end
+    if gui and now-state.lastHudAt>=0.2 then
+        state.lastHudAt=now
+        local visible={}
+        for _,obj in ipairs(gui:GetDescendants()) do
+            if (obj:IsA("TextLabel") or obj:IsA("TextButton")) and not obj:IsDescendantOf(ownGui)
+                and isHallowGuiVisible(obj) then
+                local txt=(obj.Text or ""):gsub("<[^>]+>",""):gsub("%s+"," ")
+                local lower=txt:lower()
+                if #txt<300 and (lower:find("three souls",1,true) or lower:find("parry",1,true)
+                    or lower:find("hooves on stone",1,true) or lower:find("lamp is out",1,true)) then
+                    local key=obj:GetFullName().."|"..txt;visible[key]=true
+                    if not state.hud[key] then
+                        MURIM_LATE.soulNote("HUD: "..txt.." | "..obj:GetFullName())
+                        if lower:find("three souls",1,true) or lower:find("parry them",1,true) then
+                            MURIM_LATE.lastSoulHUD="["..os.date("%H:%M:%S").."] "..txt
+                            MURIM_LATE.soulUntil=now+8
+                        end
+                    end
+                end
             end
-            if not blocked then best=dest;bestDistance=distance end
+        end
+        state.hud=visible
+    end
+    local present={}
+    for obj in pairs(MURIM_LATE.encounter.registry) do
+        if obj.Name~="HBSoul" and obj:IsA("BasePart") and obj:IsDescendantOf(workspace)
+            and (obj.Position-root.Position).Magnitude<100 and not state.effects[obj] then
+            local name=obj.Name:lower()
+            if name:find("ring",1,true) or name:find("parry",1,true) or name:find("telegraph",1,true) then
+                state.effects[obj]=true
+                MURIM_LATE.soulNote("Indicador proximo: "..obj:GetFullName().." Act="..tostring(obj:GetAttribute("Act"))
+                    .." ActT="..tostring(obj:GetAttribute("ActT")).." ActW="..tostring(obj:GetAttribute("ActW")))
+            end
+        end
+        if obj.Name~="HBSoul" or not obj:IsA("BasePart") or not obj:IsDescendantOf(workspace)
+            or (obj.Position-root.Position).Magnitude>180 then continue end
+        present[obj]=true
+        MURIM_LATE.soulUntil=now+2
+        local previous=state.samples[obj]
+        local velocity=obj.AssemblyLinearVelocity
+        if previous and now>previous.at then velocity=(obj.Position-previous.pos)/(now-previous.at) end
+        local relative=obj.Position-root.Position
+        local due,eta,basis=MURIM_LATE.soulImpact(relative,velocity-root.AssemblyLinearVelocity)
+        local at=tonumber(obj:GetAttribute("ActT"))
+        local windup=tonumber(obj:GetAttribute("ActW"))
+        if at and windup and windup>0 then
+            eta=at+windup-workspace:GetServerTimeNow()
+            due=eta>=0 and eta<=0.12;basis="ActT+ActW replicado"
+        end
+        local sample=previous or {}
+        if not previous then
+            local attrs={}
+            for _,name in ipairs({"Act","ActT","ActW","Parryable","Parried","Owner","Target"}) do
+                local value=obj:GetAttribute(name)
+                if value~=nil then attrs[#attrs+1]=name.."="..tostring(value) end
+            end
+            MURIM_LATE.soulNote(string.format("Soul %s dist=%.1f tamanho=(%.1f,%.1f,%.1f) %s",obj:GetFullName(),
+                relative.Magnitude,obj.Size.X,obj.Size.Y,obj.Size.Z,table.concat(attrs," ")))
+        end
+        if due and not sample.sent and automatic and sendParry then
+            local context={soul=obj,root=root,hp=hum.Health,distance=relative.Magnitude,eta=eta,basis=basis}
+            local ok,reason=sendParry(context)
+            if ok then
+                sample.sent=true
+                MURIM_LATE.soulNote(string.format("ParryDown enviado: dist=%.1f ETA=%.3f base=%s; NAO confirma defesa",relative.Magnitude,eta or -1,basis))
+            elseif now-(sample.lastBlock or -1e9)>=0.5 then
+                sample.lastBlock=now
+                MURIM_LATE.soulNote("Parry bloqueado: "..tostring(reason).."; nova tentativa enquanto a janela estiver aberta")
+            end
+        end
+        if previous and not sample.sent and (sample.minimum or math.huge)<8 and relative.Magnitude>(sample.minimum or math.huge)+6
+            and not sample.missed then
+            sample.missed=true
+            MURIM_LATE.soulNote("Soul passou perto sem ParryDown; Auto="..tostring(automatic).."; timing ainda nao validado")
+        end
+        sample.minimum=math.min(sample.minimum or math.huge,relative.Magnitude)
+        sample.pos=obj.Position;sample.at=now;state.samples[obj]=sample
+    end
+    for obj,sample in pairs(state.samples) do
+        if not present[obj] then
+            MURIM_LATE.soulNote("Soul deixou de ser observada; ParryDown enviado="..tostring(sample.sent==true).."; resultado nao comprovado")
+            state.samples[obj]=nil
         end
     end
-    if best then
-        MURIM_LATE.lastSoulMove=now
-        root.CFrame=root.CFrame+(best-root.Position)
-        root.AssemblyLinearVelocity=Vector3.zero;root.AssemblyAngularVelocity=Vector3.zero
-        if MURIM_RAID_DEFENSE.hoverRoot==root and MURIM_RAID_DEFENSE.hover then
-            MURIM_RAID_DEFENSE.hoverPos=best;MURIM_RAID_DEFENSE.hover.Position=best
-        end
-        MURIM_RAID_DEFENSE.cerberusRecovery=nil
-        MURIM_LATE.encounterEvent(string.format("Evasao HBSoul: %d objetos; distancia horizontal %.0f->%.0f; teleporte lateral, altura mantida; protecao nao confirmada",#hazards,current,bestDistance))
-    else
-        MURIM_TRACE.add("AVISO","Cerberus","HBSoul presente; ataques pausados, nenhum destino lateral com piso/caminho livre e distancia maior.",3)
-    end
-    return true
 end
 
 function MURIM_LATE.liveCerberus(root,raid,origin)
@@ -7812,6 +7960,47 @@ local function executeParry()
 end
 
 
+
+-- A06-only parry path. The generic Auto Parry behavior remains unchanged.
+local function executeSoulParry(context)
+    if destroyed or not isAutoHallowRaid or context.root.Parent~=player.Character then return false,"Auto OFF/personagem mudou" end
+    if isParrying then return false,"parry em andamento" end
+    if not canParry() then
+        local char=player.Character
+        return false,"estado="..tostring(char and char:GetAttribute("Stance")).." prontoEm="..tostring(char and char:GetAttribute("ParryReadyAt"))
+    end
+    combatRemote=combatRemote or findCombatRemote()
+    if not combatRemote then return false,"CombatInput ausente" end
+    local remote=combatRemote
+    local ok,err=pcall(function() remote:FireServer("ParryDown",nil) end)
+    if not ok then return false,tostring(err) end
+    isParrying=true
+    task.delay(PARRY_WINDOW,function()
+        -- Always release this input even if Auto was disabled in the meantime.
+        local released,releaseError=pcall(function() remote:FireServer("ParryUp",nil) end)
+        isParrying=false
+        local hum=context.root.Parent and context.root.Parent:FindFirstChildOfClass("Humanoid")
+        MURIM_LATE.soulNote(string.format("ParryUp pcall=%s HP=%.0f->%.0f Stance=%s; resultado da defesa nao inferido%s",
+            tostring(released),context.hp,hum and hum.Health or 0,
+            tostring(context.root.Parent and context.root.Parent:GetAttribute("Stance")),released and "" or " erro="..tostring(releaseError)))
+    end)
+    return true
+end
+externalConnections[#externalConnections+1]=RunService.Heartbeat:Connect(function()
+    if destroyed then return end
+    local state=MURIM_LATE.soulState
+    if os.clock()-state.lastTick<0.03 then return end
+    local char=player.Character
+    local root=char and char:FindFirstChild("HumanoidRootPart")
+    if not root or math.abs(root.Position.X-40000)>145 then
+        if state.root then MURIM_LATE.soulTick(nil,Vector3.zero,false,nil,screenGui,nil) end
+        return
+    end
+    local _,origin=getActiveRaidInfo(player)
+    local ok,err=pcall(MURIM_LATE.soulTick,root,origin,isAutoHallowRaid,player:FindFirstChild("PlayerGui"),screenGui,executeSoulParry)
+    if not ok then MURIM_TRACE.add("ERRO","ParryA06",tostring(err),5,"soul-tick") end
+end)
+
 local function checkAttacker(enemy, myPos, myHrp)
     if not isAutoParry or isParrying or not enemy or enemy == player.Character then return end
     local act = enemy:GetAttribute("Act")
@@ -8217,14 +8406,14 @@ local hallowRaidTask = task.spawn(function()
                         defenseBlocking=MURIM_RAID_DEFENSE.tick(char,hrp,tailorCenter,MURIM_LATE.cerberusFocus)
                     end
                     if currentRaidRoomIndex==6 then
-                        defenseBlocking=MURIM_LATE.evadeSouls(hrp,raidOrigin) or defenseBlocking
+                        defenseBlocking=MURIM_LATE.soulBlocking(hrp) or defenseBlocking
                     end
                     if defenseBlocking then
                         MURIM_LATE.stopWalk()
                         currentTarget=nil
                         if hallowStatusLabel then
                             hallowStatusLabel.Text=currentRaidRoomIndex==6 and os.clock()<(MURIM_LATE.soulUntil or 0)
-                                and "HBSoul: ataque pausado; evasao lateral / aguardando perigo passar"
+                                and "Three Souls: ataques pausados; aguardando parry das souls"
                                 or "Recuperacao de HP: ataques pausados ate atingir HP alvo"
                         end
                     else
