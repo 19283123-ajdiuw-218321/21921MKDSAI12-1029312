@@ -45,7 +45,9 @@ end
 
 local source = [====[
 local report, finishNotice = ...
-print("[Boxer_fighter_Test V2] Base V18H; A03: nunca excluir Paper com Painted eyes pendente; varredura do ultimo objetivo")
+-- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
+local player = game:GetService("Players").LocalPlayer
+print("[Boxer_fighter_Test V2] V18T: A04 autonomous Watchman Street; A03 preserved")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -7457,7 +7459,17 @@ local hallowRaidTask = task.spawn(function()
                         and hrp.Position.Z-raidOrigin.Z>=488 and hrp.Position.Z-raidOrigin.Z<=538 then
                         tailorCenter=MURIM_A03.tailorCenter(raidOrigin,activeRaidModel)
                     end
-                    if MURIM_RAID_DEFENSE.tick(char,hrp,tailorCenter) then
+                    local defenseBlocking=false
+                    if currentRaidRoomIndex==4 then
+                        -- furtividade nao herda pausa de HP do combate Paper Tailor
+                        if MURIM_RAID_DEFENSE.retreating then
+                            MURIM_RAID_DEFENSE.release()
+                            MURIM_RAID_DEFENSE.reset()
+                        end
+                    else
+                        defenseBlocking=MURIM_RAID_DEFENSE.tick(char,hrp,tailorCenter)
+                    end
+                    if defenseBlocking then
                         currentTarget=nil
                         if hallowStatusLabel then
                             hallowStatusLabel.Text="🛡️ Recuperacao A03: ataque pausado ate HP alvo; evitando intervalo longo"
@@ -7488,6 +7500,10 @@ local hallowRaidTask = task.spawn(function()
                             MURIM_RAID_HIT.paperStallCheck()
                             MURIM_A03.tick(player,hrp,activeRaidModel,raidOrigin)
                         end
+                    end
+                    -- A04 e etapa de furtividade, nao depende da varredura de inimigos/loot.
+                    if currentRaidRoomIndex==4 then
+                        MURIM_A04.tick(hrp,activeRaidModel,raidOrigin)
                     end
                     -- Check for drops or boss chest in raid
                     local dropsFolder = Workspace:FindFirstChild("Murim_Drops")
@@ -7681,8 +7697,6 @@ local hallowRaidTask = task.spawn(function()
                                 end
                             elseif currentRaidRoomIndex == 3 then
                                 -- A03 ja foi atualizada neste ciclo, inclusive com inimigos ativos.
-                            elseif currentRaidRoomIndex == 4 then
-                                MURIM_A04.tick(hrp,activeRaidModel,raidOrigin)
                             elseif currentRaidRoomIndex >= 5 and currentRaidRoomIndex <= 10 then
                                 MURIM_LATE.tick(hrp,activeRaidModel,raidOrigin,currentRaidRoomIndex)
                             end
