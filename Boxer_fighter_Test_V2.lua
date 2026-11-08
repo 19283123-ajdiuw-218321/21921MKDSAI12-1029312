@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V18X: A04 continuous escape after open gate; shrine logic preserved")
+print("[Boxer_fighter_Test V2] V18Y: A05 passage; Cerberus focus after recovery; previous successful recovery point")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -89,7 +89,7 @@ end
 -- V18S: no emulador a transferencia de texto pode truncar perto de 16 KB.
 -- Copiar log prioriza os eventos MAIS RECENTES; Salvar TXT mantem o historico integral.
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V18X | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V18Y | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -1667,6 +1667,11 @@ function MURIM_RAID_HIT.canConsider(npc, area, normalFilter)
         end
     end
     local record=MURIM_RAID_HIT.records[npc]
+    if area==6 and name:find("cerberus",1,true) then
+        -- Recovery pauses and boss phases are not grounds for abandoning a live boss.
+        if record then record.skipUntil=0;record.permanentSkip=false end
+        return true
+    end
     local lastEyePending=area==3 and MURIM_RAID_HIT.eyes==1
         and not MURIM_RAID_HIT.yardObjective and MURIM_RAID_HIT.isSpecialPaper(npc,area)
     if record and record.permanentSkip and not lastEyePending then return false end
@@ -1784,6 +1789,13 @@ function MURIM_RAID_HIT.checkHealth(npc, area)
         rec.lastDamageAt=now
     end
     rec.hp=hum.Health
+    if area==6 and nameLow:find("cerberus",1,true) then
+        rec.skipUntil=0;rec.permanentSkip=false
+        if rec.attempts>=12 and now-rec.lastDamageAt>=7 then
+            MURIM_TRACE.add("AVISO","Cerberus","Chefe vivo sem dano recente; manter alvo, sem liberar loot/porta por cooldown.",10)
+        end
+        return true
+    end
     if isTailor then
         -- Falha do V18C: o Tailor levava cooldown de 24s depois de 12 ataques
         -- sem dano; com o chefe correndo a HUD ficava parada enquanto ele
@@ -2360,6 +2372,8 @@ function MURIM_RAID_DEFENSE.reset()
     MURIM_RAID_DEFENSE.tailorMode=false
     MURIM_RAID_DEFENSE.tailorAnchor=nil
     MURIM_RAID_DEFENSE.retreatStartedAt=0
+    MURIM_RAID_DEFENSE.cerberusRecovery=nil
+    MURIM_RAID_DEFENSE.lastCerberusFallback=0
 end
 function MURIM_RAID_DEFENSE.clearance(char,root,up)
     local p=RaycastParams.new()
@@ -2434,7 +2448,29 @@ function MURIM_RAID_DEFENSE.hoverTailor(char,root,center)
     return true,string.format("Tailor subida curta Y+%.1f, X/Z preservado; raio=%.1f",pos.Y-center.Y,
         (Vector3.new(pos.X-center.X,0,pos.Z-center.Z)).Magnitude)
 end
-function MURIM_RAID_DEFENSE.tick(char,root,tailorCenter)
+function MURIM_RAID_DEFENSE.cerberusFallback(char,root,hp,maxHP)
+    local saved=MURIM_RAID_DEFENSE.cerberusRecovery
+    local previous=MURIM_RAID_DEFENSE.prevHP
+    local hover=MURIM_RAID_DEFENSE.hover
+    if not saved or saved.root~=root or not hover or not previous
+        or previous-hp<maxHP*0.10 or os.clock()-(MURIM_RAID_DEFENSE.lastCerberusFallback or 0)<3 then return false end
+    local delta=saved.pos-root.Position
+    if delta.Magnitude<6 or delta.Magnitude>90 then return false end
+    local params=RaycastParams.new()
+    params.FilterType=Enum.RaycastFilterType.Exclude
+    params.FilterDescendantsInstances={char}
+    pcall(function() params.RespectCanCollide=true end)
+    if workspace:Raycast(root.Position,delta,params) then return false end
+    MURIM_RAID_DEFENSE.lastCerberusFallback=os.clock()
+    MURIM_RAID_DEFENSE.hoverPos=saved.pos
+    hover.Position=saved.pos
+    root.CFrame=root.CFrame+delta
+    root.AssemblyLinearVelocity=Vector3.zero
+    MURIM_TRACE.add("ACAO","SegurancaHP","Golpe forte durante cura: retornando ao ultimo ponto com recuperacao concluida, caminho livre. Protecao ainda depende do HP real.",3)
+    return true
+end
+
+function MURIM_RAID_DEFENSE.tick(char,root,tailorCenter,cerberus)
     local hum=char and char:FindFirstChildOfClass("Humanoid")
     if not hum or not root then return false end
     local hp,maxHP=hum.Health,math.max(hum.MaxHealth,1)
@@ -2476,6 +2512,9 @@ function MURIM_RAID_DEFENSE.tick(char,root,tailorCenter)
         return false
     end
     if hp>=resume then
+        if cerberus and MURIM_RAID_DEFENSE.hoverPos then
+            MURIM_RAID_DEFENSE.cerberusRecovery={root=root,pos=MURIM_RAID_DEFENSE.hoverPos}
+        end
         MURIM_RAID_DEFENSE.release()
         MURIM_RAID_DEFENSE.retreating=false
         MURIM_RAID_DEFENSE.tailorMode=false
@@ -2496,6 +2535,7 @@ function MURIM_RAID_DEFENSE.tick(char,root,tailorCenter)
         end
     end
     if MURIM_RAID_DEFENSE.prevHP and hp<MURIM_RAID_DEFENSE.prevHP-0.5 then
+        if cerberus then MURIM_RAID_DEFENSE.cerberusFallback(char,root,hp,maxHP) end
         MURIM_RAID_DEFENSE.damageHits+=1
         MURIM_TRACE.add("AVISO","SegurancaHP",string.format(
             "Dano persistiu durante recuo vertical (%.0f -> %.0f). Altura NAO assegura imunidade; suspensao continua.",
@@ -3455,7 +3495,93 @@ end
 -- sala com base apenas no Z ou em um modelo visual.
 MURIM_LATE={phase="aguardando",lastTick=0,lastMove=0,lastNotice=0,
     attempts=setmetatable({},{__mode="k"}), pending=nil, passage=nil,lastIndex=0}
+function MURIM_LATE.stopWalk()
+    local walking=MURIM_LATE.walking
+    MURIM_LATE.walking=nil
+    if walking and walking.root.Parent and walking.humanoid.Parent then
+        walking.humanoid:Move(Vector3.zero,false)
+        walking.humanoid:MoveTo(walking.root.Position)
+    end
+end
+
+function MURIM_LATE.liveCerberus(root,raid,origin)
+    local function alive(npc)
+        if not npc or not npc.Parent or not npc:IsA("Model")
+            or not npc.Name:lower():find("cerberus",1,true) then return false end
+        local hum=npc:FindFirstChildOfClass("Humanoid")
+        local part=npc:FindFirstChild("HumanoidRootPart") or npc.PrimaryPart
+        return hum and hum.Health>0 and part
+            and isHallowEnemyInArea(part.Position,origin,6)
+            and math.abs(part.Position.X-origin.X)<145
+    end
+    if alive(MURIM_LATE.cerberusFocus) then return MURIM_LATE.cerberusFocus end
+    MURIM_LATE.cerberusFocus=nil
+    local npcs=workspace:FindFirstChild("Murim_NPCs")
+    local folders={raid}
+    if npcs then table.insert(folders,1,npcs) end
+    for _,folder in ipairs(folders) do
+        if folder then
+            for _,npc in ipairs(folder:GetDescendants()) do
+                if alive(npc) then
+                    MURIM_LATE.cerberusFocus=npc
+                    return npc
+                end
+            end
+        end
+    end
+    return nil
+end
+
+function MURIM_LATE.walkA05(root,dest)
+    local humanoid=root.Parent and root.Parent:FindFirstChildWhichIsA("Humanoid")
+    if not humanoid or humanoid.Health<=0 or root.Anchored then return false end
+    MURIM_LATE.walking={root=root,humanoid=humanoid}
+    -- Physical walking cannot teleport through a closed door. The entrance
+    -- at Z+994 is not the exit to Cerberus at the far end of this room.
+    humanoid:MoveTo(dest)
+    return true
+end
+
+function MURIM_LATE.objects(area,raid,origin,index)
+    local objects=area:GetDescendants()
+    if index~=5 then return objects end
+    local seen={}
+    for _,obj in ipairs(objects) do seen[obj]=true end
+    local function add(obj)
+        if not seen[obj] then seen[obj]=true;table.insert(objects,obj) end
+    end
+    -- Boundary doors can be parented to the following room or raid root.
+    for _,obj in ipairs(raid:GetDescendants()) do
+        if obj:IsA("Model") and obj.Name=="HallowDoor" then
+            local part=obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart",true)
+            if part then
+                local z=part.Position.Z-origin.Z
+                if z>=960 and z<=1112 and math.abs(part.Position.X-origin.X)<100
+                    and math.abs(part.Position.Y-(origin.Y-20))<50 then add(obj) end
+            end
+        end
+    end
+    -- The log places The Proprietress in Murim_NPCs, not in A05_Teahouse.
+    local npcs=workspace:FindFirstChild("Murim_NPCs")
+    if npcs then
+        for _,npc in ipairs(npcs:GetChildren()) do
+            if npc:IsA("Model") and npc.Name:lower()=="the proprietress" then
+                for _,obj in ipairs(npc:GetDescendants()) do
+                    if obj:IsA("ProximityPrompt") then
+                        local pos=MURIM_A04.promptPosition(obj)
+                        if pos and pos.Z-origin.Z>=960 and pos.Z-origin.Z<1097
+                            and math.abs(pos.X-origin.X)<100 then add(obj) end
+                    end
+                end
+            end
+        end
+    end
+    return objects
+end
+
 function MURIM_LATE.reset()
+    MURIM_LATE.stopWalk()
+    MURIM_LATE.cerberusFocus=nil
     MURIM_LATE.phase="aguardando objetivo replicado"
     MURIM_LATE.lastTick=0;MURIM_LATE.lastMove=0;MURIM_LATE.lastNotice=0
     MURIM_LATE.attempts=setmetatable({},{__mode="k"});MURIM_LATE.pending=nil
@@ -3463,10 +3589,15 @@ function MURIM_LATE.reset()
 end
 function MURIM_LATE.tick(root,raid,origin,index)
     if not root or not raid or not origin or index<5 or index>10 then return true end
+    if index==6 and MURIM_LATE.liveCerberus(root,raid,origin) then
+        MURIM_LATE.phase="Cerberus vivo: navegacao e oferendas suspensas"
+        return true
+    end
     local now=os.clock()
-    if now-MURIM_LATE.lastTick<1.1 then return true end
+    if now-MURIM_LATE.lastTick<(index==5 and 0.25 or 1.1) then return true end
     MURIM_LATE.lastTick=now
     if MURIM_LATE.lastIndex~=index then
+        MURIM_LATE.stopWalk()
         MURIM_LATE.lastIndex=index
         MURIM_LATE.pending=nil
         MURIM_LATE.passage=nil
@@ -3478,6 +3609,7 @@ function MURIM_LATE.tick(root,raid,origin,index)
         MURIM_TRACE.add("AVISO","AutoFases","A"..index.." nao carregada; sem teleporte especulativo.",15)
         return true
     end
+    local objects=MURIM_LATE.objects(area,raid,origin,index)
     if MURIM_LATE.pending then
         local p=MURIM_LATE.pending
         if not p.prompt.Parent or not p.prompt.Enabled then
@@ -3496,14 +3628,14 @@ function MURIM_LATE.tick(root,raid,origin,index)
     local barrierZ=nil
     -- Nao caminhar ate um prompt que esteja do outro lado de uma porta
     -- ainda fechada: o alcance do prompt nao comprova acesso fisico.
-    for _,obj in ipairs(area:GetDescendants()) do
+    for _,obj in ipairs(objects) do
         if obj:IsA("Model") and obj.Name=="HallowDoor" and obj:GetAttribute("Open")~=true then
             local part=obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart",true)
             local z=part and part.Position.Z-origin.Z
             if z and z>rel+2 and (not barrierZ or z<barrierZ) then barrierZ=z end
         end
     end
-    for _,obj in ipairs(area:GetDescendants()) do
+    for _,obj in ipairs(objects) do
         if obj:IsA("ProximityPrompt") and obj.Enabled then
             local action=(obj.ActionText or ""):lower()
             local anchor=obj:FindFirstAncestorWhichIsA("BasePart")
@@ -3527,11 +3659,13 @@ function MURIM_LATE.tick(root,raid,origin,index)
             MURIM_LATE.phase="A"..index.." interagir: "..c.action
             local reach=math.max(2,(c.prompt.MaxActivationDistance or 7)-1.5)
             if c.dist>reach then
-                if now-MURIM_LATE.lastMove>2 then
+                if now-MURIM_LATE.lastMove>(index==5 and 0.4 or 2) then
                     MURIM_LATE.lastMove=now
-                    MURIM_A04.advance(root,c.part.Position,"A"..index.." prompt: "..c.action)
+                    if index==5 then MURIM_LATE.walkA05(root,c.part.Position)
+                    else MURIM_A04.advance(root,c.part.Position,"A"..index.." prompt: "..c.action) end
                 end
             else
+                if index==5 then MURIM_LATE.stopWalk() end
                 local ok,via=tryHallowGuestPrompt(c.prompt)
                 MURIM_LATE.attempts[c.prompt]={count=record and (record.count<2 and record.count+1 or 1) or 1,at=now}
                 MURIM_LATE.pending={prompt=c.prompt,action=c.action,at=now}
@@ -3549,10 +3683,11 @@ function MURIM_LATE.tick(root,raid,origin,index)
             MURIM_LATE.passage=nil
         elseif rel>=p.z+5 or (p.door and p.door.Parent and p.door:GetAttribute("Open")==true) then
             MURIM_LATE.phase="A"..index.." finalizando travessia da porta aberta"
-            if now-MURIM_LATE.lastMove>2 then
+            if now-MURIM_LATE.lastMove>(index==5 and 0.4 or 2) then
                 MURIM_LATE.lastMove=now
-                MURIM_A04.advance(root,Vector3.new(origin.X,root.Position.Y,origin.Z+p.goal),
-                    "A"..index.." travessia confirmada")
+                local target=Vector3.new(origin.X,root.Position.Y,origin.Z+p.goal)
+                if index==5 then MURIM_LATE.walkA05(root,target)
+                else MURIM_A04.advance(root,target,"A"..index.." travessia confirmada") end
             end
             return true
         else
@@ -3563,7 +3698,7 @@ function MURIM_LATE.tick(root,raid,origin,index)
     -- aberta. Antes dela, aproximar ao marcador sem atravessar porta fechada.
     local nextDoor=nil
     local nextDoorZ=math.huge
-    for _,obj in ipairs(area:GetDescendants()) do
+    for _,obj in ipairs(objects) do
         if obj:IsA("Model") and obj.Name=="HallowDoor" then
             local part=obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart",true)
             local z=part and part.Position.Z-origin.Z
@@ -3582,13 +3717,22 @@ function MURIM_LATE.tick(root,raid,origin,index)
         end
         MURIM_LATE.phase=isOpen and "passando porta aberta A"..index
             or "aguardando porta da A"..index.." abrir"
-        if rel<goal-3 and now-MURIM_LATE.lastMove>2 then
+        if rel<goal-3 and now-MURIM_LATE.lastMove>(index==5 and 0.4 or 2) then
             MURIM_LATE.lastMove=now
-            MURIM_A04.advance(root,Vector3.new(origin.X,root.Position.Y,origin.Z+goal),"A"..index.." porta observada")
+            local target=Vector3.new(origin.X,root.Position.Y,origin.Z+goal)
+            if index==5 then MURIM_LATE.walkA05(root,target)
+            else MURIM_A04.advance(root,target,"A"..index.." porta observada") end
         end
         MURIM_TRACE.add("INFO","AutoFases",string.format(
             "A%d: porta Z+%.0f Open=%s; atual Z+%.0f; objetivo nao comprovado. %s",
             index,nextDoorZ,tostring(isOpen),rel,MURIM_LATE.phase),12)
+        return true
+    end
+    if index==5 then
+        -- User-observed passage: Z+1079 -> A06 Z+1101. Use physical locomotion,
+        -- which stops against collision if the door is still closed/unidentified.
+        MURIM_LATE.phase="A05: seguindo corredor para a porta do Cerberus"
+        MURIM_LATE.walkA05(root,Vector3.new(origin.X,root.Position.Y,origin.Z+1102))
         return true
     end
     MURIM_LATE.phase="A"..index.." sem prompt/porta liberada; aguardando estado real"
@@ -6151,7 +6295,7 @@ toggleHallowRaidBtn.MouseButton1Click:Connect(function()
         return
     end
     isAutoHallowRaid = not isAutoHallowRaid
-    if not isAutoHallowRaid then MURIM_A04.cancelHold(); MURIM_A04.stopRun() end
+    if not isAutoHallowRaid then MURIM_A04.cancelHold(); MURIM_A04.stopRun(); MURIM_LATE.stopWalk() end
     MURIM_TRACE.active = isAutoHallowRaid
     MURIM_TRACE.stageTo(isAutoHallowRaid and ("Ativado: " .. hallowDifficulty) or "Desativado")
     if isAutoHallowRaid then
@@ -7748,6 +7892,10 @@ local hallowRaidTask = task.spawn(function()
 
 
                     if currentRaidRoomIndex~=4 then MURIM_A04.stopRun() end
+                    if currentRaidRoomIndex~=5 then MURIM_LATE.stopWalk() end
+                    if currentRaidRoomIndex==6 then
+                        MURIM_LATE.cerberusFocus=MURIM_LATE.liveCerberus(hrp,activeRaidModel,raidOrigin)
+                    else MURIM_LATE.cerberusFocus=nil end
                     local tailorCenter=nil
                     if currentRaidRoomIndex==3 and MURIM_RAID_HIT.yardObjective
                         and hrp.Position.Z-raidOrigin.Z>=488 and hrp.Position.Z-raidOrigin.Z<=538 then
@@ -7761,9 +7909,10 @@ local hallowRaidTask = task.spawn(function()
                             MURIM_RAID_DEFENSE.reset()
                         end
                     else
-                        defenseBlocking=MURIM_RAID_DEFENSE.tick(char,hrp,tailorCenter)
+                        defenseBlocking=MURIM_RAID_DEFENSE.tick(char,hrp,tailorCenter,MURIM_LATE.cerberusFocus)
                     end
                     if defenseBlocking then
+                        MURIM_LATE.stopWalk()
                         currentTarget=nil
                         if hallowStatusLabel then
                             hallowStatusLabel.Text="🛡️ Recuperacao A03: ataque pausado ate HP alvo; evitando intervalo longo"
@@ -7811,9 +7960,12 @@ local hallowRaidTask = task.spawn(function()
                         continue -- A04 owns movement: no loot/combat may override this tick.
                     end
                     -- Check for drops or boss chest in raid
+                    if currentRaidRoomIndex==6 then
+                        MURIM_LATE.cerberusFocus=MURIM_LATE.liveCerberus(hrp,activeRaidModel,raidOrigin)
+                    else MURIM_LATE.cerberusFocus=nil end
                     local dropsFolder = Workspace:FindFirstChild("Murim_Drops")
                     local raidDrop = nil
-                    if dropsFolder then
+                    if dropsFolder and not MURIM_LATE.cerberusFocus then
                         for _, drop in ipairs(dropsFolder:GetChildren()) do
                             if drop and drop.Parent then
                                 local dPart = drop:IsA("BasePart") and drop or (drop:IsA("Model") and (drop.PrimaryPart or drop:FindFirstChildWhichIsA("BasePart", true)))
@@ -7833,8 +7985,8 @@ local hallowRaidTask = task.spawn(function()
                         task.wait(0.1)
                     else
                         -- Find closest valid living foe
-                        local bestFoe = nil
-                        local bestDist = math.huge
+                        local bestFoe = MURIM_LATE.cerberusFocus
+                        local bestDist = bestFoe and -math.huge or math.huge
                         local hrpPos = hrp.Position
 
 
@@ -8036,6 +8188,7 @@ local hallowRaidTask = task.spawn(function()
         else
             MURIM_A04.cancelHold()
             MURIM_A04.stopRun()
+            MURIM_LATE.stopWalk()
             if hallowStatusLabel and hallowStatusLabel.Text ~= "💤 Automação de Halloween desativada"
                 and not isAutoHallowRaid and MURIM_TRACE.stage ~= "Pausado: queda detectada" then
                 hallowStatusLabel.Text = "💤 Automação de Halloween desativada"
@@ -8093,6 +8246,7 @@ local function cleanup()
     destroyed = true
     MURIM_A04.cancelHold()
     MURIM_A04.stopRun()
+    MURIM_LATE.stopWalk()
     MURIM_TRACE.active = false
     MURIM_TRACE.add("INFO", "Fim", "Interface destruida: automacoes encerradas.")
     stopAll()
