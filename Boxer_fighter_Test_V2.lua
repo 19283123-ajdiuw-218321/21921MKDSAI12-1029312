@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V18V: A04 Street Shrine only; full hold, retry in place and resume")
+print("[Boxer_fighter_Test V2] V18W: A04 local grounded routes; shrine hold retained; inspection scope fixed")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -89,7 +89,7 @@ end
 -- V18S: no emulador a transferencia de texto pode truncar perto de 16 KB.
 -- Copiar log prioriza os eventos MAIS RECENTES; Salvar TXT mantem o historico integral.
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V18V | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V18W | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -757,6 +757,7 @@ end
 
 -- Diagnostico somente leitura: examina por que a sala 1 nao gera combate.
 -- Fica no escopo do arquivo para nao aumentar os locais em buildMaster (limite Luau).
+local MURIM_A01 -- forward declaration: inspection and controller share the same state
 local function inspectHalloweenWorld(ply, isAcceptedFoe, isAlivePredicate)
     local ws = game:GetService("Workspace")
     local rs = game:GetService("ReplicatedStorage")
@@ -954,7 +955,7 @@ end
 -- ==========================================================================
 local MURIM_A02
 local MURIM_RAID_HIT, MURIM_A03, MURIM_A04
-local MURIM_A01 = {
+MURIM_A01 = {
     enabled = true,
     phase = "aguardando raid",
     attempts = setmetatable({}, {__mode="k"}),
@@ -3023,56 +3024,116 @@ function MURIM_A04.riskAt(pos,root,threats,holding)
     return worst,nearest
 end
 
+-- Local ground graph for streamed raid geometry. Does not depend on the
+-- global navigation mesh reaching a distant exit beyond the loaded room.
+function MURIM_A04.localRoute(root,dest,validEdge)
+    local start=root.Position
+    local params=RaycastParams.new()
+    params.FilterType=Enum.RaycastFilterType.Exclude
+    params.FilterDescendantsInstances={root.Parent}
+    params.IgnoreWater=true
+    pcall(function() params.RespectCanCollide=true end)
+    local function ground(x,z,y)
+        local hit=workspace:Raycast(Vector3.new(x,y+3,z),Vector3.new(0,-12,0),params)
+        if not hit or not hit.Instance.CanCollide or hit.Normal.Y<0.7 then return nil end
+        local n=hit.Instance.Name:lower()
+        if n:find("roof",1,true) or n:find("ceiling",1,true)
+            or n:find("lantern",1,true) or n:find("lamp",1,true) then return nil end
+        local pos=hit.Position+Vector3.new(0,3.5,0)
+        if math.abs(pos.Y-y)>5 then return nil end
+        return pos
+    end
+    local nodes={{x=0,z=0,pos=start,parent=nil}}
+    local seen={["0:0"]=true}
+    local best,bestScore=nil,math.huge
+    local head=1
+    while head<=#nodes and head<=225 do
+        local node=nodes[head]
+        for _,dir in ipairs({{1,0},{-1,0},{0,1},{0,-1}}) do
+            local x,z=node.x+dir[1],node.z+dir[2]
+            local key=x..":"..z
+            if math.abs(x)<=7 and math.abs(z)<=7 and not seen[key] then
+                local pos=ground(start.X+x*4,start.Z+z*4,node.pos.Y)
+                if pos and validEdge(node.pos,pos) then
+                    seen[key]=true
+                    local nextNode={x=x,z=z,pos=pos,parent=head}
+                    table.insert(nodes,nextNode)
+                    local score=Vector3.new(pos.X-dest.X,0,pos.Z-dest.Z).Magnitude
+                    if score<bestScore then best,bestScore=#nodes,score end
+                end
+            end
+        end
+        head+=1
+    end
+    if not best or bestScore>=Vector3.new(start.X-dest.X,0,start.Z-dest.Z).Magnitude-0.1 then
+        return nil,#nodes
+    end
+    local points={}
+    while nodes[best].parent do
+        table.insert(points,1,nodes[best].pos)
+        best=nodes[best].parent
+    end
+    return {dest=dest,points=points,index=1},#nodes
+end
+
 function MURIM_A04.move(root,dest,why,threats,escape)
     local offset=Vector3.new(dest.X-root.Position.X,0,dest.Z-root.Position.Z)
     if offset.Magnitude<2 then return true end
-    local nextPos=root.Position+offset.Unit*math.min(12,offset.Magnitude)
     local currentRisk=MURIM_A04.riskAt(root.Position,root,threats,false)
-    local nextRisk=MURIM_A04.riskAt(nextPos,root,threats,false)
-    local midRisk=MURIM_A04.riskAt((nextPos+root.Position)*0.5,root,threats,false)
-    if escape then
-        if nextRisk>currentRisk+0.02 or midRisk>currentRisk+0.02 then return false end
-    elseif nextRisk>0 or midRisk>0 then
-        return false
-    end
-    local function validLanding(landing)
-        local landingRisk=MURIM_A04.riskAt(landing,root,threats,false)
-        if landingRisk>(escape and currentRisk+0.02 or 0) then return false end
-        local params=RaycastParams.new()
-        params.FilterType=Enum.RaycastFilterType.Exclude
-        params.FilterDescendantsInstances={root.Parent}
-        pcall(function() params.RespectCanCollide=true end)
-        local hit=workspace:Raycast(root.Position,landing-root.Position,params)
-        return not hit or (hit.Position-landing).Magnitude<1
-    end
-    if MURIM_A04.advance(root,nextPos,why,validLanding) then
-        MURIM_A04.route=nil
+    local params=RaycastParams.new()
+    params.FilterType=Enum.RaycastFilterType.Exclude
+    params.FilterDescendantsInstances={root.Parent}
+    pcall(function() params.RespectCanCollide=true end)
+    local function validEdge(from,to)
+        for _,alpha in ipairs({0.5,1}) do
+            local pos=from+(to-from)*alpha
+            if MURIM_A04.riskAt(pos,root,threats,false)>(escape and currentRisk+0.02 or 0) then return false end
+        end
+        -- Check center and both body edges; a clear center ray is not a clear doorway.
+        local delta=to-from
+        local flat=Vector3.new(delta.X,0,delta.Z)
+        if flat.Magnitude<0.1 then return true end
+        local side=Vector3.new(-flat.Z,0,flat.X).Unit*1.2
+        for _,shift in ipairs({Vector3.zero,side,side*-1}) do
+            local hit=workspace:Raycast(from+shift,delta,params)
+            if hit and (hit.Position-(to+shift)).Magnitude>=0.7 then return false end
+        end
         return true
     end
-    -- A wall/room entrance needs a path around it, not repeated straight-line probes.
-    local now=os.clock()
+    local function validLanding(landing) return validEdge(root.Position,landing) end
+    local function follow(route)
+        while route.points[route.index] and
+            (route.points[route.index]-root.Position).Magnitude<2.5 do route.index+=1 end
+        local point=route.points[route.index]
+        if not point then return nil end
+        if (point-root.Position).Magnitude>14 then return false end
+        return MURIM_A04.advance(root,point,why.." via rota local",validLanding)
+    end
+    -- Finish a detour before attempting the obstructed straight line again.
     local route=MURIM_A04.route
-    if not route or (route.dest-dest).Magnitude>5 then
-        if now-(MURIM_A04.routeAt or 0)<1 then return false end
-        MURIM_A04.routeAt=now
-        local ok,path=pcall(function()
-            local p=game:GetService("PathfindingService"):CreatePath({AgentRadius=2,AgentHeight=5,AgentCanJump=true})
-            p:ComputeAsync(root.Position,dest)
-            return p
-        end)
-        if not ok or path.Status~=Enum.PathStatus.Success then return false end
-        route={dest=dest,points=path:GetWaypoints(),index=2}
-        MURIM_A04.route=route
+    if route and (route.dest-dest).Magnitude<=5 then
+        local followed=follow(route)
+        if followed then return true end
+        MURIM_A04.route=nil
+    else MURIM_A04.route=nil end
+    local nextPos=root.Position+offset.Unit*math.min(12,offset.Magnitude)
+    if validLanding(nextPos) and MURIM_A04.advance(root,nextPos,why,validLanding) then return true end
+    local now=os.clock()
+    if now-(MURIM_A04.routeAt or 0)<1 then return false end
+    MURIM_A04.routeAt=now
+    local nodes
+    route,nodes=MURIM_A04.localRoute(root,dest,validEdge)
+    if not route then
+        MURIM_A04.navFailure="sem rota local: "..tostring(nodes).." pontos conectados"
+        MURIM_TRACE.add("AVISO","A04Rota",MURIM_A04.navFailure,5)
+        return false
     end
-    while route.points[route.index] and (route.points[route.index].Position-root.Position).Magnitude<4 do
-        route.index+=1
-    end
-    local point=route.points[route.index]
-    if not point then MURIM_A04.route=nil; return false end
-    local delta=point.Position-root.Position
-    local target=root.Position+delta.Unit*math.min(10,delta.Magnitude)
-    if not validLanding(target) then MURIM_A04.route=nil; return false end
-    return MURIM_A04.advance(root,target,why.." via caminho",validLanding)
+    MURIM_A04.route=route
+    MURIM_A04.navFailure=nil
+    MURIM_TRACE.add("MOVIMENTO","A04Rota",string.format(
+        "Rota ao redor do bloqueio: %d pontos; %d pisos conectados; primeiro X=%.0f Z=%.0f",
+        #route.points,nodes,route.points[1].X,route.points[1].Z),3)
+    return follow(route) or false
 end
 
 function MURIM_A04.cancelHold()
@@ -3248,7 +3309,7 @@ function MURIM_A04.tick(root,raid,origin)
         if now-MURIM_A04.lastMove>=0.4 then
             MURIM_A04.lastMove=now
             if not MURIM_A04.move(root,Vector3.new(origin.X,root.Position.Y,origin.Z+970),"saida A04",threats,false) then
-                MURIM_A04.phase="saida aberta; aguardando caminho livre, sem Hide"
+                MURIM_A04.phase="saida aberta; "..(MURIM_A04.navFailure or "caminho obstruido/ameacado; recalculando")
             end
         end
         return true
