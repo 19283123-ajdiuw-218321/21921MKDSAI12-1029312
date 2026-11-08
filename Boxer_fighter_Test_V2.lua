@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V18U: A04 prompts, oil, threat response and exclusive navigation")
+print("[Boxer_fighter_Test V2] V18V: A04 Street Shrine only; full hold, retry in place and resume")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -89,7 +89,7 @@ end
 -- V18S: no emulador a transferencia de texto pode truncar perto de 16 KB.
 -- Copiar log prioriza os eventos MAIS RECENTES; Salvar TXT mantem o historico integral.
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V18U | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V18V | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -2561,7 +2561,7 @@ end
 -- V16 A04: percurso CONTINUO (sem instancias/telas), acender 3 lanternas e
 -- usar esconderijos em caso de Watchman/procissao. Travessia por piso verificado.
 MURIM_A04={
-    responses={},needOil=true,processionUntil=0,searchIndex=1,
+    responses={},processionUntil=0,searchIndex=1,
     phase="aguardando",lamps={},seenEnabled={},lampCount=0,attempts=setmetatable({},{__mode="k"}),
     lastTick=0,lastMove=0,lastNotice=0,pending=nil,firstHideDone=false,
     lastHideAt=0,hideUntil=0,hidePrompt=nil,hideAttempt=0,
@@ -2581,7 +2581,7 @@ MURIM_A04={
 }
 function MURIM_A04.reset()
     if MURIM_A04.cancelHold then MURIM_A04.cancelHold() end
-    MURIM_A04.responses={}; MURIM_A04.needOil=true
+    MURIM_A04.responses={}
     MURIM_A04.processionUntil=0; MURIM_A04.safeSince=nil; MURIM_A04.searchIndex=1
     MURIM_A04.raid=nil; MURIM_A04.character=nil
     MURIM_A04.route=nil; MURIM_A04.routeAt=0
@@ -2684,7 +2684,7 @@ function MURIM_A04.advance(root,dest,why,validateLanding)
         end
     end
     local relOff=origin and (original.X-origin.X) or 0
-    if origin and math.abs(relOff)>14 and delta.Z>6 then
+    if not validateLanding and origin and math.abs(relOff)>14 and delta.Z>6 then
         local towardCenter=math.clamp(origin.X-original.X,-12,12)
         addProbe(Vector3.new(original.X+towardCenter,original.Y,
             original.Z+math.min(6,delta.Z)),"retomar corredor central")
@@ -2790,14 +2790,15 @@ function MURIM_A04.findComeOut()
     for _,guiRoot in ipairs(roots) do
         if guiRoot then
             for _,obj in ipairs(guiRoot:GetDescendants()) do
-                if (obj:IsA("TextButton") or obj:IsA("TextLabel"))
+                if (obj:IsA("GuiButton") or obj:IsA("TextLabel"))
                     and isHallowGuiVisible(obj) then
-                    local txt=(obj.Text or ""):lower():gsub("^%s+",""):gsub("%s+$","")
+                    local raw=(obj:IsA("TextButton") or obj:IsA("TextLabel")) and obj.Text or ""
+                    local txt=raw:lower():gsub("<[^>]+>",""):gsub("^%s+",""):gsub("%s+$","")
                     txt=txt:gsub("%s+"," ")
                     local name=(obj.Name or ""):lower()
-                    local matches=txt=="come out" or txt=="leave hiding"
+                    local matches=(#txt<80 and (txt:find("%f[%a]come out%f[%A]") or txt:find("%f[%a]leave hiding%f[%A]")))
                         or txt=="sair do esconderijo" or txt=="sair de esconderijo"
-                        or (obj:IsA("TextButton") and (name=="comeout" or name=="unhide"))
+                        or (obj:IsA("GuiButton") and (name=="comeout" or name=="unhide"))
                     if matches then
                         local button=obj:IsA("GuiButton") and obj or obj:FindFirstAncestorWhichIsA("GuiButton")
                         return obj,button
@@ -2955,13 +2956,20 @@ function MURIM_A04.readWorld(root,raid,origin)
         elseif obj:IsA("Model") and obj.Name=="HallowDoor" then
             local part=obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart",true)
             local z=part and part.Position.Z-origin.Z
-            if z and z>=850 and z<=955 and (not world.gate or z>world.gate.z) then
-                world.gate={model=obj,z=z,open=obj:GetAttribute("Open")==true}
+            local open=obj:GetAttribute("Open")==true
+            if z and z>=850 and z<=955 and (not world.gate
+                or (open and not world.gate.open) or (open==world.gate.open and z>world.gate.z)) then
+                world.gate={model=obj,z=z,open=open}
             end
         end
     end
     for _,list in ipairs({world.lamps,world.oil,world.pickup,world.hides}) do
         table.sort(list,function(a,b) return a.d<b.d end)
+    end
+    if world.gate and world.gate.open and #world.lamps==3 then
+        local disabled=0
+        for _,item in ipairs(world.lamps) do if not item.prompt.Enabled then disabled+=1 end end
+        if disabled==3 then world.count=3 end -- live door + all three prompts, not manual/auto attribution
     end
     return world
 end
@@ -2973,7 +2981,8 @@ function MURIM_A04.threats(raid,origin)
     if npcs then table.insert(folders,npcs) end
     for _,folder in ipairs(folders) do
         for _,npc in ipairs(folder:GetDescendants()) do
-            if npc:IsA("Model") and not seen[npc] then
+            if npc:IsA("Model") and not seen[npc]
+                and (npc.Parent==npcs or npc:FindFirstChildWhichIsA("Humanoid") or npc:GetAttribute("HallowId")~=nil) then
                 seen[npc]=true
                 local name=npc.Name:lower()
                 local procession=name:find("sedan",1,true) or name:find("procession",1,true)
@@ -3068,6 +3077,10 @@ end
 
 function MURIM_A04.cancelHold()
     local pending=MURIM_A04.pending
+    if pending and pending.connection then pending.connection:Disconnect() end
+    if pending and pending.keyDown then
+        pcall(function() game:GetService("VirtualInputManager"):SendKeyEvent(false,pending.inputKey,false,game) end)
+    end
     if pending and pending.holding and pending.prompt.Parent then
         pcall(function() pending.prompt:InputHoldEnd() end)
     end
@@ -3080,12 +3093,28 @@ function MURIM_A04.startPrompt(item,kind,now)
     local count=(MURIM_A04.attempts[prompt] or 0)+1
     MURIM_A04.attempts[prompt]=count
     MURIM_A04.lastPromptAttempt[prompt]=now
-    local ok,err=pcall(function() prompt:InputHoldBegin() end)
+    local pending={prompt=prompt,key=item.key,kind=kind,at=now,
+        holding=true,hold=math.max(0,prompt.HoldDuration)+0.2,attempt=count,triggered=false}
+    MURIM_A04.pending=pending
+    if prompt.Triggered then
+        pending.connection=prompt.Triggered:Connect(function(who)
+            if who==nil or who==player then pending.triggered=true end
+        end)
+    end
+    -- First attempt: the specific prompt. Retry: actual configured key, as in
+    -- the manual interaction. Neither method treats a successful call as success.
+    local ok,err=pcall(function()
+        if count%2==0 and prompt.KeyboardKeyCode and prompt.KeyboardKeyCode~=Enum.KeyCode.Unknown then
+            pending.inputKey=prompt.KeyboardKeyCode
+            pending.keyDown=true
+            game:GetService("VirtualInputManager"):SendKeyEvent(true,pending.inputKey,false,game)
+        else
+            prompt:InputHoldBegin()
+        end
+    end)
     if not ok then
         MURIM_TRACE.add("ERRO","A04Prompt",tostring(err),5)
     end
-    MURIM_A04.pending={prompt=prompt,key=item.key,kind=kind,at=now,
-        holding=true,hold=math.max(0,prompt.HoldDuration)+0.2,attempt=count}
     MURIM_A04.phase="segurando prompt: "..kind
 end
 
@@ -3104,13 +3133,17 @@ function MURIM_A04.updatePrompt(root,world,now)
     end
     if p.holding then
         if now-p.at<p.hold and p.prompt.Enabled then return true end
+        if p.keyDown then
+            pcall(function() game:GetService("VirtualInputManager"):SendKeyEvent(false,p.inputKey,false,game) end)
+            p.keyDown=false
+        end
         pcall(function() p.prompt:InputHoldEnd() end)
         p.holding=false
         p.releasedAt=now
         -- Alternate after a full real hold if the previous InputHold did not work.
         -- The required duration has already elapsed; never leave a background
         -- hold running after cancellation, toggle-off, death, or a new threat.
-        if p.attempt%2==0 and p.prompt.Enabled and typeof(fireproximityprompt)=="function" then
+        if not p.triggered and p.prompt.Enabled and typeof(fireproximityprompt)=="function" then
             local ok,err=pcall(function() fireproximityprompt(p.prompt,0) end)
             if not ok then MURIM_TRACE.add("ERRO","A04Prompt",tostring(err),5) end
         end
@@ -3122,38 +3155,25 @@ function MURIM_A04.updatePrompt(root,world,now)
     if lit or disabled then
         -- Record response separately from confirmed Lit/exit door.
         MURIM_A04.responses[p.key]={at=now,kind=p.kind}
-        if p.kind=="Oil Jar" then MURIM_A04.needOil=false end
         if p.kind=="Street Shrine" and not MURIM_A04.firstHideDone then
             MURIM_A04.firstHideDone=true
             MURIM_A04.processionUntil=now+12
         end
         MURIM_TRACE.add("EVIDENCIA","A04Prompt",p.kind..": "..
             (lit and "Lit=true" or "Enabled=false; resposta observada, conclusao ainda nao confirmada"))
-        MURIM_A04.pending=nil
+        MURIM_A04.cancelHold()
         return false
     end
     if now-p.releasedAt>=3 then
-        MURIM_TRACE.add("AVISO","A04Prompt",p.kind.." sem efeito; reagendar tentativa e verificar Oil Jar",5)
-        if p.kind=="Street Shrine" or p.kind=="Oil Jar" then MURIM_A04.needOil=true end
-        MURIM_A04.pending=nil
+        MURIM_TRACE.add("AVISO","A04Prompt",p.kind.." sem efeito observado; repetir o MESMO prompt apos intervalo",5)
+        MURIM_A04.cancelHold()
         return false
     end
     return true
 end
 
-function MURIM_A04.shelter(root,world,threats,now)
-    for _,item in ipairs(world.hides) do
-        if item.prompt.Enabled then
-            local reach=math.max(1,item.prompt.MaxActivationDistance-1)
-            if item.d<=reach then
-                if now-(MURIM_A04.lastPromptAttempt[item.prompt] or -100)>=3 then
-                    MURIM_A04.startPrompt(item,"Hide",now)
-                end
-                return true
-            end
-            if MURIM_A04.move(root,item.pos,"abrigo por ameaca",threats,true) then return true end
-        end
-    end
+function MURIM_A04.avoidThreat(root,world,threats,now)
+    -- No automatic Hide. Only grounded retreat from an observed threat.
     -- No reachable hide: retreat along grounded positions away from the closest threat.
     local nearest=nil
     for _,t in ipairs(threats) do
@@ -3194,7 +3214,7 @@ function MURIM_A04.tick(root,raid,origin)
         if t.procession and (t.part.Position-root.Position).Magnitude<120 then procession=true end
     end
     local precaution=now<(MURIM_A04.processionUntil or 0)
-    local danger=risk>0 or procession or precaution
+    local danger=risk>0 or procession
     local hidden=MURIM_A04.findComeOut()~=nil
     MURIM_A04.comeOutVisible=hidden
     MURIM_A04.lampCount=world.count
@@ -3221,45 +3241,31 @@ function MURIM_A04.tick(root,raid,origin)
     end
     MURIM_A04.safeSince=nil
     MURIM_A04.comeOutAttempts=0
-    if danger then
-        if MURIM_A04.pending and MURIM_A04.pending.kind=="Hide" then
-            MURIM_A04.updatePrompt(root,world,now)
-        else
-            MURIM_A04.cancelHold()
-            MURIM_A04.phase=precaution and "protecao apos primeira lanterna" or "evitando Watchman/procissao"
-            if now-MURIM_A04.lastMove>=0.4 then
-                MURIM_A04.lastMove=now
-                MURIM_A04.shelter(root,world,threats,now)
+    -- A completed street resumes at its open exit before considering retreat.
+    if world.gate and world.gate.open then
+        MURIM_A04.cancelHold()
+        MURIM_A04.phase="porta Open=true: atravessando saida A04"
+        if now-MURIM_A04.lastMove>=0.4 then
+            MURIM_A04.lastMove=now
+            if not MURIM_A04.move(root,Vector3.new(origin.X,root.Position.Y,origin.Z+970),"saida A04",threats,false) then
+                MURIM_A04.phase="saida aberta; aguardando caminho livre, sem Hide"
             end
+        end
+        return true
+    end
+    if risk>0 or procession then
+        MURIM_A04.cancelHold()
+        MURIM_A04.phase="evitando ameaca; sem Hide automatico"
+        if now-MURIM_A04.lastMove>=0.4 then
+            MURIM_A04.lastMove=now
+            MURIM_A04.avoidThreat(root,world,threats,now)
         end
         return true
     end
     if MURIM_A04.updatePrompt(root,world,now) then return true end
-    if now<(MURIM_A04.processionUntil or 0) then return true end
-    -- Door state is read again after every reload; no cache is required to resume.
-    if world.gate and world.gate.open then
-        MURIM_A04.phase="porta Open=true: atravessando saida A04"
-        if now-MURIM_A04.lastMove>=0.4 then
-            MURIM_A04.lastMove=now
-            MURIM_A04.move(root,Vector3.new(origin.X,root.Position.Y,origin.Z+970),"saida A04",threats,false)
-        end
-        return true
-    end
     local chosen,kind=nil,nil
     local function available(item)
         return item.prompt.Enabled and now-(MURIM_A04.lastPromptAttempt[item.prompt] or -100)>4
-    end
-    for _,item in ipairs(world.pickup) do
-        if available(item) then chosen=item;kind="Take lantern";break end
-    end
-    -- Refill at entry or when a shrine attempt has no observable effect.
-    if not chosen and MURIM_A04.needOil then
-        for _,item in ipairs(world.oil) do
-            local response=MURIM_A04.responses[item.key]
-            if available(item) and (not response or now-response.at>25) then
-                chosen=item;kind="Oil Jar";break
-            end
-        end
     end
     if not chosen then
         for _,item in ipairs(world.lamps) do
@@ -3268,7 +3274,7 @@ function MURIM_A04.tick(root,raid,origin)
     end
     if chosen then
         MURIM_A04.phase="aproximando: "..kind.." "..chosen.key
-        local reach=math.max(1,chosen.prompt.MaxActivationDistance-1.5)
+        local reach=math.max(1,math.min(5,chosen.prompt.MaxActivationDistance-2))
         if chosen.d<=reach then
             if MURIM_A04.riskAt(root.Position,root,threats,true)==0 then
                 MURIM_A04.startPrompt(chosen,kind,now)
@@ -3276,8 +3282,8 @@ function MURIM_A04.tick(root,raid,origin)
         elseif now-MURIM_A04.lastMove>=0.4 then
             MURIM_A04.lastMove=now
             if not MURIM_A04.move(root,chosen.pos,kind,threats,false) then
-                MURIM_A04.phase="caminho ao prompt ameacado/bloqueado; procurando abrigo"
-                MURIM_A04.shelter(root,world,threats,now)
+                MURIM_A04.phase="caminho ao Street Shrine bloqueado; recalculando rota"
+                -- Geometry failure is not a threat: never trigger Hide here.
             end
         end
         return true
@@ -3298,7 +3304,6 @@ function MURIM_A04.tick(root,raid,origin)
         local dest=Vector3.new(origin.X,root.Position.Y,origin.Z+targets[index])
         if (Vector3.new(dest.X,0,dest.Z)-Vector3.new(root.Position.X,0,root.Position.Z)).Magnitude<8 then
             MURIM_A04.searchIndex=index%#targets+1
-            MURIM_A04.needOil=true
         else
             MURIM_A04.move(root,dest,"varredura A04",threats,false)
         end
