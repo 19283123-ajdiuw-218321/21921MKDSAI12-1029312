@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V19B: A04/A05 teleport; open exit before Speak; Cerberus and HP retained")
+print("[Boxer_fighter_Test V2] V19C: current-room inspection; HBSoul lateral evasion; retained A05 observations")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -89,7 +89,7 @@ end
 -- V18S: no emulador a transferencia de texto pode truncar perto de 16 KB.
 -- Copiar log prioriza os eventos MAIS RECENTES; Salvar TXT mantem o historico integral.
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V19B | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V19C | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -770,14 +770,18 @@ local function inspectHalloweenWorld(ply, isAcceptedFoe, isAlivePredicate)
         return
     end
     local raid, origin = getActiveRaidInfo(ply)
+    local roomIndex=detectRoomIndexFromPosition(root.Position,origin,raid)
+    local roomDef=roomIndex and HALLOW_ROOM_DATA[roomIndex]
+    local roomName=roomDef and roomDef.name or "sala desconhecida"
+    local room=roomDef and raid and raid:FindFirstChild(roomName,true)
+    local roomLabel=roomIndex and string.format("A%02d",roomIndex) or "desconhecida"
     local humanoid = char:FindFirstChildWhichIsA("Humanoid")
     local fm = humanoid and humanoid.FloorMaterial.Name or "indisponivel"
     MURIM_TRACE.add("INFO", "Censo", string.format("INICIO (somente leitura) pos=(%.0f,%.0f,%.0f), solo=%s, raid=%s", root.Position.X, root.Position.Y, root.Position.Z, fm, raid and raid.Name or "ausente"))
     if not raid then
         MURIM_TRACE.add("AVISO", "Censo", "Sem modelo HallowGate carregado; inspeção de inimigos pode ser parcial.")
     else
-        local room = raid:FindFirstChild("A01_Causeway", true)
-        MURIM_TRACE.add("INFO", "Censo", "A01_Causeway carregada=" .. tostring(room ~= nil)
+        MURIM_TRACE.add("INFO", "Censo", roomName.." carregada=" .. tostring(room ~= nil)
             .. "; tipo=" .. (room and room.ClassName or "-")
             .. "; filhos=" .. (room and tostring(#room:GetChildren()) or "0"))
     end
@@ -828,6 +832,7 @@ local function inspectHalloweenWorld(ply, isAcceptedFoe, isAlivePredicate)
         countBySource[#countBySource+1] = string.format("%s: modelos com Humanoid=%d; vivos=%d; a <=250=%d; aceitos por ambos filtros=%d; inspecionados=%d",source,seen,alive,inRange,accepted,inspected)
     end
     inspectSource(npcFolder,"Murim_NPCs",false)
+    inspectSource(room,"Sala atual/"..roomLabel,true)
     inspectSource(raid,"Raids/HallowGate",true)
     for _, line in ipairs(countBySource) do MURIM_TRACE.add("INFO","Censo",line) end
     table.sort(records, function(a,b) return a.distance<b.distance end)
@@ -862,7 +867,6 @@ local function inspectHalloweenWorld(ply, isAcceptedFoe, isAlivePredicate)
         MURIM_TRACE.add("INFO","Mecanica","HallowWatched #"..i.." "..obj.Name.." tipo="..obj.ClassName.." HallowId="..tostring(obj:GetAttribute("HallowId")~=nil))
     end
     -- Prompt de interacao no modelo A01 (pode revelar objetivo sem inimigos).
-    local room = raid and raid:FindFirstChild("A01_Causeway",true)
     if room then
         local promptCount=0
         for _, obj in ipairs(room:GetDescendants()) do
@@ -871,13 +875,13 @@ local function inspectHalloweenWorld(ply, isAcceptedFoe, isAlivePredicate)
                 if promptCount<=12 then
                     local anchor=obj:FindFirstAncestorWhichIsA("BasePart")
                     local dist=anchor and (anchor.Position-root.Position).Magnitude or -1
-                    MURIM_TRACE.add("INFO","PromptA01",string.format("%s | acao=%s | objeto=%s | enabled=%s | dist=%.0f",obj.Name,tostring(obj.ActionText):sub(1,45),tostring(obj.ObjectText):sub(1,45),tostring(obj.Enabled),dist))
+                    MURIM_TRACE.add("INFO","Prompt"..roomLabel,string.format("%s | acao=%s | objeto=%s | enabled=%s | dist=%.0f",obj.Name,tostring(obj.ActionText):sub(1,45),tostring(obj.ObjectText):sub(1,45),tostring(obj.Enabled),dist))
                 end
             end
         end
-        MURIM_TRACE.add("INFO","Censo","ProximityPrompts na sala A01="..promptCount)
+        MURIM_TRACE.add("INFO","Censo","ProximityPrompts na sala "..roomLabel.."="..promptCount)
         local specialCount=0
-        local keywords={"paper","flutt","ghost","jiangs","effigy","lantern","trigger","watch","enemy","talisman"}
+        local keywords={"paper","flutt","ghost","jiangs","effigy","lantern","trigger","watch","enemy","talisman","soul","door","brazier"}
         for _, obj in ipairs(room:GetDescendants()) do
             local low=obj.Name:lower()
             local match=false
@@ -889,14 +893,14 @@ local function inspectHalloweenWorld(ply, isAcceptedFoe, isAlivePredicate)
                 if specialCount<=12 then
                     local part=obj:IsA("BasePart") and obj or (obj:IsA("Model") and obj:FindFirstChildWhichIsA("BasePart",true))
                     local dist=part and (part.Position-root.Position).Magnitude or -1
-                    MURIM_TRACE.add("INFO","ObjetoA01",string.format("%s | tipo=%s | dist=%.0f",obj.Name:sub(1,65),obj.ClassName,dist))
+                    MURIM_TRACE.add("INFO","Objeto"..roomLabel,string.format("%s | tipo=%s | dist=%.0f",obj.Name:sub(1,65),obj.ClassName,dist))
                 end
             end
         end
-        MURIM_TRACE.add("INFO","Censo","Objetos com nomes de mecanica na A01="..specialCount)
+        MURIM_TRACE.add("INFO","Censo","Objetos com nomes de mecanica na "..roomLabel.."="..specialCount)
     end
     -- Analise acionavel somente de leitura. Nunca afirmar que houve conclusao da fase.
-    if room then
+    if room and roomIndex==1 then
         local aliveNear = 0
         for _, m in ipairs(records) do
             if m.health > 0 then aliveNear += 1 end
@@ -943,7 +947,10 @@ local function inspectHalloweenWorld(ply, isAcceptedFoe, isAlivePredicate)
         end
         MURIM_TRACE.add("INFO", "Sala A01", "Inspecao concluida sem acionar interacoes; as instrucoes acima sao HIPOTESES para teste manual.")
     end
-    if tonumber(tostring(MURIM_TRACE.stage):match("area (%d+)"))==3 then
+    if roomIndex~=1 then
+        MURIM_TRACE.add("INFO","Sala "..roomLabel,"Inspecao da sala atual; presenca de objetos nao comprova conclusao nem autoria de interacoes.")
+    end
+    if roomIndex==3 then
         MURIM_TRACE.suggest("Voce esta na A03. Observe a HUD atual: em 'To the yard', confirme HallowDoor.Open na Z+478 e avance ate o patio/Tailor. A instrucao generica da A01 nao se aplica aqui.")
     end
     MURIM_TRACE.add("INFO","Censo","FIM. Nenhum ataque, teleporte ou clique foi executado por esta inspecao.")
@@ -3579,6 +3586,8 @@ function MURIM_TRACE.encounterDump()
     local e=MURIM_LATE.encounter
     return "[ARENA A06: observacao local; aparecimento nao prova invocador; ausencia nao prova morte]\n"
         ..e.snapshot.."\n"..table.concat(e.events,"\n").."\n\n"
+        .. "[SALINHA A05: movimentos observados, autoria nao inferida]\n"
+        ..table.concat(MURIM_LATE.teahouseEvents or {},"\n").."\n\n"
 end
 function MURIM_LATE.observeEncounter(root,origin,automatic)
     local e=MURIM_LATE.encounter
@@ -3598,7 +3607,7 @@ function MURIM_LATE.observeEncounter(root,origin,automatic)
     local seen,rows,souls,npcs={}, {},0,0
     for obj in pairs(e.registry) do
         if not obj.Parent or not obj:IsDescendantOf(workspace) then e.registry[obj]=nil;continue end
-        if obj:IsDescendantOf(root.Parent) then continue end
+        if obj==root.Parent or obj:IsDescendantOf(root.Parent) then continue end
         local soul=obj.Name:lower():find("soul",1,true)~=nil
         local hum=obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid")
         if not soul and not hum then continue end
@@ -3652,6 +3661,102 @@ function MURIM_LATE.observeEncounter(root,origin,automatic)
     e.snapshot=string.format("%s Auto=%s jogadorHP=%.0f NPCs vivos=%d objetos nome Soul=%d maximo observado=%d (nao comprova inimigos); %d listados\n",
         os.date("%H:%M:%S"),tostring(automatic),hp,npcs,souls,e.peakSouls,math.min(#rows,12))
         ..table.concat(rows,"\n",1,math.min(#rows,12))
+end
+
+
+function MURIM_LATE.observeTeahouse(root,raid,origin,automatic)
+    if not root or not raid or math.abs(root.Position.X-origin.X)>145
+        or root.Position.Z-origin.Z<960 or root.Position.Z-origin.Z>=1097 then return end
+    local rows={}
+    for _,obj in ipairs(raid:GetDescendants()) do
+        if obj:IsA("Model") and obj.Name=="HallowDoor" then
+            local part=obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart",true)
+            if part and part.Position.Z-origin.Z>=960 and part.Position.Z-origin.Z<=1112 then
+                rows[#rows+1]=string.format("porta Z+%.0f Open=%s",part.Position.Z-origin.Z,tostring(obj:GetAttribute("Open")))
+            end
+        elseif obj:IsA("ProximityPrompt") then
+            local pos=MURIM_A04.promptPosition(obj)
+            if pos and pos.Z-origin.Z>=960 and pos.Z-origin.Z<1097 then
+                rows[#rows+1]=(obj.ActionText or obj.Name).."="..tostring(obj.Enabled)
+            end
+        end
+    end
+    table.sort(rows)
+    local state=table.concat(rows,"; ")
+    local old=MURIM_LATE.teahousePosition
+    if state~=MURIM_LATE.teahouseState or not old or (root.Position-old).Magnitude>=5 then
+        MURIM_LATE.teahouseState=state;MURIM_LATE.teahousePosition=root.Position
+        local line=string.format("[%s] Auto=%s pos=(%.0f,%.0f,%.0f) %s",os.date("%H:%M:%S"),tostring(automatic),
+            root.Position.X,root.Position.Y,root.Position.Z,state):sub(1,360)
+        local events=MURIM_LATE.teahouseEvents or {};MURIM_LATE.teahouseEvents=events
+        table.insert(events,line);if #events>8 then table.remove(events,1) end
+    end
+end
+
+-- HBSoul is an observed non-Humanoid hazard, not an attackable NPC.
+-- Horizontal clearance matters even during vertical HP recovery.
+function MURIM_LATE.evadeSouls(root,origin)
+    local hum=root and root.Parent and root.Parent:FindFirstChildOfClass("Humanoid")
+    if not hum or hum.Health<=0 or root.Anchored then return false end
+    local now=os.clock()
+    local hazards={}
+    for obj in pairs(MURIM_LATE.encounter.registry) do
+        if obj.Name=="HBSoul" and obj:IsA("BasePart") and obj:IsDescendantOf(workspace)
+            and math.abs(obj.Position.X-origin.X)<145 and obj.Position.Z-origin.Z>=1090
+            and obj.Position.Z-origin.Z<=1245 and (obj.Position-root.Position).Magnitude<90 then
+            hazards[#hazards+1]=obj.Position
+        end
+    end
+    if #hazards==0 then return now<(MURIM_LATE.soulUntil or 0) end
+    MURIM_LATE.soulUntil=now+2
+    if now-(MURIM_LATE.lastSoulMove or -1e9)<0.6 then return true end
+    local function clearance(pos)
+        local distance=math.huge
+        for _,p in ipairs(hazards) do
+            distance=math.min(distance,Vector3.new(pos.X-p.X,0,pos.Z-p.Z).Magnitude)
+        end
+        return distance
+    end
+    local current=clearance(root.Position)
+    if current>=35 then return true end
+    local params=RaycastParams.new()
+    params.FilterType=Enum.RaycastFilterType.Exclude
+    params.FilterDescendantsInstances={root.Parent}
+    params.IgnoreWater=true
+    pcall(function() params.RespectCanCollide=true end)
+    local best,bestDistance=nil,current+6
+    for _,step in ipairs({24,32}) do
+        for _,dir in ipairs({Vector3.new(1,0,0),Vector3.new(-1,0,0),Vector3.new(0,0,1),Vector3.new(0,0,-1),
+            Vector3.new(0.707,0,0.707),Vector3.new(-0.707,0,0.707),Vector3.new(0.707,0,-0.707),Vector3.new(-0.707,0,-0.707)}) do
+            local dest=root.Position+dir*step
+            local distance=clearance(dest)
+            if math.abs(dest.X-origin.X)>65 or dest.Z-origin.Z<1105 or dest.Z-origin.Z>1228
+                or distance<=bestDistance then continue end
+            local hit=workspace:Raycast(dest+Vector3.new(0,3,0),Vector3.new(0,-90,0),params)
+            if not hit or not hit.Instance.CanCollide or hit.Normal.Y<0.7
+                or math.abs(hit.Position.Y-(origin.Y-20))>20 then continue end
+            local floorName=hit.Instance.Name:lower()
+            if floorName:find("pit",1,true) or floorName:find("spike",1,true) then continue end
+            local blocked=false
+            for _,offset in ipairs({Vector3.zero,Vector3.new(0,2,0),Vector3.new(0,-2,0)}) do
+                if workspace:Raycast(root.Position+offset,dest-root.Position,params) then blocked=true;break end
+            end
+            if not blocked then best=dest;bestDistance=distance end
+        end
+    end
+    if best then
+        MURIM_LATE.lastSoulMove=now
+        root.CFrame=root.CFrame+(best-root.Position)
+        root.AssemblyLinearVelocity=Vector3.zero;root.AssemblyAngularVelocity=Vector3.zero
+        if MURIM_RAID_DEFENSE.hoverRoot==root and MURIM_RAID_DEFENSE.hover then
+            MURIM_RAID_DEFENSE.hoverPos=best;MURIM_RAID_DEFENSE.hover.Position=best
+        end
+        MURIM_RAID_DEFENSE.cerberusRecovery=nil
+        MURIM_LATE.encounterEvent(string.format("Evasao HBSoul: %d objetos; distancia horizontal %.0f->%.0f; teleporte lateral, altura mantida; protecao nao confirmada",#hazards,current,bestDistance))
+    else
+        MURIM_TRACE.add("AVISO","Cerberus","HBSoul presente; ataques pausados, nenhum destino lateral com piso/caminho livre e distancia maior.",3)
+    end
+    return true
 end
 
 function MURIM_LATE.liveCerberus(root,raid,origin)
@@ -3736,6 +3841,7 @@ end
 function MURIM_LATE.reset()
     MURIM_LATE.stopWalk()
     MURIM_LATE.cerberusFocus=nil
+    MURIM_LATE.soulUntil=nil;MURIM_LATE.lastSoulMove=nil
     MURIM_LATE.phase="aguardando objetivo replicado"
     MURIM_LATE.lastTick=0;MURIM_LATE.lastMove=0;MURIM_LATE.lastNotice=0
     MURIM_LATE.attempts=setmetatable({},{__mode="k"});MURIM_LATE.pending=nil
@@ -7850,6 +7956,7 @@ externalConnections[#externalConnections+1]=RunService.Heartbeat:Connect(functio
             e.initialized=true
             for _,obj in ipairs(Workspace:GetDescendants()) do MURIM_LATE.trackEncounterObject(obj) end
         end
+        MURIM_LATE.observeTeahouse(root,select(1,getActiveRaidInfo(player)),origin,isAutoHallowRaid)
         MURIM_LATE.observeEncounter(root,origin,isAutoHallowRaid)
     end)
     if not ok then
@@ -8109,11 +8216,16 @@ local hallowRaidTask = task.spawn(function()
                     else
                         defenseBlocking=MURIM_RAID_DEFENSE.tick(char,hrp,tailorCenter,MURIM_LATE.cerberusFocus)
                     end
+                    if currentRaidRoomIndex==6 then
+                        defenseBlocking=MURIM_LATE.evadeSouls(hrp,raidOrigin) or defenseBlocking
+                    end
                     if defenseBlocking then
                         MURIM_LATE.stopWalk()
                         currentTarget=nil
                         if hallowStatusLabel then
-                            hallowStatusLabel.Text="🛡️ Recuperacao A03: ataque pausado ate HP alvo; evitando intervalo longo"
+                            hallowStatusLabel.Text=currentRaidRoomIndex==6 and os.clock()<(MURIM_LATE.soulUntil or 0)
+                                and "HBSoul: ataque pausado; evasao lateral / aguardando perigo passar"
+                                or "Recuperacao de HP: ataques pausados ate atingir HP alvo"
                         end
                     else
                     if currentRaidRoomIndex~=4 and isHallowPacifySeen and os.clock() - lastSeenPacifyTime >= 0.5 then
