@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V19E: A06 timeline log (attacks, damage, new objects, ms); no behavior change")
+print("[Boxer_fighter_Test V2] V19F: A04 direct shrine teleports, longer hold tolerance, evade behind Watchman; no Hide")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -97,7 +97,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V19E | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V19F | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -2733,6 +2733,7 @@ function MURIM_A04.reset()
     MURIM_A04.hideState="nao acionado";MURIM_A04.lastDebugAt=0
     MURIM_A04.exitStartPos=nil;MURIM_A04.exitCheckAt=0;MURIM_A04.exitReportAt=0
     MURIM_A04.navOrigin=nil; MURIM_A04.pendingMove=nil; MURIM_A04.lastFloorFailure=0
+    MURIM_A04.lastLitCount=0; MURIM_A04.lastWatch=nil
     MURIM_A04.exitSeenOpen=false; MURIM_A04.exitDoorZ=nil
     MURIM_A04.comeOutVisible=false;MURIM_A04.comeOutAwaiting=false
     MURIM_A04.comeOutAttempts=0;MURIM_A04.comeOutAttemptAt=0
@@ -2792,7 +2793,7 @@ end
 -- acima de um teto, e a 2a (safeWarp) repetia a sondagem no teto.
 -- Sondar abaixo do teto e mover APENAS sobre piso validado, sem reentrar
 -- na safeWarp da A01. Nao altera os movimentos das A01-A03.
-function MURIM_A04.advance(root,dest,why,validateLanding)
+function MURIM_A04.advance(root,dest,why,validateLanding,maxJump)
     if not root or not root.Parent or not dest then return false end
     MURIM_A04.checkLastMove(root)
     if MURIM_A04.pendingMove then return true end
@@ -2823,6 +2824,7 @@ function MURIM_A04.advance(root,dest,why,validateLanding)
         addProbe(Vector3.new(original.X+towardCenter,original.Y,original.Z),
             "sair lateralmente do esconderijo")
     end
+    if maxJump and delta.Magnitude>30 and delta.Magnitude<=maxJump then addProbe(original+delta,"salto direto") end
     for _,step in ipairs({30,20,12,7,4}) do
         local length=math.min(step,delta.Magnitude)
         local forward=original+delta.Unit*length
@@ -2862,7 +2864,7 @@ function MURIM_A04.advance(root,dest,why,validateLanding)
                 local landing=hit.Position+Vector3.new(0,3.5,0)
                 local good=MURIM_RAID_NAV.support(root,hit,params)
                     and not decorative and math.abs(landing.Y-original.Y)<=23
-                    and (landing-original).Magnitude<=34
+                    and (landing-original).Magnitude<=(maxJump or 34)
                 if good then
                     surface={landing=landing,name=part.Name,hit=hit}
                     break
@@ -3372,6 +3374,74 @@ function MURIM_A04.updatePrompt(root,world,now)
     return true
 end
 
+-- V19F: Watchman. Salto direto entre santuarios, hold so abortado com ameaca real e evasao por tras dele. Sem Hide.
+-- holdAbortDist e estimativa dos logs: resets vieram com ele a 24-32 studs; a 53 studs ainda nao houve reset.
+MURIM_A04.holdAbortDist=40
+MURIM_A04.jumpMax=140 -- o A01 ja teleporta 139 studs nesta raid
+MURIM_A04.noteAt={}
+function MURIM_A04.jump(root,dest,why,threats)
+    local function clear(landing) return MURIM_A04.riskAt(landing,root,threats,false)==0 end
+    return MURIM_A04.advance(root,dest,why,clear,MURIM_A04.jumpMax)
+end
+function MURIM_A04.watchNote(root,reason)
+    local seen=MURIM_A04.lastWatch
+    local now=os.clock()
+    if not seen or now-(MURIM_A04.noteAt[reason] or -1e9)<0.5 then return end
+    MURIM_A04.noteAt[reason]=now
+    local text=string.format("%s: Watchman dist=%.1f frente=%.2f; jogador=(%.0f,%.0f)",reason,seen.dist,seen.facing,root.Position.X,root.Position.Z)
+    MURIM_TRACE.add("WATCHMAN","A04",text)
+    MURIM_LATE.mark(text)
+end
+-- Somente log: trajeto do Watchman (so no TXT) e o momento em que as lanternas zeram.
+function MURIM_A04.watchSample(root,world,threats,now)
+    if world.count<(MURIM_A04.lastLitCount or 0) then
+        local seen=MURIM_A04.lastWatch
+        local text=string.format("RESET A04: Lit %d->%d; jogador=(%.0f,%.0f); ultima leitura do Watchman dist=%s ha %s",
+            MURIM_A04.lastLitCount,world.count,root.Position.X,root.Position.Z,
+            seen and string.format("%.1f",seen.dist) or "?",seen and string.format("%.2fs",now-seen.at) or "?")
+        MURIM_TRACE.add("EVIDENCIA","A04Reset",text)
+        MURIM_LATE.mark(text)
+    end
+    MURIM_A04.lastLitCount=world.count
+    local nearest,dist=nil,math.huge
+    for _,t in ipairs(threats) do
+        local d=(t.part.Position-root.Position).Magnitude
+        if d<dist then nearest,dist=t,d end
+    end
+    if not nearest then return end
+    local offset=root.Position-nearest.part.Position
+    local facing=dist>0 and nearest.part.CFrame.LookVector:Dot(offset.Unit) or 1
+    MURIM_A04.lastWatch={dist=dist,facing=facing,at=now}
+    if now-(MURIM_A04.lastSample or -1e9)>=0.25 then
+        MURIM_A04.lastSample=now
+        MURIM_LATE.mark(string.format("WATCHMAN pos=(%.0f,%.0f) dist=%.1f frente=%.2f jogador=(%.0f,%.0f) Lit=%d fase=%s",
+            nearest.part.Position.X,nearest.part.Position.Z,dist,facing,root.Position.X,root.Position.Z,world.count,tostring(MURIM_A04.phase)),"txt")
+    end
+end
+-- Recuar 10 studs continua na frente dele. Teleportar para as costas sai do campo de visao.
+function MURIM_A04.evade(root,threats,nearest)
+    local look=nearest.part.CFrame.LookVector
+    local back=Vector3.new(-look.X,0,-look.Z)
+    if back.Magnitude<0.1 then return false end
+    back=back.Unit
+    local side=Vector3.new(-back.Z,0,back.X)
+    local origin=MURIM_A04.navOrigin
+    local base=nearest.part.Position
+    local function clear(landing) return MURIM_A04.riskAt(landing,root,threats,false)==0 end
+    for _,distance in ipairs({55,75,40}) do
+        for _,lateral in ipairs({0,16,-16,32,-32}) do
+            local p=base+back*distance+side*lateral
+            local dest=Vector3.new(math.clamp(p.X,origin.X-45,origin.X+45),root.Position.Y,
+                math.clamp(p.Z,origin.Z+535,origin.Z+955))
+            if clear(dest) and MURIM_A04.advance(root,dest,"evasao por tras do Watchman",clear,MURIM_A04.jumpMax) then
+                pcall(MURIM_A04.watchNote,root,"evasao por tras")
+                return true
+            end
+        end
+    end
+    return false
+end
+
 function MURIM_A04.avoidThreat(root,world,threats,now)
     -- No automatic Hide. Only grounded retreat from an observed threat.
     -- No reachable hide: retreat along grounded positions away from the closest threat.
@@ -3380,6 +3450,7 @@ function MURIM_A04.avoidThreat(root,world,threats,now)
         if not nearest or (t.part.Position-root.Position).Magnitude<
             (nearest.part.Position-root.Position).Magnitude then nearest=t end
     end
+    if nearest and MURIM_A04.evade(root,threats,nearest) then return true end
     if nearest then
         local away=Vector3.new(root.Position.X-nearest.part.Position.X,0,root.Position.Z-nearest.part.Position.Z)
         if away.Magnitude>0 then
@@ -3540,6 +3611,7 @@ function MURIM_A04.tick(root,raid,origin)
     MURIM_A04.lamps={}
     for _,item in ipairs(world.lamps) do if item.lit then MURIM_A04.lamps[item.key]=true end end
     MURIM_A04.checkLastMove(root)
+    pcall(MURIM_A04.watchSample,root,world,threats,now)
     MURIM_A04.debugStatus=string.format("santuarios=%d; Lit=%d/3; ameacas=%d; risco=%.2f; oculto=%s; acao=%s",
         #world.lamps,world.count,#threats,risk,tostring(hidden),MURIM_A04.phase)
     if now-MURIM_A04.lastDebugAt>7 then
@@ -3575,7 +3647,12 @@ function MURIM_A04.tick(root,raid,origin)
         end
         return true
     end
-    if risk>0 or procession then
+    -- 4s de hold nao sao jogados fora por uma leitura distante; so ameaca realmente perto interrompe.
+    local keepHolding=MURIM_A04.pending~=nil and MURIM_A04.pending.kind=="Street Shrine"
+        and not procession and dist>=MURIM_A04.holdAbortDist
+    if keepHolding and risk>0 then pcall(MURIM_A04.watchNote,root,"hold mantido") end
+    if (risk>0 or procession) and not keepHolding then
+        if MURIM_A04.pending then pcall(MURIM_A04.watchNote,root,"hold interrompido") end
         MURIM_A04.cancelHold()
         MURIM_A04.phase="evitando ameaca; sem Hide automatico"
         if now-MURIM_A04.lastMove>=0.4 then
@@ -3598,12 +3675,13 @@ function MURIM_A04.tick(root,raid,origin)
         MURIM_A04.phase="aproximando: "..kind.." "..chosen.key
         local reach=math.max(1,math.min(5,chosen.prompt.MaxActivationDistance-2))
         if chosen.d<=reach then
-            if MURIM_A04.riskAt(root.Position,root,threats,true)==0 then
+            if MURIM_A04.riskAt(root.Position,root,threats,false)==0 then
                 MURIM_A04.startPrompt(chosen,kind,now)
             end
         elseif now-MURIM_A04.lastMove>=0.4 then
             MURIM_A04.lastMove=now
-            if not MURIM_A04.move(root,chosen.pos,kind,threats,false) then
+            if not MURIM_A04.jump(root,chosen.pos,kind,threats)
+                and not MURIM_A04.move(root,chosen.pos,kind,threats,false) then
                 MURIM_A04.phase="caminho ao Street Shrine bloqueado; recalculando rota"
                 -- Geometry failure is not a threat: never trigger Hide here.
             end
@@ -3812,7 +3890,7 @@ end
 function MURIM_TRACE.timelineDump(budget)
     local lines=MURIM_LATE.timeline.lines
     if #lines==0 then return "" end
-    local title="[CERBERUS: LINHA DO TEMPO em ms no relogio do servidor; candidato de golpe nao prova origem do dano]\n"
+    local title="[LINHA DO TEMPO A04/A06 em ms no relogio do servidor; candidato de golpe nao prova origem do dano]\n"
     local out={}
     if not budget then
         for i,row in ipairs(lines) do out[i]=row.text end
