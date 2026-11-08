@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V18Y: A05 passage; Cerberus focus after recovery; previous successful recovery point")
+print("[Boxer_fighter_Test V2] V18Z: A04 escape by verified CFrame landings; A05/Cerberus fixes retained")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -89,7 +89,7 @@ end
 -- V18S: no emulador a transferencia de texto pode truncar perto de 16 KB.
 -- Copiar log prioriza os eventos MAIS RECENTES; Salvar TXT mantem o historico integral.
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V18Y | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V18Z | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -3317,6 +3317,48 @@ function MURIM_A04.houndNear(root,origin)
     return false
 end
 
+function MURIM_A04.escapeLanding(root,origin)
+    local params=RaycastParams.new()
+    params.FilterType=Enum.RaycastFilterType.Exclude
+    params.FilterDescendantsInstances={root.Parent}
+    params.IgnoreWater=true
+    pcall(function() params.RespectCanCollide=true end)
+    local rayY=math.max(origin.Y-10,root.Position.Y+5)
+    local function sample(x,z)
+        local hit=workspace:Raycast(Vector3.new(x,rayY,z),Vector3.new(0,-65,0),params)
+        if not hit or not hit.Instance.CanCollide or hit.Normal.Y<0.7
+            or hit.Position.Y<origin.Y-35 or hit.Position.Y>origin.Y+5 then return nil end
+        local node=hit.Instance
+        for _=1,8 do
+            if not node then break end
+            local name=node.Name:lower()
+            if name=="pit" or name:find("spike",1,true) or name:find("trap",1,true)
+                or name:find("roof",1,true) or name:find("ceiling",1,true) then return nil end
+            node=node.Parent
+        end
+        return hit
+    end
+    for _,step in ipairs({28,24,20,16,12,8}) do
+        local z=math.min(root.Position.Z+step,origin.Z+970)
+        for _,dx in ipairs({0,-3,3}) do
+            local x=origin.X+dx
+            local hit=sample(x,z)
+            if hit then
+                local supported=true
+                for _,off in ipairs({{1.5,0},{-1.5,0},{0,1.5},{0,-1.5}}) do
+                    local side=sample(x+off[1],z+off[2])
+                    if not side or math.abs(side.Position.Y-hit.Position.Y)>3 then supported=false;break end
+                end
+                if supported then
+                    local ceiling=workspace:Raycast(hit.Position+Vector3.new(0,0.2,0),Vector3.new(0,5.5,0),params)
+                    if not ceiling then return hit.Position+Vector3.new(0,3.5,0),hit.Instance.Name end
+                end
+            end
+        end
+    end
+    return nil
+end
+
 function MURIM_A04.runExit(root,origin,now)
     local humanoid=root.Parent and root.Parent:FindFirstChildWhichIsA("Humanoid")
     if not humanoid or humanoid.Health<=0 then MURIM_A04.stopRun();return true end
@@ -3330,36 +3372,42 @@ function MURIM_A04.runExit(root,origin,now)
         return true
     end
     local run=MURIM_A04.running
+    if run and (root.Position.Z-origin.Z<850
+        or (run.expected and root.Position.Z<run.expected.Z-45)) then
+        MURIM_A04.stopRun()
+        MURIM_A04.phase="deslocamento para tras observado; relendo porta e santuarios"
+        MURIM_TRACE.add("AVISO","A04Teleporte","Fuga invalidada por retorno ao checkpoint/correcao de posicao. Nao reutilizar rota antiga.",3)
+        return false
+    end
     if not run then
         run={root=root,humanoid=humanoid,originalSpeed=humanoid.WalkSpeed,
-            speed=math.max(humanoid.WalkSpeed,32),lastJump=-100,origin=origin}
+            speed=humanoid.WalkSpeed,origin=origin,lastWarp=-100}
         MURIM_A04.running=run
         MURIM_A04.route=nil
-        MURIM_TRACE.add("ACAO","A04Fuga","Corrida continua apos a porta; sem espera por grade de piso/rotas locais.")
+        humanoid:Move(Vector3.zero,false)
+        humanoid:MoveTo(root.Position)
     end
-    humanoid.WalkSpeed=run.speed
-    -- Use the character's continuous locomotion over stairs and pits rather
-    -- than repeatedly teleporting it onto Pit parts or four-stud grid nodes.
-    humanoid:MoveTo(Vector3.new(origin.X,root.Position.Y,origin.Z+970))
-    MURIM_A04.phase="fuga: correndo para A05"
-    MURIM_A04.debugStatus=string.format("FUGA; Z+%.0f; velocidade solicitada=%.0f; sem Hide/loot/combate",
-        root.Position.Z-origin.Z,run.speed)
-    local params=RaycastParams.new()
-    params.FilterType=Enum.RaycastFilterType.Exclude
-    params.FilterDescendantsInstances={root.Parent}
-    params.IgnoreWater=true
-    pcall(function() params.RespectCanCollide=true end)
-    local ahead=root.Position+Vector3.new(0,0,5)
-    local floor=workspace:Raycast(ahead,Vector3.new(0,-9,0),params)
-    local obstacle=workspace:Raycast(root.Position,Vector3.new(0,0,4),params)
-    if (not floor or obstacle) and now-run.lastJump>=0.8 then
-        local landing=workspace:Raycast(root.Position+Vector3.new(0,4,10),Vector3.new(0,-20,0),params)
-        if landing and landing.Instance.CanCollide and landing.Normal.Y>=0.7
-            and humanoid.FloorMaterial~=Enum.Material.Air then
-            humanoid.Jump=true
-            run.lastJump=now
+    if now-run.lastWarp<0.25 then return true end
+    run.lastWarp=now
+    if run.expected then
+        local errorDistance=(root.Position-run.expected).Magnitude
+        if errorDistance>12 then
+            MURIM_TRACE.add("AVISO","A04Teleporte",string.format("Posicao corrigida/deslocada %.0f studs apos salto; recalculando do ponto real.",errorDistance),3)
         end
     end
+    local landing,floor=MURIM_A04.escapeLanding(root,origin)
+    if not landing then
+        MURIM_A04.phase="fuga: sem piso de pouso carregado; nao saltar no vazio"
+        MURIM_TRACE.add("AVISO","A04Teleporte",MURIM_A04.phase,3)
+        return true
+    end
+    root.CFrame=CFrame.new(landing)
+    root.AssemblyLinearVelocity=Vector3.zero
+    root.AssemblyAngularVelocity=Vector3.zero
+    run.expected=landing
+    MURIM_A04.phase="fuga: teleporte para A05"
+    MURIM_A04.debugStatus=string.format("TELEPORTE FUGA; destino Z+%.0f; Y=%.0f; piso=%s",landing.Z-origin.Z,landing.Y,floor)
+    MURIM_TRACE.add("MOVIMENTO","A04Teleporte",MURIM_A04.debugStatus)
     return true
 end
 
