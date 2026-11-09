@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V19F: A04 direct shrine teleports, longer hold tolerance, evade behind Watchman; no Hide")
+print("[Boxer_fighter_Test V2] V19G: Cerberus keeps parry for real bites, dodges GhostFire, logs every parry; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -97,7 +97,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V19F | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V19G | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -4224,6 +4224,97 @@ function MURIM_LATE.soulTick(root,origin,automatic,gui,ownGui,sendParry)
     end
 end
 
+-- V19G: Cerberus, a partir do TXT das 20:57. CJ_Back/Wake/Scent/Rear/ChainSweep nao feriram ninguem de perto,
+-- mas o parry neles gastava o cooldown da mordida seguinte (6 das 27 mordidas perdidas assim).
+MURIM_LATE.cerberusSkip={CJ_Back=true,CJ_Wake=true,CJ_Scent=true,CJ_Rear=true,CJ_ChainSweep=true}
+-- CJ_GreedyDrag acertou 3 de 3 a mais de 54 studs; o parry generico para em 18. Tentativa: nao ha prova de que seja defensavel.
+MURIM_LATE.cerberusAnyRange={CJ_GreedyDrag=true}
+MURIM_LATE.dodge={}
+MURIM_LATE.dodgeRise=25 -- a recuperacao ja sobe 25 e os ticks do GhostFire pararam ao subir
+MURIM_LATE.dodgeRange=40 -- o cone visivel (BossStrikeZone) tem 35.6 de comprimento
+MURIM_LATE.dodgeLead=0.3
+MURIM_LATE.dodgeTail=2.0 -- o cone some cerca de 1.94s depois do impacto
+function MURIM_LATE.isCerberus(npc)
+    return npc~=nil and npc.Name:lower():find("cerberus",1,true)~=nil
+end
+function MURIM_LATE.parrySkip(npc,act)
+    return MURIM_LATE.isCerberus(npc) and MURIM_LATE.cerberusSkip[act]==true
+end
+function MURIM_LATE.parryAnyRange(npc,act)
+    return MURIM_LATE.isCerberus(npc) and MURIM_LATE.cerberusAnyRange[act]==true
+end
+-- Somente log: cada tentativa de parry no Cerberus e o que o servidor fez com ela.
+function MURIM_LATE.parryNote(char,npc,act,hitTime,allowed,inProgress)
+    if not char or not MURIM_LATE.isCerberus(npc) then return nil end
+    local hum=char:FindFirstChildOfClass("Humanoid")
+    return {char=char,act=act,eta=hitTime-MURIM_LATE.serverTime(),allowed=allowed,inProgress=inProgress,
+        ready=char:GetAttribute("ParryReadyAt"),stance=char:GetAttribute("Stance"),hp=hum and hum.Health or 0,
+        hadBurst=char:FindFirstChild("Burst",true)~=nil,
+        attackAge=MURIM_LATE.lastAttackAt and os.clock()-MURIM_LATE.lastAttackAt or -1}
+end
+function MURIM_LATE.parryBefore(char,npc,act,hitTime,allowed,inProgress)
+    local ok,note=pcall(MURIM_LATE.parryNote,char,npc,act,hitTime,allowed,inProgress)
+    return ok and note or nil
+end
+function MURIM_LATE.parryWatch(note)
+    local char=note.char
+    local block,changed,burst=false,false,false
+    for _=1,8 do
+        task.wait(0.05)
+        block=block or char:GetAttribute("Stance")=="Block"
+        changed=changed or char:GetAttribute("ParryReadyAt")~=note.ready
+        burst=burst or (not note.hadBurst and char:FindFirstChild("Burst",true)~=nil)
+    end
+    local hum=char:FindFirstChildOfClass("Humanoid")
+    local accepted=block or changed or burst
+    MURIM_LATE.mark(string.format("PARRY Act=%s ETA=%.3f podia=%s emAndamento=%s aceito=%s defendeu=%s HPperdido=%.0f Stance=%s ultimoAttack=%.2fs",
+        tostring(note.act),note.eta,tostring(note.allowed),tostring(note.inProgress),tostring(accepted),tostring(burst),
+        note.hp-(hum and hum.Health or 0),tostring(note.stance),note.attackAge))
+    if not accepted then
+        local parts={}
+        for key,value in pairs(char:GetAttributes()) do parts[#parts+1]=key.."="..MURIM_LATE.attrText(value) end
+        table.sort(parts)
+        MURIM_LATE.mark("PARRY sem efeito; atributos: "..table.concat(parts," "),"txt")
+    end
+end
+function MURIM_LATE.parryAfter(note)
+    if note then task.spawn(function() pcall(MURIM_LATE.parryWatch,note) end) end
+end
+-- GhostFire: 12 casts; os 4 que pegaram de perto custaram 250-430 HP cada. Quem estava no alto da recuperacao nao levou nada.
+function MURIM_LATE.dodgeRelease(dodge)
+    dodge.active=false
+    if not MURIM_RAID_DEFENSE.retreating and MURIM_RAID_DEFENSE.hover==dodge.hover then MURIM_RAID_DEFENSE.release() end
+end
+function MURIM_LATE.dodgeTick(char,root)
+    local dodge=MURIM_LATE.dodge
+    local now=MURIM_LATE.serverTime()
+    if dodge.active then
+        if dodge.root==root and now<dodge.untilAt then return true end
+        MURIM_LATE.dodgeRelease(dodge)
+        MURIM_LATE.mark("DESVIO GhostFire encerrado; voltando ao combate")
+        return false
+    end
+    local boss=MURIM_LATE.cerberusFocus
+    if not boss or MURIM_RAID_DEFENSE.retreating or boss:GetAttribute("Act")~="CJ_GhostFire" then return false end
+    local actT,actW=tonumber(boss:GetAttribute("ActT")),tonumber(boss:GetAttribute("ActW"))
+    if not actT or not actW or actW<=0 or dodge.doneAt==actT then return false end
+    local impact=actT+actW
+    if now<impact-MURIM_LATE.dodgeLead or now>impact+1.2 then return false end
+    local part=boss:FindFirstChild("HumanoidRootPart") or boss.PrimaryPart
+    if not part or (part.Position-root.Position).Magnitude>MURIM_LATE.dodgeRange then return false end
+    dodge.doneAt=actT
+    local ok,info=MURIM_RAID_DEFENSE.hoverAbove(char,root,MURIM_LATE.dodgeRise)
+    MURIM_LATE.mark(string.format("DESVIO GhostFire impacto em %.3fs: subiu=%s (%s)",impact-now,tostring(ok),tostring(info)))
+    if not ok then return false end
+    dodge.active=true;dodge.root=root;dodge.untilAt=impact+MURIM_LATE.dodgeTail;dodge.hover=MURIM_RAID_DEFENSE.hover
+    local body=dodge.hover
+    -- Se o loop parar (Auto OFF, troca de sala), o personagem nao pode ficar preso no ar.
+    task.delay(impact+MURIM_LATE.dodgeTail-now+1,function()
+        if dodge.active and dodge.hover==body then MURIM_LATE.dodgeRelease(dodge) end
+    end)
+    return true
+end
+
 function MURIM_LATE.liveCerberus(root,raid,origin)
     local function alive(npc)
         if not npc or not npc.Parent or not npc:IsA("Model")
@@ -8322,6 +8413,9 @@ local function checkAttacker(enemy, myPos, myHrp)
     if not isAutoParry or isParrying or not enemy or enemy == player.Character then return end
     local act = enemy:GetAttribute("Act")
     if not act then return end
+    -- V19G: Act inofensivo do Cerberus nao gasta o cooldown da mordida seguinte.
+    if MURIM_LATE.parrySkip(enemy,act) then return end
+    local anyRange = MURIM_LATE.parryAnyRange(enemy,act)
 
 
     local actT = enemy:GetAttribute("ActT")
@@ -8334,11 +8428,11 @@ local function checkAttacker(enemy, myPos, myHrp)
 
 
     local ep = enemyHrp.Position
-    if math.abs(myPos.X - ep.X) > PARRY_DISTANCE or math.abs(myPos.Z - ep.Z) > PARRY_DISTANCE then return end
+    if not anyRange and (math.abs(myPos.X - ep.X) > PARRY_DISTANCE or math.abs(myPos.Z - ep.Z) > PARRY_DISTANCE) then return end
 
 
     local dist = (myPos - ep).Magnitude
-    if dist > PARRY_DISTANCE then return end
+    if not anyRange and dist > PARRY_DISTANCE then return end
 
 
     local attackId = tostring(act) .. "_" .. tostring(actT)
@@ -8353,14 +8447,19 @@ local function checkAttacker(enemy, myPos, myHrp)
     if timeRemaining > 0 and timeRemaining <= (actW + 0.1) then
         handledAttacks[enemy] = attackId
         local delayTime = math.max(0, timeRemaining - PARRY_LEAD)
-        if delayTime <= 0.02 then
+        local function fireParry()
+            local note = MURIM_LATE.parryBefore(player.Character,enemy,act,hitTime,canParry(),isParrying)
             executeParry()
+            MURIM_LATE.parryAfter(note)
+        end
+        if delayTime <= 0.02 then
+            fireParry()
         else
             task.delay(delayTime, function()
                 if not destroyed and isAutoParry and enemy and enemy.Parent and myHrp.Parent then
                     local currentDist = (myHrp.Position - enemyHrp.Position).Magnitude
-                    if currentDist <= PARRY_DISTANCE then
-                        executeParry()
+                    if anyRange or currentDist <= PARRY_DISTANCE then
+                        fireParry()
                     end
                 end
             end)
@@ -8738,6 +8837,9 @@ local hallowRaidTask = task.spawn(function()
                     end
                     if currentRaidRoomIndex==6 then
                         defenseBlocking=MURIM_LATE.soulBlocking(hrp) or defenseBlocking
+                        local dodgeOk,dodging=pcall(MURIM_LATE.dodgeTick,char,hrp)
+                        if dodgeOk and dodging then defenseBlocking=true
+                        elseif not dodgeOk then MURIM_TRACE.add("ERRO","DesvioA06",tostring(dodging),5,"desvio-a06") end
                     end
                     if defenseBlocking then
                         MURIM_LATE.stopWalk()
@@ -8939,6 +9041,7 @@ local hallowRaidTask = task.spawn(function()
                                     local hitSent = false
                                     if combatRemote then
                                         hitSent=pcall(function() combatRemote:FireServer("Attack") end)
+                                        MURIM_LATE.lastAttackAt=os.clock()
                                     end
                                     MURIM_RAID_HIT.sent(bestFoe,currentRaidRoomIndex,combatRemote~=nil,hitSent)
                                 end
