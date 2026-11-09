@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V19I: A05 talks to the NPCs and keeps moving while the exit is closed; Cerberus from V19H; A04 from V19F")
+print("[Boxer_fighter_Test V2] V19J: Cerberus ult souls detected from CJ_Ult (UltimateAt disappears); manual A05 talks logged; A05 from V19I; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -97,7 +97,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V19I | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V19J | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -4239,6 +4239,7 @@ function MURIM_LATE.isCerberus(npc)
     return npc~=nil and npc.Name:lower():find("cerberus",1,true)~=nil
 end
 function MURIM_LATE.parrySkip(npc,act)
+    if act=="CJ_Ult" then MURIM_LATE.noteUlt(npc) end
     return MURIM_LATE.isCerberus(npc) and MURIM_LATE.cerberusSkip[act]==true
 end
 function MURIM_LATE.parryAnyRange(npc,act)
@@ -4323,10 +4324,17 @@ end
 
 -- V19H: TXT das 21:23. As 3 almas da ult (HBSoul) sao os parries obrigatorios; cada uma chega como CJ_Bite1/2/3 com W=1.13.
 -- Primeira ult: 2 almas de ~195 HP mataram, e a 31+ studs o parry generico nem tentava. Segunda ult: 3 de 3 pelo tempo do Act.
+-- V19J: TXT das 22:19: UltimateAt some antes das almas chegarem, e as 66 tentativas sairam com ult=false.
+-- O impacto da propria CJ_Ult (ActT+ActW) tem o mesmo valor e fica guardado.
+function MURIM_LATE.noteUlt(npc)
+    if not MURIM_LATE.isCerberus(npc) then return end
+    local actT,actW=tonumber(npc:GetAttribute("ActT")),tonumber(npc:GetAttribute("ActW"))
+    if actT and actW then MURIM_LATE.ultImpact=actT+actW end
+end
 function MURIM_LATE.ultStrike(npc,act)
     if not MURIM_LATE.isCerberus(npc) or type(act)~="string" or act:find("CJ_Bite",1,true)~=1 then return false end
-    local ultAt,actT=tonumber(npc:GetAttribute("UltimateAt")),tonumber(npc:GetAttribute("ActT"))
-    -- Observado nas duas ults: as tres comecam de +0.01s a +2.32s depois de UltimateAt, que nao e limpo depois.
+    local ultAt,actT=tonumber(npc:GetAttribute("UltimateAt")) or MURIM_LATE.ultImpact,tonumber(npc:GetAttribute("ActT"))
+    -- Observado em 7 ults: as tres comecam de +0.01s a +2.32s depois do impacto da CJ_Ult.
     return ultAt~=nil and actT~=nil and actT>=ultAt-0.5 and actT<=ultAt+3
 end
 -- O caminho das almas apertava de novo 0.15s depois de cada defesa; o erro gerava cooldown em cima da alma seguinte.
@@ -4422,28 +4430,59 @@ function MURIM_LATE.visibleTexts()
     for _,obj in ipairs(gui:GetDescendants()) do
         if (obj:IsA("TextLabel") or obj:IsA("TextButton")) and isHallowGuiVisible(obj) then
             local text=(obj.Text or ""):gsub("<[^>]+>",""):gsub("%s+"," ")
-            if #text>=3 and #text<200 then found[text]=true end
+            if #text>=3 and #text<200 then
+                local ok,path=pcall(function() return obj:GetFullName() end)
+                found[text]=ok and path or true
+            end
         end
     end
     return found
 end
+-- V19J: a conversa tem varias falas; olha a tela por 30s e registra cada texto novo uma vez.
 function MURIM_LATE.noteDialog(who)
-    local before=MURIM_LATE.visibleTexts()
-    task.delay(1.2,function()
+    local seen=MURIM_LATE.visibleTexts()
+    local function sample(left,first)
         pcall(function()
             local fresh={}
-            for text in pairs(MURIM_LATE.visibleTexts()) do
-                if not before[text] then fresh[#fresh+1]=text end
+            for text,path in pairs(MURIM_LATE.visibleTexts()) do
+                if not seen[text] and text:find("%a%a") then
+                    seen[text]=true
+                    fresh[#fresh+1]=path==true and text or text.." ["..path.."]"
+                end
             end
             table.sort(fresh)
-            if #fresh==0 then
+            if first and #fresh==0 then
                 MURIM_TRACE.add("EVIDENCIA","A05Fala",tostring(who)..": nenhum texto novo na tela depois do Speak")
             end
             for i=1,math.min(#fresh,12) do
                 MURIM_TRACE.add("EVIDENCIA","A05Fala",tostring(who)..": "..fresh[i])
             end
         end)
-    end)
+        if left>0 then task.delay(2,function() sample(left-1,false) end) end
+    end
+    task.delay(1.2,function() sample(MURIM_LATE.dialogSamples,true) end)
+end
+MURIM_LATE.dialogSamples=14
+-- V19J: os NPCs ficam em Workspace.Murim_NPCs, fora do modelo da raid, e o registro de prompts ignorava a fala deles.
+-- Somente log: nao aciona nada.
+function MURIM_LATE.noteManualTalk(prompt)
+    if os.clock()-(MURIM_LATE.autoTalkAt or -1e9)<3 then return end
+    local node=prompt.Parent
+    while node do
+        if type(node.Name)=="string" and node.Name:find("HallowGate",1,true) then return end
+        node=node.Parent
+    end
+    local character=player and player.Character
+    local root=character and character:FindFirstChild("HumanoidRootPart")
+    local _,origin=getActiveRaidInfo(player)
+    if not root or not origin then return end
+    local x,z=root.Position.X-origin.X,root.Position.Z-origin.Z
+    if z<960 or z>=1097 or math.abs(x)>=100 then return end
+    local owner=prompt:FindFirstAncestorWhichIsA("Model")
+    local who=owner and owner.Name or "?"
+    MURIM_TRACE.add("ACAO","A05Fala",string.format("Manual: %s / %s (%s); jogador X%+.0f Z+%.0f",
+        tostring(prompt.ActionText),tostring(prompt.ObjectText),who,x,z))
+    MURIM_LATE.noteDialog(who)
 end
 
 function MURIM_LATE.objects(area,raid,origin,index)
@@ -4595,7 +4634,7 @@ function MURIM_LATE.tick(root,raid,origin,index)
                 if index==5 then MURIM_LATE.stopWalk() end
                 local owner=c.prompt:FindFirstAncestorWhichIsA("Model")
                 local who=owner and owner.Name or "?"
-                if speech then pcall(MURIM_LATE.noteDialog,who) end
+                if speech then MURIM_LATE.autoTalkAt=os.clock();pcall(MURIM_LATE.noteDialog,who) end
                 local ok,via=tryHallowGuestPrompt(c.prompt)
                 MURIM_LATE.attempts[c.prompt]={count=record and (record.count<2 and record.count+1 or 1) or 1,at=now}
                 MURIM_LATE.pending={prompt=c.prompt,action=c.action,at=now}
@@ -9541,6 +9580,7 @@ local function installMurimDiagnostics(host)
             if not prompt or not prompt.Parent then return end
             -- Registra acionamentos em TODAS as areas A01..A10, sem acionar nada.
             pcall(MURIM_SURVEY.notePromptTriggered, prompt)
+            pcall(MURIM_LATE.noteManualTalk, prompt)
             local inA01 = false
             local node = prompt.Parent
             while node do
