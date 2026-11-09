@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V19H: Cerberus ult souls parried at any range, no Ult whiff, no double press; A04 from V19F")
+print("[Boxer_fighter_Test V2] V19I: A05 talks to the NPCs and keeps moving while the exit is closed; Cerberus from V19H; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -97,7 +97,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V19H | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V19I | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -4388,6 +4388,64 @@ function MURIM_LATE.teleportA05(root,dest)
     return moved
 end
 
+-- V19I: na A05 e preciso falar com os NPCs e continuar andando pela sala ate a porta abrir.
+-- Rota: pontos de House.Floor em que a run das 20:57 pousou sem falha, sempre antes da porta em Z+1060.
+MURIM_LATE.a05Route={{-23,1047},{4,1042},{17,1031},{7,1023},{-7,1021},{-5,1045}}
+function MURIM_LATE.circleA05(root,origin)
+    local route=MURIM_LATE.a05Route
+    local index=MURIM_LATE.a05Point or 1
+    local point=route[index]
+    local dx,dz=origin.X+point[1]-root.Position.X,origin.Z+point[2]-root.Position.Z
+    if dx*dx+dz*dz<=16 then
+        index=index%#route+1
+        point=route[index]
+    end
+    local moved=MURIM_LATE.teleportA05(root,Vector3.new(origin.X+point[1],root.Position.Y,origin.Z+point[2]))
+    -- Ponto bloqueado nao pode prender a rotina.
+    MURIM_LATE.a05Point=moved and index or index%#route+1
+    return moved
+end
+-- A Proprietress segue valendo pelo nome; os demais NPCs entram se estiverem dentro da sala.
+-- O filtro de posicao vem antes de GetDescendants: Murim_NPCs tambem guarda NPCs do mapa inteiro.
+function MURIM_LATE.npcInA05(npc,origin)
+    if npc.Name:lower()=="the proprietress" then return true end
+    local part=npc.PrimaryPart or npc:FindFirstChild("HumanoidRootPart")
+    if not part then return false end
+    local z=part.Position.Z-origin.Z
+    return z>=960 and z<1097 and math.abs(part.Position.X-origin.X)<100
+end
+-- Somente log: o prompt de fala continua Enabled depois do uso, entao so a tela mostra se a conversa abriu.
+function MURIM_LATE.visibleTexts()
+    local found={}
+    local gui=player and player:FindFirstChild("PlayerGui")
+    if not gui then return found end
+    for _,obj in ipairs(gui:GetDescendants()) do
+        if (obj:IsA("TextLabel") or obj:IsA("TextButton")) and isHallowGuiVisible(obj) then
+            local text=(obj.Text or ""):gsub("<[^>]+>",""):gsub("%s+"," ")
+            if #text>=3 and #text<200 then found[text]=true end
+        end
+    end
+    return found
+end
+function MURIM_LATE.noteDialog(who)
+    local before=MURIM_LATE.visibleTexts()
+    task.delay(1.2,function()
+        pcall(function()
+            local fresh={}
+            for text in pairs(MURIM_LATE.visibleTexts()) do
+                if not before[text] then fresh[#fresh+1]=text end
+            end
+            table.sort(fresh)
+            if #fresh==0 then
+                MURIM_TRACE.add("EVIDENCIA","A05Fala",tostring(who)..": nenhum texto novo na tela depois do Speak")
+            end
+            for i=1,math.min(#fresh,12) do
+                MURIM_TRACE.add("EVIDENCIA","A05Fala",tostring(who)..": "..fresh[i])
+            end
+        end)
+    end)
+end
+
 function MURIM_LATE.objects(area,raid,origin,index)
     local objects=area:GetDescendants()
     if index~=5 then return objects end
@@ -4411,7 +4469,7 @@ function MURIM_LATE.objects(area,raid,origin,index)
     local npcs=workspace:FindFirstChild("Murim_NPCs")
     if npcs then
         for _,npc in ipairs(npcs:GetChildren()) do
-            if npc:IsA("Model") and npc.Name:lower()=="the proprietress" then
+            if npc:IsA("Model") and MURIM_LATE.npcInA05(npc,origin) then
                 for _,obj in ipairs(npc:GetDescendants()) do
                     if obj:IsA("ProximityPrompt") then
                         local pos=MURIM_A04.promptPosition(obj)
@@ -4522,7 +4580,8 @@ function MURIM_LATE.tick(root,raid,origin,index)
     for _,c in ipairs(candidates) do
         local record=MURIM_LATE.attempts[c.prompt]
         local speech=index==5 and (c.action:lower()=="speak" or c.action:lower()=="talk")
-        local allowed=not speech or (not record and c.part.Position.Z>=root.Position.Z-8)
+        -- V19I: a saida aberta ja retornou acima; com a porta fechada, fala com cada NPC e tenta de novo uma vez.
+        local allowed=not speech or not record or (record.count<2 and now-record.at>=10)
         if allowed and (not record or record.count<2 or now-record.at>20) then
             MURIM_LATE.phase="A"..index.." interagir: "..c.action
             local reach=math.max(2,(c.prompt.MaxActivationDistance or 7)-1.5)
@@ -4534,11 +4593,14 @@ function MURIM_LATE.tick(root,raid,origin,index)
                 end
             else
                 if index==5 then MURIM_LATE.stopWalk() end
+                local owner=c.prompt:FindFirstAncestorWhichIsA("Model")
+                local who=owner and owner.Name or "?"
+                if speech then pcall(MURIM_LATE.noteDialog,who) end
                 local ok,via=tryHallowGuestPrompt(c.prompt)
                 MURIM_LATE.attempts[c.prompt]={count=record and (record.count<2 and record.count+1 or 1) or 1,at=now}
                 MURIM_LATE.pending={prompt=c.prompt,action=c.action,at=now}
                 MURIM_TRACE.add(ok and "ACAO" or "AVISO","AutoFases",
-                    "A"..index.." tentando "..c.action.." via "..tostring(via).."; aguardando estado real.")
+                    "A"..index.." tentando "..c.action.." ("..tostring(who)..") via "..tostring(via).."; aguardando estado real.")
             end
             return true
         end
@@ -4585,7 +4647,14 @@ function MURIM_LATE.tick(root,raid,origin,index)
         end
         MURIM_LATE.phase=isOpen and "passando porta aberta A"..index
             or "aguardando porta da A"..index.." abrir"
-        if rel<goal-3 and now-MURIM_LATE.lastMove>(index==5 and 0.4 or 2) then
+        if index==5 and not isOpen and nearExit then
+            -- V19I: esperando a saida abrir, continua andando pela sala em vez de ficar parado na porta.
+            MURIM_LATE.phase="A05: rodeando a sala enquanto a porta nao abre"
+            if now-MURIM_LATE.lastMove>0.4 then
+                MURIM_LATE.lastMove=now
+                MURIM_LATE.circleA05(root,origin)
+            end
+        elseif rel<goal-3 and now-MURIM_LATE.lastMove>(index==5 and 0.4 or 2) then
             MURIM_LATE.lastMove=now
             local target=Vector3.new(origin.X,root.Position.Y,origin.Z+goal)
             if index==5 then MURIM_LATE.teleportA05(root,target)
