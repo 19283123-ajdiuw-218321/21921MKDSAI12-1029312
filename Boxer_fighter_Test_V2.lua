@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V19G: Cerberus keeps parry for real bites, dodges GhostFire, logs every parry; A04 from V19F")
+print("[Boxer_fighter_Test V2] V19H: Cerberus ult souls parried at any range, no Ult whiff, no double press; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -97,7 +97,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V19G | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V19H | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -4226,7 +4226,8 @@ end
 
 -- V19G: Cerberus, a partir do TXT das 20:57. CJ_Back/Wake/Scent/Rear/ChainSweep nao feriram ninguem de perto,
 -- mas o parry neles gastava o cooldown da mordida seguinte (6 das 27 mordidas perdidas assim).
-MURIM_LATE.cerberusSkip={CJ_Back=true,CJ_Wake=true,CJ_Scent=true,CJ_Rear=true,CJ_ChainSweep=true}
+-- V19H: CJ_Ult nao feriu (0 e 3 HP no impacto) e o parry nele gastava o cooldown antes da primeira alma.
+MURIM_LATE.cerberusSkip={CJ_Back=true,CJ_Wake=true,CJ_Scent=true,CJ_Rear=true,CJ_ChainSweep=true,CJ_Ult=true}
 -- CJ_GreedyDrag acertou 3 de 3 a mais de 54 studs; o parry generico para em 18. Tentativa: nao ha prova de que seja defensavel.
 MURIM_LATE.cerberusAnyRange={CJ_GreedyDrag=true}
 MURIM_LATE.dodge={}
@@ -4241,7 +4242,7 @@ function MURIM_LATE.parrySkip(npc,act)
     return MURIM_LATE.isCerberus(npc) and MURIM_LATE.cerberusSkip[act]==true
 end
 function MURIM_LATE.parryAnyRange(npc,act)
-    return MURIM_LATE.isCerberus(npc) and MURIM_LATE.cerberusAnyRange[act]==true
+    return MURIM_LATE.isCerberus(npc) and (MURIM_LATE.cerberusAnyRange[act]==true or MURIM_LATE.ultStrike(npc,act))
 end
 -- Somente log: cada tentativa de parry no Cerberus e o que o servidor fez com ela.
 function MURIM_LATE.parryNote(char,npc,act,hitTime,allowed,inProgress)
@@ -4249,8 +4250,9 @@ function MURIM_LATE.parryNote(char,npc,act,hitTime,allowed,inProgress)
     local hum=char:FindFirstChildOfClass("Humanoid")
     return {char=char,act=act,eta=hitTime-MURIM_LATE.serverTime(),allowed=allowed,inProgress=inProgress,
         ready=char:GetAttribute("ParryReadyAt"),stance=char:GetAttribute("Stance"),hp=hum and hum.Health or 0,
-        hadBurst=char:FindFirstChild("Burst",true)~=nil,
-        attackAge=MURIM_LATE.lastAttackAt and os.clock()-MURIM_LATE.lastAttackAt or -1}
+        burstObj=char:FindFirstChild("Burst",true),
+        attackAge=MURIM_LATE.lastAttackAt and os.clock()-MURIM_LATE.lastAttackAt or -1,
+        extra=MURIM_LATE.parryState(char,npc,act)}
 end
 function MURIM_LATE.parryBefore(char,npc,act,hitTime,allowed,inProgress)
     local ok,note=pcall(MURIM_LATE.parryNote,char,npc,act,hitTime,allowed,inProgress)
@@ -4258,18 +4260,22 @@ function MURIM_LATE.parryBefore(char,npc,act,hitTime,allowed,inProgress)
 end
 function MURIM_LATE.parryWatch(note)
     local char=note.char
-    local block,changed,burst=false,false,false
+    local block,changed,burst,cleared=false,false,false,false
     for _=1,8 do
         task.wait(0.05)
         block=block or char:GetAttribute("Stance")=="Block"
-        changed=changed or char:GetAttribute("ParryReadyAt")~=note.ready
-        burst=burst or (not note.hadBurst and char:FindFirstChild("Burst",true)~=nil)
+        local ready=char:GetAttribute("ParryReadyAt")
+        changed=changed or ready~=note.ready
+        -- V19H: defesa aceita zera o cooldown (ParryReadyAt vira nil); Burst antigo ainda preso nao conta.
+        cleared=cleared or (note.ready~=nil and ready==nil)
+        local current=char:FindFirstChild("Burst",true)
+        burst=burst or (current~=nil and current~=note.burstObj)
     end
     local hum=char:FindFirstChildOfClass("Humanoid")
     local accepted=block or changed or burst
-    MURIM_LATE.mark(string.format("PARRY Act=%s ETA=%.3f podia=%s emAndamento=%s aceito=%s defendeu=%s HPperdido=%.0f Stance=%s ultimoAttack=%.2fs",
-        tostring(note.act),note.eta,tostring(note.allowed),tostring(note.inProgress),tostring(accepted),tostring(burst),
-        note.hp-(hum and hum.Health or 0),tostring(note.stance),note.attackAge))
+    MURIM_LATE.mark(string.format("PARRY Act=%s ETA=%.3f podia=%s emAndamento=%s aceito=%s defendeu=%s HPperdido=%.0f Stance=%s ultimoAttack=%.2fs%s",
+        tostring(note.act),note.eta,tostring(note.allowed),tostring(note.inProgress),tostring(accepted),tostring(burst or cleared),
+        note.hp-(hum and hum.Health or 0),tostring(note.stance),note.attackAge,note.extra))
     if not accepted then
         local parts={}
         for key,value in pairs(char:GetAttributes()) do parts[#parts+1]=key.."="..MURIM_LATE.attrText(value) end
@@ -4315,6 +4321,31 @@ function MURIM_LATE.dodgeTick(char,root)
     return true
 end
 
+-- V19H: TXT das 21:23. As 3 almas da ult (HBSoul) sao os parries obrigatorios; cada uma chega como CJ_Bite1/2/3 com W=1.13.
+-- Primeira ult: 2 almas de ~195 HP mataram, e a 31+ studs o parry generico nem tentava. Segunda ult: 3 de 3 pelo tempo do Act.
+function MURIM_LATE.ultStrike(npc,act)
+    if not MURIM_LATE.isCerberus(npc) or type(act)~="string" or act:find("CJ_Bite",1,true)~=1 then return false end
+    local ultAt,actT=tonumber(npc:GetAttribute("UltimateAt")),tonumber(npc:GetAttribute("ActT"))
+    -- Observado nas duas ults: as tres comecam de +0.01s a +2.32s depois de UltimateAt, que nao e limpo depois.
+    return ultAt~=nil and actT~=nil and actT>=ultAt-0.5 and actT<=ultAt+3
+end
+-- O caminho das almas apertava de novo 0.15s depois de cada defesa; o erro gerava cooldown em cima da alma seguinte.
+function MURIM_LATE.ultStrikeLive()
+    local boss=MURIM_LATE.cerberusFocus
+    if not boss or not boss.Parent or not MURIM_LATE.ultStrike(boss,boss:GetAttribute("Act")) then return false end
+    local actT,actW=tonumber(boss:GetAttribute("ActT")),tonumber(boss:GetAttribute("ActW"))
+    return actW~=nil and MURIM_LATE.serverTime()<=actT+actW+0.35
+end
+-- Somente log: estado do personagem no instante do ParryDown.
+function MURIM_LATE.parryState(char,npc,act)
+    local now=MURIM_LATE.serverTime()
+    local mine,theirs=char:FindFirstChild("HumanoidRootPart"),npc:FindFirstChild("HumanoidRootPart")
+    local myT,stun,noDodge=tonumber(char:GetAttribute("ActT")),tonumber(char:GetAttribute("StunEnd")),tonumber(char:GetAttribute("NoDodgeUntil"))
+    return string.format(" ult=%s dist=%.1f recuo=%s meuAct=%s meuActIdade=%.2f meuActW=%.2f atordoado=%.2f semDodge=%.2f",
+        tostring(MURIM_LATE.ultStrike(npc,act)),mine and theirs and (mine.Position-theirs.Position).Magnitude or -1,
+        tostring(MURIM_RAID_DEFENSE.retreating==true),tostring(char:GetAttribute("Act")),myT and now-myT or -1,
+        tonumber(char:GetAttribute("ActW")) or -1,stun and stun-now or 0,noDodge and noDodge-now or 0)
+end
 function MURIM_LATE.liveCerberus(root,raid,origin)
     local function alive(npc)
         if not npc or not npc.Parent or not npc:IsA("Model")
@@ -8372,6 +8403,8 @@ end
 -- A06-only parry path. The generic Auto Parry behavior remains unchanged.
 local function executeSoulParry(context)
     if destroyed or not isAutoHallowRaid or context.root.Parent~=player.Character then return false,"Auto OFF/personagem mudou" end
+    -- V19H: durante a ult quem aperta e o parry pelo tempo do Cerberus; segunda tentativa so gera cooldown.
+    if isAutoParry and MURIM_LATE.ultStrikeLive() then return false,"alma da ult fica com o parry pelo tempo do Cerberus" end
     if isParrying then return false,"parry em andamento" end
     if not canParry() then
         local char=player.Character
@@ -8415,6 +8448,8 @@ local function checkAttacker(enemy, myPos, myHrp)
     if not act then return end
     -- V19G: Act inofensivo do Cerberus nao gasta o cooldown da mordida seguinte.
     if MURIM_LATE.parrySkip(enemy,act) then return end
+    -- V19H: as 3 almas da ult sao os parries principais; outro inimigo nao gasta o cooldown enquanto elas vem.
+    if MURIM_LATE.ultStrikeLive() and not MURIM_LATE.ultStrike(enemy,act) then return end
     local anyRange = MURIM_LATE.parryAnyRange(enemy,act)
 
 
