@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V19K: A02 opens coffins without fighting; stays behind Cerberus/Matriarch; continues after the Cerberus (Exit Lantern blocked); ult from V19J; A05 from V19I; A04 from V19F")
+print("[Boxer_fighter_Test V2] V19L: A03 no longer stops 1 stud before the yard door; behind the Paper Tailor; full log copy and stop reasons; V19K raid; ult from V19J; A05 from V19I; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -97,7 +97,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V19K | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V19L | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -2075,6 +2075,8 @@ function MURIM_A03.tailorCombatPosition(root, bossPart, origin, raid)
         MURIM_A03.tailorProbeFailed=false
         MURIM_A03.tailorProbeConfirmed=false
         MURIM_A03.tailorLastCombatAt=now
+        MURIM_A03.tailorBehindFailed=false
+        MURIM_A03.tailorBehindNoted=false
     end
     -- O tempo de cura NAO deve ser contado como falha de ataque: reiniciar
     -- a janela de teste depois do recuo de HP.
@@ -2085,6 +2087,22 @@ function MURIM_A03.tailorCombatPosition(root, bossPart, origin, raid)
     local rec=npc and MURIM_RAID_HIT.records[npc]
     if rec and (rec.lastDamageAt or 0)>MURIM_A03.tailorProbeAt then
         MURIM_A03.tailorProbeConfirmed=true
+    end
+    -- V19L: como no Top76, primeiro fica 3 studs atras do Tailor, dentro do mesmo raio de arena do metodo antigo.
+    -- Sem dano confirmado em 5s de combate continuo, volta ao metodo antigo (+6, depois +8.5).
+    if not MURIM_A03.tailorBehindFailed and fromMarker<=holdRadius then
+        if not MURIM_A03.tailorProbeConfirmed and now-MURIM_A03.tailorProbeAt>5 then
+            MURIM_A03.tailorBehindFailed=true
+            MURIM_A03.tailorProbeAt=now
+            MURIM_TRACE.add("AVISO","TailorLeash","Atras do Tailor sem dano confirmado em 5s. Voltando para a posicao antiga, acima dele.",5)
+        else
+            if not MURIM_A03.tailorBehindNoted then
+                MURIM_A03.tailorBehindNoted=true
+                MURIM_TRACE.add("DECISAO","TailorLeash","Paper Tailor: posicao atras do boss a 3 studs.")
+            end
+            local behindZ=boss.Z-origin.Z
+            return bossPart.CFrame*CFrame.new(0,0,3),behindZ>=458 and behindZ<=542 and math.abs(boss.X-origin.X)<=85
+        end
     end
     if not MURIM_A03.tailorProbeFailed and not MURIM_A03.tailorProbeConfirmed
         and now-MURIM_A03.tailorProbeAt>5 then
@@ -2301,13 +2319,18 @@ function MURIM_A03.safeStage(root, origin, relGoal, label, innerOpen, finalOpen)
     MURIM_A03.stageAttempts=MURIM_A03.stageAttempts+1
     local stepRel=math.min(relGoal,rel+16)
     -- Reduz passo antes das duas portas para evitar pular o batente.
-    if rel<473 and stepRel>473 then stepRel=473 end
-    if rel<521 and stepRel>521 then stepRel=521 end
+    -- V19L: colado no batente o corte deixava o passo menor que 1.5 e o personagem parava (TXT 19:18, Z+472).
+    if rel<471.5 and stepRel>473 then stepRel=473 end
+    if rel<519.5 and stepRel>521 then stepRel=521 end
     if innerOpen~=true and not innerAlreadyCrossed then
         stepRel=math.min(stepRel,467)
     end
     if finalOpen~=true then stepRel=math.min(stepRel,518) end
-    if stepRel<=rel+1.5 then return false end
+    if stepRel<=rel+1.5 then
+        MURIM_A03.lastStageReason=string.format("sem passo: atual Z+%.1f, proximo Z+%.1f (porta inter=%s, final=%s)",
+            rel,stepRel,tostring(innerOpen),tostring(finalOpen))
+        return false
+    end
     local landing,why=MURIM_A03.findLanding(root,origin,stepRel)
     if landing then
         local oldZ=rel
@@ -4646,6 +4669,33 @@ function MURIM_LATE.goNext(root,raid,origin,index,now)
         end)
     end
     return true
+end
+-- V19L: o log precisa dizer POR QUE o personagem esta parado (TXT 19:18: 60s em Z+472 e o log so dizia "mecanica nao automatizada").
+function MURIM_LATE.phaseText(index)
+    if not index then return "Sala ainda nao identificada." end
+    if index==2 then return "A02: "..tostring(MURIM_A02.phase) end
+    if index==3 then return "A03: "..tostring(MURIM_A03.phase).."; ultimo passo: "..tostring(MURIM_A03.lastStageReason) end
+    if index==4 then return "A04: "..tostring(MURIM_A04.phase) end
+    if type(index)=="number" and index>=5 then return "A"..index..": "..tostring(MURIM_LATE.phase) end
+    return "A"..tostring(index)..": "..tostring(MURIM_A01 and MURIM_A01.phase)
+end
+function MURIM_LATE.stallCheck(root,index,origin)
+    local now=os.clock()
+    local pos=root.Position
+    local s=MURIM_LATE.stall
+    MURIM_LATE.stallIndex=index
+    if not s or s.root~=root or (pos-s.pos).Magnitude>3 or now-(MURIM_LATE.lastAttackAt or -1e9)<5 then
+        MURIM_LATE.stall={root=root,pos=pos,since=now,reported=now}
+        return false
+    end
+    if now-s.since>=12 and now-s.reported>=12 then
+        s.reported=now
+        MURIM_TRACE.add("AVISO","Parado",string.format("Parado ha %.0fs em A%s Z+%.0f: sem andar e sem atacar. %s%s",
+            now-s.since,tostring(index),pos.Z-origin.Z,MURIM_LATE.phaseText(index),
+            MURIM_RAID_DEFENSE.retreating and " | recuperando HP" or ""))
+        return true
+    end
+    return false
 end
 function MURIM_LATE.tick(root,raid,origin,index)
     if not root or not raid or not origin or index<5 or index>10 then return true end
@@ -9082,6 +9132,7 @@ local hallowRaidTask = task.spawn(function()
 
                     if currentRaidRoomIndex~=4 then MURIM_A04.stopRun() end
                     if currentRaidRoomIndex~=5 then MURIM_LATE.stopWalk() end
+                    pcall(MURIM_LATE.stallCheck,hrp,currentRaidRoomIndex,raidOrigin)
                     if currentRaidRoomIndex==6 then
                         MURIM_LATE.cerberusFocus=MURIM_LATE.liveCerberus(hrp,activeRaidModel,raidOrigin)
                     else MURIM_LATE.cerberusFocus=nil end
@@ -9380,7 +9431,7 @@ local hallowRaidTask = task.spawn(function()
                                     MURIM_TRACE.add("AVISO", "Sala", "Aguardando objetivo: area=" .. tostring(currentRaidRoomIndex)
                                         .. "; modelo confirmado=" .. tostring(HallowEntryState.verifiedRoomIndex ~= nil)
                                         .. "; combate visto=" .. tostring(HallowEntryState.sawCombatInRoom)
-                                        .. "; inatividade=" .. string.format("%.1f", idleTime) .. "s. Sem inimigos detectados; pode haver mecanica de fase nao automatizada.")
+                                        .. "; inatividade=" .. string.format("%.1f", idleTime) .. "s. Sem inimigos detectados. " .. MURIM_LATE.phaseText(currentRaidRoomIndex))
                                 end
                         end
                     end
@@ -9611,11 +9662,11 @@ local function installMurimDiagnostics(host)
     redraw()
 
     copyBtn.Activated:Connect(function()
-        local content = MURIM_TRACE.dump(12000)
+        local content = MURIM_TRACE.dump()
         local copy = setclipboard or toclipboard
         if type(copy) == "function" then
             local ok, err = pcall(copy, content)
-            feedback.Text = ok and "✅ Log RECENTE copiado (<12 KB); cole na conversa. Salvar TXT guarda o historico completo." or ("⚠️ Copia falhou: " .. tostring(err))
+            feedback.Text = ok and "✅ Log COMPLETO copiado (mesmo conteudo do Salvar TXT)." or ("⚠️ Copia falhou: " .. tostring(err))
         else
             feedback.Text = "⚠️ Executor sem setclipboard. Tente Salvar TXT."
         end
@@ -9740,7 +9791,7 @@ local function installMurimDiagnostics(host)
             if MURIM_TRACE.active and os.clock() - MURIM_TRACE.lastStageAt >= 20 then
                 MURIM_TRACE.add("AVISO", "Sem progresso",
                     "Nenhuma mudanca de etapa ha 20s. Estado: " .. MURIM_TRACE.stage
-                    .. ". Toque em Inspecionar raid para identificar inimigos e objetos.", 25)
+                    .. ". " .. MURIM_LATE.phaseText(MURIM_LATE.stallIndex), 25)
             end
         end
     end)
