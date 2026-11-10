@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V19O: A05 waits with its back to the exit door and no seen reports; V19N A07; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
+print("[Boxer_fighter_Test V2] V19P: A05 waits right at the exit door, back turned, camera on the door; clean A05 dialog log; V19N A07; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -97,7 +97,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V19O | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V19P | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -4462,6 +4462,13 @@ function MURIM_LATE.visibleTexts()
     end
     return found
 end
+-- V19P: no TXT 20:27 a fala trouxe abas do menu, inventario e loot; so legendas, dialogo e avisos da raid contam.
+function MURIM_LATE.dialogPath(path)
+    if path==true then return true end
+    if type(path)~="string" then return false end
+    return path:find("HallowCaption",1,true)~=nil or path:find("MurimHallowHUD",1,true)~=nil
+        or path:find("Dialog",1,true)~=nil or path:find("Notices",1,true)~=nil
+end
 -- V19J: a conversa tem varias falas; olha a tela por 30s e registra cada texto novo uma vez.
 function MURIM_LATE.noteDialog(who)
     local seen=MURIM_LATE.visibleTexts()
@@ -4469,7 +4476,7 @@ function MURIM_LATE.noteDialog(who)
         pcall(function()
             local fresh={}
             for text,path in pairs(MURIM_LATE.visibleTexts()) do
-                if not seen[text] and text:find("%a%a") then
+                if not seen[text] and text:find("%a%a") and MURIM_LATE.dialogPath(path) then
                     seen[text]=true
                     fresh[#fresh+1]=path==true and text or text.." ["..path.."]"
                 end
@@ -4491,11 +4498,14 @@ MURIM_LATE.dialogSamples=14
 -- Somente log: nao aciona nada.
 function MURIM_LATE.noteManualTalk(prompt)
     if os.clock()-(MURIM_LATE.autoTalkAt or -1e9)<3 then return end
-    local node=prompt.Parent
+    local node,npc=prompt.Parent,false
     while node do
         if type(node.Name)=="string" and node.Name:find("HallowGate",1,true) then return end
+        if node.Name=="Murim_NPCs" then npc=true end
         node=node.Parent
     end
+    -- V19P: bau e item do chao nao sao conversa (TXT 20:27: LootChest_Iron e "Pick up" viraram fala).
+    if not npc then return end
     local character=player and player.Character
     local root=character and character:FindFirstChild("HumanoidRootPart")
     local _,origin=getActiveRaidInfo(player)
@@ -4800,8 +4810,10 @@ end
 -- V19O: print das 20:08: o usuario ficou de costas para a porta da A05 e ela abriu ("Prossiga").
 -- De 6 aberturas registradas, 4 foram com o Auto desligado, isto e, sem o "seen" que diz ao servidor que olhamos para tudo.
 -- Na A05: sem "seen"; depois dos prompts fica parado de costas para a porta por 60s e so entao volta a rodear (V19I).
-MURIM_LATE.backHold=60
-MURIM_LATE.backSpot={4,1042}
+MURIM_LATE.backHold=90
+MURIM_LATE.circleFor=20
+-- V19P: TXT 20:27: o usuario parou colado na porta (Z+1058) de costas e ela abriu em 3s; a V19O esperava a 18 studs.
+MURIM_LATE.backSpot={0,1055}
 function MURIM_LATE.backToDoorA05(root,origin,now)
     local spot=Vector3.new(origin.X+MURIM_LATE.backSpot[1],root.Position.Y,origin.Z+MURIM_LATE.backSpot[2])
     local dx,dz=spot.X-root.Position.X,spot.Z-root.Position.Z
@@ -4816,6 +4828,7 @@ function MURIM_LATE.backToDoorA05(root,origin,now)
     if root.CFrame.LookVector.Z>-0.95 then
         root.CFrame=CFrame.lookAt(root.Position,root.Position-Vector3.new(0,0,1))
     end
+    pcall(MURIM_LATE.cameraToDoor,root,now)
     if not MURIM_LATE.backNoted then
         MURIM_LATE.backNoted=true
         MURIM_TRACE.add("ACAO","A05Costas","Parado de costas para a porta de saida; seen desligado na A05. Volta a rodear se nao abrir em "..MURIM_LATE.backHold.."s.")
@@ -4834,6 +4847,21 @@ function MURIM_LATE.watchedA05(origin)
         end
     end
     MURIM_TRACE.add("EVIDENCIA","A05Costas","HallowWatched na raid ao entrar na A05: "..n..(n>0 and (" | "..table.concat(list,"; ")) or ""))
+end
+-- V19P: nas duas aberturas manuais (prints 20:08 e 20:26) a camera olhava para a porta, por tras do personagem,
+-- e a The Proprietress (unico HallowWatched da A05, log 20:22:37) ficava fora da tela.
+function MURIM_LATE.cameraToDoor(root,now)
+    local cam=workspace.CurrentCamera
+    if not cam or now-(MURIM_LATE.camAt or -1e9)<2 then return false end
+    MURIM_LATE.camAt=now
+    if cam.CFrame.LookVector.Z>0.7 then return false end
+    local p=root.Position
+    cam.CFrame=CFrame.lookAt(p+Vector3.new(0,5,-14),p+Vector3.new(0,2,6))
+    if not MURIM_LATE.camNoted then
+        MURIM_LATE.camNoted=true
+        MURIM_TRACE.add("ACAO","A05Costas","Camera virada para a porta; a sala e a Proprietress ficam fora da tela.")
+    end
+    return true
 end
 function MURIM_LATE.tick(root,raid,origin,index)
     if not root or not raid or not origin or index<5 or index>10 then return true end
@@ -5006,10 +5034,13 @@ function MURIM_LATE.tick(root,raid,origin,index)
         MURIM_LATE.phase=isOpen and "passando porta aberta A"..index
             or "aguardando porta da A"..index.." abrir"
         if index==5 and not isOpen and nearExit then
-            MURIM_LATE.backSince=MURIM_LATE.backSince or now
-            if now-MURIM_LATE.backSince<MURIM_LATE.backHold then
+            -- V19P: o tempo de costas so conta depois de chegar no lugar (na V19O comecava antes e sobraram 10s).
+            -- Sem abrir: rodeia um pouco (V19I) e volta para a porta.
+            local since=MURIM_LATE.backSince
+            if since and now-since>=MURIM_LATE.backHold+MURIM_LATE.circleFor then MURIM_LATE.backSince=nil;since=nil end
+            if MURIM_LATE.backHold>0 and (not since or now-since<MURIM_LATE.backHold) then
                 MURIM_LATE.phase="A05: de costas para a porta, esperando abrir"
-                MURIM_LATE.backToDoorA05(root,origin,now)
+                if MURIM_LATE.backToDoorA05(root,origin,now) and not MURIM_LATE.backSince then MURIM_LATE.backSince=now end
             else
             -- V19I: esperando a saida abrir, continua andando pela sala em vez de ficar parado na porta.
             MURIM_LATE.phase="A05: rodeando a sala enquanto a porta nao abre"
