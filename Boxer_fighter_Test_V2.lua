@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V19N: A07 fights near ghosts first, then the brazier; no early A08 jump; brazier and HUD in the log; V19L A03/Tailor/log; V19K raid; ult from V19J; A05 from V19I; A04 from V19F")
+print("[Boxer_fighter_Test V2] V19O: A05 waits with its back to the exit door and no seen reports; V19N A07; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -97,7 +97,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V19N | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V19O | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -4797,6 +4797,44 @@ function MURIM_LATE.hudWatch(gui)
     end
     MURIM_LATE.hudSeen=seen
 end
+-- V19O: print das 20:08: o usuario ficou de costas para a porta da A05 e ela abriu ("Prossiga").
+-- De 6 aberturas registradas, 4 foram com o Auto desligado, isto e, sem o "seen" que diz ao servidor que olhamos para tudo.
+-- Na A05: sem "seen"; depois dos prompts fica parado de costas para a porta por 60s e so entao volta a rodear (V19I).
+MURIM_LATE.backHold=60
+MURIM_LATE.backSpot={4,1042}
+function MURIM_LATE.backToDoorA05(root,origin,now)
+    local spot=Vector3.new(origin.X+MURIM_LATE.backSpot[1],root.Position.Y,origin.Z+MURIM_LATE.backSpot[2])
+    local dx,dz=spot.X-root.Position.X,spot.Z-root.Position.Z
+    if dx*dx+dz*dz>9 then
+        if now-MURIM_LATE.lastMove>0.4 then
+            MURIM_LATE.lastMove=now
+            MURIM_LATE.teleportA05(root,spot)
+        end
+        return false
+    end
+    -- A porta fica em +Z; olhar para -Z deixa ela nas costas e a camera padrao tambem fica de frente para o outro lado.
+    if root.CFrame.LookVector.Z>-0.95 then
+        root.CFrame=CFrame.lookAt(root.Position,root.Position-Vector3.new(0,0,1))
+    end
+    if not MURIM_LATE.backNoted then
+        MURIM_LATE.backNoted=true
+        MURIM_TRACE.add("ACAO","A05Costas","Parado de costas para a porta de saida; seen desligado na A05. Volta a rodear se nao abrir em "..MURIM_LATE.backHold.."s.")
+    end
+    return true
+end
+-- Somente log: o que a raid marca como "vigiado" quando entramos na A05.
+function MURIM_LATE.watchedA05(origin)
+    local list,n={},0
+    for _,obj in ipairs(game:GetService("CollectionService"):GetTagged("HallowWatched")) do
+        local part=obj:IsA("BasePart") and obj or (obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart",true)))
+        local z=part and part.Position.Z-origin.Z
+        n+=1
+        if #list<10 then
+            list[#list+1]=string.format("%s Id=%s Z+%s",obj.Name,tostring(obj:GetAttribute("HallowId")),z and string.format("%.0f",z) or "?")
+        end
+    end
+    MURIM_TRACE.add("EVIDENCIA","A05Costas","HallowWatched na raid ao entrar na A05: "..n..(n>0 and (" | "..table.concat(list,"; ")) or ""))
+end
 function MURIM_LATE.tick(root,raid,origin,index)
     if not root or not raid or not origin or index<5 or index>10 then return true end
     if index==6 and MURIM_LATE.liveCerberus(root,raid,origin) then
@@ -4813,6 +4851,8 @@ function MURIM_LATE.tick(root,raid,origin,index)
         MURIM_LATE.pending=nil
         MURIM_LATE.passage=nil
         MURIM_LATE.roomAt=now
+        MURIM_LATE.backSince=nil;MURIM_LATE.backNoted=nil;MURIM_LATE.doorNoted=nil
+        if index==5 then pcall(MURIM_LATE.watchedA05,origin) end
     end
     local def=HALLOW_ROOM_DATA[index]
     local area=def and raid:FindFirstChild(def.name,true)
@@ -4830,6 +4870,12 @@ function MURIM_LATE.tick(root,raid,origin,index)
                 local z=part and part.Position.Z-origin.Z
                 if z and z>=HALLOW_AREA_Z[6]-50 and z<=HALLOW_AREA_Z[6]+15 then
                     MURIM_LATE.pending=nil
+                    if not MURIM_LATE.doorNoted then
+                        MURIM_LATE.doorNoted=true
+                        MURIM_TRACE.add("EVIDENCIA","A05Porta",MURIM_LATE.backSince
+                            and string.format("Porta da A05 abriu com %.0fs de costas para ela.",now-MURIM_LATE.backSince)
+                            or "Porta da A05 abriu antes de ficar de costas.")
+                    end
                     MURIM_LATE.phase="A05: saida aberta; teleporte para A06"
                     if now-MURIM_LATE.lastMove>=0.3 then
                         MURIM_LATE.lastMove=now
@@ -4960,11 +5006,17 @@ function MURIM_LATE.tick(root,raid,origin,index)
         MURIM_LATE.phase=isOpen and "passando porta aberta A"..index
             or "aguardando porta da A"..index.." abrir"
         if index==5 and not isOpen and nearExit then
+            MURIM_LATE.backSince=MURIM_LATE.backSince or now
+            if now-MURIM_LATE.backSince<MURIM_LATE.backHold then
+                MURIM_LATE.phase="A05: de costas para a porta, esperando abrir"
+                MURIM_LATE.backToDoorA05(root,origin,now)
+            else
             -- V19I: esperando a saida abrir, continua andando pela sala em vez de ficar parado na porta.
             MURIM_LATE.phase="A05: rodeando a sala enquanto a porta nao abre"
             if now-MURIM_LATE.lastMove>0.4 then
                 MURIM_LATE.lastMove=now
                 MURIM_LATE.circleA05(root,origin)
+            end
             end
         elseif rel<goal-3 and now-MURIM_LATE.lastMove>(index==5 and 0.4 or 2) then
             MURIM_LATE.lastMove=now
@@ -9268,7 +9320,7 @@ local hallowRaidTask = task.spawn(function()
                                 or "Recuperacao de HP: ataques pausados ate atingir HP alvo"
                         end
                     else
-                    if currentRaidRoomIndex~=4 and isHallowPacifySeen and os.clock() - lastSeenPacifyTime >= 0.5 then
+                    if currentRaidRoomIndex~=4 and currentRaidRoomIndex~=5 and isHallowPacifySeen and os.clock() - lastSeenPacifyTime >= 0.5 then
                         lastSeenPacifyTime = os.clock()
                         pcall(function()
                             local seenRemote = ReplicatedStorage:FindFirstChild("HallowGateSeen")
