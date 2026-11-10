@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V19J: Cerberus ult souls detected from CJ_Ult (UltimateAt disappears); manual A05 talks logged; A05 from V19I; A04 from V19F")
+print("[Boxer_fighter_Test V2] V19K: A02 opens coffins without fighting; stays behind Cerberus/Matriarch; continues after the Cerberus (Exit Lantern blocked); ult from V19J; A05 from V19I; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -97,7 +97,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V19J | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V19K | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -1398,7 +1398,7 @@ function MURIM_A02.getObservables(ply, lodge, origin)
                 local act = (object.ActionText or ""):lower()
                 local objText = (object.ObjectText or ""):lower()
                 local coffin = object:FindFirstAncestor("HallowCoffin")
-                if coffin and act == "open" then
+                if coffin and act == "open" and coffin:GetAttribute("Risen")~=true then
                     local parentPart = object:FindFirstAncestorWhichIsA("BasePart")
                     if parentPart then
                         prompts[#prompts+1] = {prompt=object, part=parentPart, coffin=coffin,
@@ -3811,6 +3811,7 @@ function MURIM_LATE.observeEncounter(root,origin,automatic)
             MURIM_LATE.encounterEvent("Presenca nova: "..row)
         elseif previous.alive and not alive then
             MURIM_LATE.encounterEvent("HP zero observado: #"..id.." "..obj.Name)
+            if MURIM_LATE.isRaidBoss(obj) then MURIM_LATE.markBossDown(6,obj.Name) end
         end
     end
     for obj,previous in pairs(e.seen) do
@@ -4530,6 +4531,121 @@ function MURIM_LATE.reset()
     MURIM_LATE.lastTick=0;MURIM_LATE.lastMove=0;MURIM_LATE.lastNotice=0
     MURIM_LATE.attempts=setmetatable({},{__mode="k"});MURIM_LATE.pending=nil
     MURIM_LATE.passage=nil;MURIM_LATE.lastIndex=0
+    if MURIM_LATE.bossTrack and MURIM_LATE.bossTrack.conn then pcall(function() MURIM_LATE.bossTrack.conn:Disconnect() end) end
+    MURIM_LATE.bossDown={};MURIM_LATE.bossTrack=nil;MURIM_LATE.nextRoomAt=nil
+end
+-- V19K: tres ideias do script do Top76 (feito para PC), trazidas para o mobile sem teclado.
+-- 1) A02: abre os caixoes direto, sem parar para matar os mobs.
+-- 2) Cerberus e Matriarch: o personagem fica colado atras do boss.
+-- 3) Depois do Cerberus a raid continua: segue para a A07 e nao usa a Exit Lantern.
+MURIM_LATE.behindDist=4
+MURIM_LATE.exitAfter=120
+MURIM_LATE.bossDown={}
+function MURIM_LATE.a02SkipMobs(index,furthest)
+    if index~=2 or (furthest or 1)>=3 then MURIM_LATE.a02Since=nil return false end
+    local now=os.clock()
+    MURIM_LATE.a02Since=MURIM_LATE.a02Since or now
+    if MURIM_A02.phase=="aguardando porta ou chave" then
+        -- Caixoes acabaram e a porta nao abriu (ou nenhum caixao apareceu em 20s): volta a lutar como antes.
+        return MURIM_A02.openedObserved==0 and now-MURIM_LATE.a02Since<20
+    end
+    return true
+end
+function MURIM_LATE.isRaidBoss(npc)
+    local name=npc and type(npc.Name)=="string" and npc.Name:lower() or ""
+    return name:find("cerberus",1,true)~=nil or name:find("matriarch",1,true)~=nil
+end
+function MURIM_LATE.markBossDown(index,name)
+    if MURIM_LATE.bossDown[index] then return end
+    MURIM_LATE.bossDown[index]=os.clock()
+    MURIM_TRACE.add("EVIDENCIA","Boss","A"..index.." "..tostring(name).." com HP zero; depois dos drops segue para a A"..(index+1)..".")
+end
+function MURIM_LATE.trackBoss(npc,index)
+    local track=MURIM_LATE.bossTrack
+    if track and track.npc==npc then return end
+    if track and track.conn then pcall(function() track.conn:Disconnect() end) end
+    track={npc=npc,index=index}
+    local hum=npc:FindFirstChildOfClass("Humanoid")
+    if hum then
+        track.conn=hum.HealthChanged:Connect(function(hp)
+            if hp<=0 then MURIM_LATE.markBossDown(index,npc.Name) end
+        end)
+    end
+    MURIM_LATE.bossTrack=track
+    MURIM_TRACE.add("DECISAO","Boss",string.format("A%d %s: posicao atras do boss a %.0f studs.",index,npc.Name,MURIM_LATE.behindDist))
+end
+function MURIM_LATE.bossCF(index,npc,part)
+    if index<6 or not MURIM_LATE.isRaidBoss(npc) then return nil end
+    MURIM_LATE.trackBoss(npc,index)
+    return part.CFrame*CFrame.new(0,0,MURIM_LATE.behindDist)
+end
+-- Morte do jogador tambem tira o boss da tela, mas sem HP zero: isso nao conta.
+function MURIM_LATE.bossDead(index)
+    if MURIM_LATE.bossDown[index] then return true end
+    local track=MURIM_LATE.bossTrack
+    local hum=track and track.index==index and track.npc:FindFirstChildOfClass("Humanoid")
+    if hum and hum.Health<=0 then MURIM_LATE.markBossDown(index,track.npc.Name) end
+    return MURIM_LATE.bossDown[index]~=nil
+end
+function MURIM_LATE.isExitPrompt(prompt)
+    local text=(tostring(prompt.ActionText or "").." "..tostring(prompt.ObjectText or "")):lower()
+    return text:find("lantern home",1,true)~=nil or text:find("exit lantern",1,true)~=nil
+end
+-- Se a sala seguinte nao der certo por 2 minutos depois do boss, a saida volta a valer para o Auto nao ficar parado.
+function MURIM_LATE.exitAllowed(index,now)
+    if index>=10 then return true end
+    local down=MURIM_LATE.bossDown[index]
+    return down~=nil and now-down>=MURIM_LATE.exitAfter
+end
+function MURIM_LATE.skipExit(prompt,index,now)
+    if not MURIM_LATE.isExitPrompt(prompt) or MURIM_LATE.exitAllowed(index,now) then return false end
+    MURIM_TRACE.add("DECISAO","AutoFases","A"..index.." "..tostring(prompt.ActionText).." ignorada: a raid continua depois do boss.",30)
+    return true
+end
+function MURIM_LATE.nextReady(index,now,hasWork)
+    if index<6 or index>9 or MURIM_LATE.exitAllowed(index,now) then return false end
+    local quiet=now-math.max(MURIM_LATE.lastAttackAt or 0,MURIM_LATE.roomAt or now)
+    if index==6 or index==9 then
+        if not MURIM_LATE.bossDead(index) then return false end
+        return now-MURIM_LATE.bossDown[index]>=(hasWork and 20 or 4) and quiet>=3
+    end
+    return quiet>=(hasWork and 25 or 8)
+end
+function MURIM_LATE.entryOf(raid,origin,index)
+    local def=HALLOW_ROOM_DATA[index]
+    if not def then return nil end
+    local area=raid:FindFirstChild(def.name,true)
+    local markers=area and area:FindFirstChild("Markers")
+    local entry=markers and markers:FindFirstChild("HallowEntry")
+    if entry and entry:IsA("Attachment") then return entry.WorldPosition,"Markers.HallowEntry" end
+    if entry and entry:IsA("BasePart") then return entry.Position,"Markers.HallowEntry" end
+    if def.offset then
+        return Vector3.new(origin.X+def.offset.X,origin.Y+def.offset.Y,origin.Z+def.offset.Z),"posicao da sala"
+    end
+    return nil
+end
+function MURIM_LATE.goNext(root,raid,origin,index,now)
+    if now<(MURIM_LATE.nextRoomAt or 0) then return true end
+    MURIM_LATE.nextRoomAt=now+6
+    MURIM_LATE.phase="A"..index.." concluida: indo para A"..(index+1)
+    local pos,how=MURIM_LATE.entryOf(raid,origin,index+1)
+    if not pos then
+        MURIM_TRACE.add("AVISO","ProximaSala","A"..(index+1).." sem posicao conhecida; tentando de novo em 6s.",12)
+        return true
+    end
+    local ok=MURIM_A01.safeWarp(root,pos+Vector3.new(0,3,0),root.Parent,"entrada A"..(index+1))
+    MURIM_TRACE.add(ok and "ACAO" or "AVISO","ProximaSala",string.format("A%d -> A%d por %s: teleporte=%s.",index,index+1,how,tostring(ok)))
+    if ok then
+        local goal=root.Position
+        task.delay(1.5,function()
+            pcall(function()
+                local d=(root.Position-goal).Magnitude
+                MURIM_TRACE.add("EVIDENCIA","ProximaSala",string.format("A%d: 1.5s depois, a %.0f studs do destino (%s).",
+                    index+1,d,d<15 and "ficou" or "voltou ou se moveu"))
+            end)
+        end)
+    end
+    return true
 end
 function MURIM_LATE.tick(root,raid,origin,index)
     if not root or not raid or not origin or index<5 or index>10 then return true end
@@ -4546,6 +4662,7 @@ function MURIM_LATE.tick(root,raid,origin,index)
         MURIM_LATE.lastIndex=index
         MURIM_LATE.pending=nil
         MURIM_LATE.passage=nil
+        MURIM_LATE.roomAt=now
     end
     local def=HALLOW_ROOM_DATA[index]
     local area=def and raid:FindFirstChild(def.name,true)
@@ -4607,7 +4724,8 @@ function MURIM_LATE.tick(root,raid,origin,index)
                 and anchor.Position.Z-origin.Z<=HALLOW_AREA_Z[index+1]+12
                 and (not barrierZ or anchor.Position.Z-origin.Z<=barrierZ-4)
                 and not action:find("hide",1,true)
-                and not action:find("refill",1,true) then
+                and not action:find("refill",1,true)
+                and not MURIM_LATE.skipExit(obj,index,now) then
                 candidates[#candidates+1]={prompt=obj,part=anchor,
                     action=obj.ActionText or "interagir",
                     dist=(anchor.Position-root.Position).Magnitude}
@@ -4615,6 +4733,10 @@ function MURIM_LATE.tick(root,raid,origin,index)
         end
     end
     table.sort(candidates,function(a,b) return a.dist<b.dist end)
+    -- V19K: boss morto e sala quieta: segue para a proxima sala, como o Top76 faz.
+    if MURIM_LATE.nextReady(index,now,#candidates>0) then
+        return MURIM_LATE.goNext(root,raid,origin,index,now)
+    end
     -- Nao tentar prompts de uma sala adiante sem entrar nela.
     for _,c in ipairs(candidates) do
         local record=MURIM_LATE.attempts[c.prompt]
@@ -9114,6 +9236,11 @@ local hallowRaidTask = task.spawn(function()
                         end
 
 
+                        -- V19K: na A02 a chave sai do caixao; os mobs nao precisam morrer.
+                        if MURIM_LATE.a02SkipMobs(currentRaidRoomIndex,HallowEntryState.furthestArea) and bestFoe then
+                            MURIM_TRACE.add("DECISAO","AutoA02","Mobs ignorados: abrindo os caixoes primeiro.",20)
+                            bestFoe=nil
+                        end
                         if currentRaidRoomIndex==3 and MURIM_RAID_HIT.eyes==1
                             and not MURIM_RAID_HIT.yardObjective then
                             -- Varredura forcada: teleporta a cada Paper, confirma HP
@@ -9163,7 +9290,7 @@ local hallowRaidTask = task.spawn(function()
                                 if isPaperTailor then
                                     attackCF,canAttack=MURIM_A03.tailorCombatPosition(hrp,targetPart,raidOrigin,activeRaidModel)
                                 else
-                                    attackCF=targetPart.CFrame*getFarmOffsetCFrame()
+                                    attackCF=MURIM_LATE.bossCF(currentRaidRoomIndex,bestFoe,targetPart) or targetPart.CFrame*getFarmOffsetCFrame()
                                 end
                                 if attackCF then
                                     hrp.CFrame=attackCF
