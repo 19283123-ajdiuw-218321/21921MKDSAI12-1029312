@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V19L: A03 no longer stops 1 stud before the yard door; behind the Paper Tailor; full log copy and stop reasons; V19K raid; ult from V19J; A05 from V19I; A04 from V19F")
+print("[Boxer_fighter_Test V2] V19M: A07 lights the brazier before fighting the Hungry Ghosts; V19L A03/Tailor/log; V19K raid; ult from V19J; A05 from V19I; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -97,7 +97,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V19L | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V19M | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -4697,6 +4697,43 @@ function MURIM_LATE.stallCheck(root,index,origin)
     end
     return false
 end
+-- V19M: TXT 19:38: na A07 ficou 5 min matando Hungry Ghost que nao paravam de vir; cada ida ao braseiro
+-- era puxada de volta pelo combate. O guia diz: acender o braseiro primeiro. Combate espera ate 25s por braseiro.
+MURIM_LATE.brazierCap=25
+function MURIM_LATE.brazierFirst(index,raid,origin,root)
+    if index~=7 or not raid or not origin or not root then MURIM_LATE.brazier=nil return false end
+    local now=os.clock()
+    local b=MURIM_LATE.brazier
+    if b and now-b.scanAt<0.5 then return b.active end
+    b=b or {since=setmetatable({},{__mode="k"})}
+    b.scanAt=now
+    b.active=false
+    local def=HALLOW_ROOM_DATA[7]
+    local area=def and raid:FindFirstChild(def.name,true)
+    local best,bestDist=nil,math.huge
+    if area then
+        for _,obj in ipairs(area:GetDescendants()) do
+            if obj:IsA("ProximityPrompt") and obj.Enabled and tostring(obj.ActionText):lower():find("brazier",1,true) then
+                local part=obj:FindFirstAncestorWhichIsA("BasePart")
+                if part and math.abs(part.Position.X-origin.X)<125 then
+                    local d=(part.Position-root.Position).Magnitude
+                    if d<bestDist then best,bestDist=obj,d end
+                end
+            end
+        end
+    end
+    if best then
+        b.since[best]=b.since[best] or now
+        if now-b.since[best]<MURIM_LATE.brazierCap then
+            b.active=true
+            MURIM_TRACE.add("DECISAO","BraseiroA07",string.format("Braseiro primeiro (guia): combate pausado; braseiro a %.0f studs.",bestDist),15)
+        else
+            MURIM_TRACE.add("AVISO","BraseiroA07","Braseiro nao acendeu em 25s; voltando a lutar.",30)
+        end
+    end
+    MURIM_LATE.brazier=b
+    return b.active
+end
 function MURIM_LATE.tick(root,raid,origin,index)
     if not root or not raid or not origin or index<5 or index>10 then return true end
     if index==6 and MURIM_LATE.liveCerberus(root,raid,origin) then
@@ -9290,6 +9327,8 @@ local hallowRaidTask = task.spawn(function()
                         -- V19K: na A02 a chave sai do caixao; os mobs nao precisam morrer.
                         if MURIM_LATE.a02SkipMobs(currentRaidRoomIndex,HallowEntryState.furthestArea) and bestFoe then
                             MURIM_TRACE.add("DECISAO","AutoA02","Mobs ignorados: abrindo os caixoes primeiro.",20)
+                            bestFoe=nil
+                        elseif MURIM_LATE.brazierFirst(currentRaidRoomIndex,activeRaidModel,raidOrigin,hrp) and bestFoe then
                             bestFoe=nil
                         end
                         if currentRaidRoomIndex==3 and MURIM_RAID_HIT.eyes==1
