@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V19M: A07 lights the brazier before fighting the Hungry Ghosts; V19L A03/Tailor/log; V19K raid; ult from V19J; A05 from V19I; A04 from V19F")
+print("[Boxer_fighter_Test V2] V19N: A07 fights near ghosts first, then the brazier; no early A08 jump; brazier and HUD in the log; V19L A03/Tailor/log; V19K raid; ult from V19J; A05 from V19I; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -97,7 +97,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V19M | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V19N | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -4627,7 +4627,8 @@ function MURIM_LATE.skipExit(prompt,index,now)
 end
 function MURIM_LATE.nextReady(index,now,hasWork)
     if index<6 or index>9 or MURIM_LATE.exitAllowed(index,now) then return false end
-    local quiet=now-math.max(MURIM_LATE.lastAttackAt or 0,MURIM_LATE.roomAt or now)
+    -- V19N: inimigo ignorado de proposito (braseiro) tambem conta como sala ocupada.
+    local quiet=now-math.max(MURIM_LATE.lastAttackAt or 0,MURIM_LATE.roomAt or now,MURIM_LATE.pausedFoeAt or 0)
     if index==6 or index==9 then
         if not MURIM_LATE.bossDead(index) then return false end
         return now-MURIM_LATE.bossDown[index]>=(hasWork and 20 or 4) and quiet>=3
@@ -4700,14 +4701,22 @@ end
 -- V19M: TXT 19:38: na A07 ficou 5 min matando Hungry Ghost que nao paravam de vir; cada ida ao braseiro
 -- era puxada de volta pelo combate. O guia diz: acender o braseiro primeiro. Combate espera ate 25s por braseiro.
 MURIM_LATE.brazierCap=25
-function MURIM_LATE.brazierFirst(index,raid,origin,root)
+MURIM_LATE.brazierFoeRange=25
+function MURIM_LATE.brazierFirst(index,raid,origin,root,foeDist)
     if index~=7 or not raid or not origin or not root then MURIM_LATE.brazier=nil return false end
     local now=os.clock()
     local b=MURIM_LATE.brazier
     if b and now-b.scanAt<0.5 then return b.active end
-    b=b or {since=setmetatable({},{__mode="k"})}
+    b=b or {spent=setmetatable({},{__mode="k"})}
+    local prevAt,prevPrompt=b.scanAt,b.activePrompt
     b.scanAt=now
     b.active=false
+    b.activePrompt=nil
+    -- V19N: guia: mata os ghosts da porta e depois acende. TXT 19:43: parado no braseiro, HP caiu a 274 duas vezes.
+    if foeDist and foeDist<MURIM_LATE.brazierFoeRange then
+        MURIM_LATE.brazier=b
+        return false
+    end
     local def=HALLOW_ROOM_DATA[7]
     local area=def and raid:FindFirstChild(def.name,true)
     local best,bestDist=nil,math.huge
@@ -4723,9 +4732,11 @@ function MURIM_LATE.brazierFirst(index,raid,origin,root)
         end
     end
     if best then
-        b.since[best]=b.since[best] or now
-        if now-b.since[best]<MURIM_LATE.brazierCap then
+        -- Conta so o tempo indo ao braseiro; a luta no meio nao gasta os 25s.
+        if prevPrompt==best and prevAt then b.spent[best]=(b.spent[best] or 0)+(now-prevAt) end
+        if (b.spent[best] or 0)<MURIM_LATE.brazierCap then
             b.active=true
+            b.activePrompt=best
             MURIM_TRACE.add("DECISAO","BraseiroA07",string.format("Braseiro primeiro (guia): combate pausado; braseiro a %.0f studs.",bestDist),15)
         else
             MURIM_TRACE.add("AVISO","BraseiroA07","Braseiro nao acendeu em 25s; voltando a lutar.",30)
@@ -4733,6 +4744,58 @@ function MURIM_LATE.brazierFirst(index,raid,origin,root)
     end
     MURIM_LATE.brazier=b
     return b.active
+end
+-- V19N: TXT 19:43: o advance da A04 levou de volta para a borda da A07 um alvo que estava na A08.
+-- Da A07 em diante, portas e travessias usam o teleporte com piso conferido no proprio destino.
+function MURIM_LATE.move(root,index,dest,label)
+    if index>=7 then return MURIM_A01.safeWarp(root,dest,root.Parent,label) end
+    return MURIM_A04.advance(root,dest,label)
+end
+-- V19N: o prompt do braseiro foi acionado 2x a 4 studs e continuou Enabled; registrar o estado real do braseiro.
+function MURIM_LATE.brazierState(prompt)
+    local model=prompt:FindFirstAncestor("HallowBrazier") or prompt:FindFirstAncestorWhichIsA("Model")
+    if not model then return "sem modelo; prompt Enabled="..tostring(prompt.Enabled) end
+    local attrs={}
+    for k,v in pairs(model:GetAttributes()) do attrs[#attrs+1]=tostring(k).."="..tostring(v) end
+    table.sort(attrs)
+    local lit,total=0,0
+    for _,d in ipairs(model:GetDescendants()) do
+        if d:IsA("Fire") or d:IsA("PointLight") or d:IsA("SpotLight") or d:IsA("ParticleEmitter") then
+            total+=1
+            if d.Enabled then lit+=1 end
+        end
+    end
+    return string.format("%s atributos=[%s] luz/fogo ligados=%d/%d; prompt Enabled=%s",
+        model.Name,table.concat(attrs," "),lit,total,tostring(prompt.Enabled))
+end
+function MURIM_LATE.noteBrazier(prompt)
+    MURIM_TRACE.add("EVIDENCIA","BraseiroA07","Antes: "..MURIM_LATE.brazierState(prompt))
+    task.delay(1.5,function()
+        pcall(function() MURIM_TRACE.add("EVIDENCIA","BraseiroA07","1.5s depois: "..MURIM_LATE.brazierState(prompt)) end)
+    end)
+end
+-- V19N: objetivo e legendas da HUD da raid ("Go down the stairs", "Hooves on stone, behind you") entram no log
+-- quando aparecem; o que continua na tela nao repete.
+function MURIM_LATE.hudWatch(gui)
+    local now=os.clock()
+    if now-(MURIM_LATE.hudAt or -1e9)<1 then return end
+    MURIM_LATE.hudAt=now
+    local hud=gui and gui:FindFirstChild("MurimHallowHUD")
+    local seen={}
+    if hud then
+        for _,obj in ipairs(hud:GetDescendants()) do
+            if (obj:IsA("TextLabel") or obj:IsA("TextButton")) and isHallowGuiVisible(obj) then
+                local text=(obj.Text or ""):gsub("<[^>]+>",""):gsub("%s+"," ")
+                if #text>=4 and #text<200 and text:find("%a%a") then
+                    if not seen[text] and not (MURIM_LATE.hudSeen or {})[text] then
+                        MURIM_TRACE.add("INFO","HUD",text.." ["..tostring(obj.Name).."]")
+                    end
+                    seen[text]=true
+                end
+            end
+        end
+    end
+    MURIM_LATE.hudSeen=seen
 end
 function MURIM_LATE.tick(root,raid,origin,index)
     if not root or not raid or not origin or index<5 or index>10 then return true end
@@ -4844,6 +4907,7 @@ function MURIM_LATE.tick(root,raid,origin,index)
                 local owner=c.prompt:FindFirstAncestorWhichIsA("Model")
                 local who=owner and owner.Name or "?"
                 if speech then MURIM_LATE.autoTalkAt=os.clock();pcall(MURIM_LATE.noteDialog,who) end
+                if c.action:lower():find("brazier",1,true) then pcall(MURIM_LATE.noteBrazier,c.prompt) end
                 local ok,via=tryHallowGuestPrompt(c.prompt)
                 MURIM_LATE.attempts[c.prompt]={count=record and (record.count<2 and record.count+1 or 1) or 1,at=now}
                 MURIM_LATE.pending={prompt=c.prompt,action=c.action,at=now}
@@ -4865,7 +4929,7 @@ function MURIM_LATE.tick(root,raid,origin,index)
                 MURIM_LATE.lastMove=now
                 local target=Vector3.new(origin.X,root.Position.Y,origin.Z+p.goal)
                 if index==5 then MURIM_LATE.teleportA05(root,target)
-                else MURIM_A04.advance(root,target,"A"..index.." travessia confirmada") end
+                else MURIM_LATE.move(root,index,target,"A"..index.." travessia confirmada") end
             end
             return true
         else
@@ -4906,7 +4970,7 @@ function MURIM_LATE.tick(root,raid,origin,index)
             MURIM_LATE.lastMove=now
             local target=Vector3.new(origin.X,root.Position.Y,origin.Z+goal)
             if index==5 then MURIM_LATE.teleportA05(root,target)
-            else MURIM_A04.advance(root,target,"A"..index.." porta observada") end
+            else MURIM_LATE.move(root,index,target,"A"..index.." porta observada") end
         end
         MURIM_TRACE.add("INFO","AutoFases",string.format(
             "A%d: porta Z+%.0f Open=%s; atual Z+%.0f; objetivo nao comprovado. %s",
@@ -9170,6 +9234,7 @@ local hallowRaidTask = task.spawn(function()
                     if currentRaidRoomIndex~=4 then MURIM_A04.stopRun() end
                     if currentRaidRoomIndex~=5 then MURIM_LATE.stopWalk() end
                     pcall(MURIM_LATE.stallCheck,hrp,currentRaidRoomIndex,raidOrigin)
+                    pcall(MURIM_LATE.hudWatch,player:FindFirstChild("PlayerGui"))
                     if currentRaidRoomIndex==6 then
                         MURIM_LATE.cerberusFocus=MURIM_LATE.liveCerberus(hrp,activeRaidModel,raidOrigin)
                     else MURIM_LATE.cerberusFocus=nil end
@@ -9328,7 +9393,8 @@ local hallowRaidTask = task.spawn(function()
                         if MURIM_LATE.a02SkipMobs(currentRaidRoomIndex,HallowEntryState.furthestArea) and bestFoe then
                             MURIM_TRACE.add("DECISAO","AutoA02","Mobs ignorados: abrindo os caixoes primeiro.",20)
                             bestFoe=nil
-                        elseif MURIM_LATE.brazierFirst(currentRaidRoomIndex,activeRaidModel,raidOrigin,hrp) and bestFoe then
+                        elseif MURIM_LATE.brazierFirst(currentRaidRoomIndex,activeRaidModel,raidOrigin,hrp,bestFoe and bestDist or nil) and bestFoe then
+                            MURIM_LATE.pausedFoeAt=os.clock()
                             bestFoe=nil
                         end
                         if currentRaidRoomIndex==3 and MURIM_RAID_HIT.eyes==1
