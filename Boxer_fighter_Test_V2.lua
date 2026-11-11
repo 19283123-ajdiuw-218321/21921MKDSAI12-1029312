@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
+print("[Boxer_fighter_Test V2] V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -59,7 +59,7 @@ local MURIM_TRACE = {
     extraStatus = nil,
 }
 function MURIM_TRACE.add(level, area, message, minInterval, eventKey)
-    local safeMessage = tostring(message or ""):gsub("[\r\n]+", " "):sub(1, 280)
+    local safeMessage = tostring(message or ""):gsub("[\r\n]+", " "):sub(1, 1000) -- V19W: era 280 e cortava o resultado
     local key = tostring(level) .. "|" .. tostring(area) .. "|" .. (eventKey or safeMessage)
     local now = os.clock()
     if now - (MURIM_TRACE.lastSeen[key] or -1e9) < (minInterval or 0) then return end
@@ -78,6 +78,27 @@ function MURIM_TRACE.stageTo(stage)
     MURIM_TRACE.stage = stage
     MURIM_TRACE.lastStageAt = os.clock()
     MURIM_TRACE.add("ETAPA", "Halloween", stage)
+    local text=tostring(stage)
+    local area=text:match("area (%d+)")
+    local label=(area and string.format("A%02d",tonumber(area))) or (text=="Desativado" and "Auto OFF")
+        or (text:find("^Ativado") and "Auto ON") or nil
+    if label then
+        local p=MURIM_TRACE.progress or {};MURIM_TRACE.progress=p
+        if not p[#p] or p[#p].label~=label then
+            p[#p+1]={label=label,at=os.clock(),stamp=os.date("%H:%M:%S")}
+            if #p>120 then table.remove(p,1) end
+        end
+    end
+end
+function MURIM_TRACE.progressDump()
+    local p=MURIM_TRACE.progress
+    if not p or #p==0 then return "" end
+    local out={"[PROGRESSO: salas e Auto liga/desliga em ordem; segundos ate a proxima mudanca]"}
+    for i,e in ipairs(p) do
+        local nxt=p[i+1]
+        out[#out+1]="["..e.stamp.."] "..e.label..(nxt and string.format(" (%ds)",math.floor(nxt.at-e.at+0.5)) or " (ate agora)")
+    end
+    return table.concat(out,"\n").."\n\n"
 end
 function MURIM_TRACE.suggest(message)
     if type(message) ~= "string" or message == "" then return end
@@ -97,12 +118,14 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V19V | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V19W | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
         .. "\nLog local; nao inclui keys, tokens, HWID nem URLs.\n\n"
         .. (MURIM_TRACE.encounterDump and MURIM_TRACE.encounterDump(type(maxBytes)~="number") or "")
+        .. (MURIM_TRACE.progressDump and MURIM_TRACE.progressDump() or "")
+        .. (MURIM_TRACE.offeringDump and MURIM_TRACE.offeringDump() or "")
     if type(maxBytes) ~= "number" then
         return header .. (MURIM_TRACE.timelineDump and MURIM_TRACE.timelineDump() or "") .. table.concat(MURIM_TRACE.entries, "\n")
             .. (type(MURIM_TRACE.surveyDump)=="function" and MURIM_TRACE.surveyDump() or "")
@@ -780,6 +803,10 @@ function MURIM_SURVEY.notePromptTriggered(prompt)
             end)
         end)
         if not okA08 then MURIM_TRACE.add("ERRO","OferendaManual","Detalhe da A08 falhou: "..MURIM_SURVEY.clean(errA08,160),20) end
+        if MURIM_LATE.offerNote then
+            local okN,errN=pcall(MURIM_LATE.offerNote,prompt)
+            if not okN then MURIM_TRACE.add("ERRO","OferendaA08","Resumo da oferenda falhou: "..MURIM_SURVEY.clean(errN,160),20) end
+        end
     end
     task.delay(1, function()
         if not prompt.Parent then
@@ -5255,6 +5282,63 @@ function MURIM_LATE.carryDiff(a,b)
     table.sort(out)
     return #out>0 and MURIM_SURVEY.clean(table.concat(out,", "),300) or "nada mudou no personagem nem na mochila"
 end
+function MURIM_LATE.offerNote(prompt)
+    local list=MURIM_LATE.offerLog or {};MURIM_LATE.offerLog=list
+    local action=tostring(prompt.ActionText)
+    local part=MURIM_LATE.promptPart(prompt)
+    local entry={stamp=os.date("%H:%M:%S"),who=MURIM_LATE.holding and "Auto" or "manual",
+        where=part and string.format("(%.0f,%.0f,%.0f)",part.Position.X,part.Position.Y,part.Position.Z) or "(?)"}
+    local altar=prompt:FindFirstAncestor("HallowAltar")
+    local food=MURIM_LATE.foodName(action)
+    if altar then
+        entry.kind="lay";entry.index=altar:GetAttribute("Index");entry.food=MURIM_LATE.lastTake;entry.result="sem leitura"
+        MURIM_LATE.lastTake=nil
+    elseif food and action:lower():find("take",1,true) then
+        entry.kind="take";entry.food=food
+        if MURIM_LATE.lastTake then entry.note=" (ja segurava "..MURIM_LATE.lastTake..")" end
+        MURIM_LATE.lastTake=food
+    else
+        entry.kind="outro";entry.food=MURIM_SURVEY.clean(action,40)
+    end
+    list[#list+1]=entry
+    if #list>300 then table.remove(list,1) end
+    local carry0=MURIM_LATE.carrySnapshot and MURIM_LATE.carrySnapshot()
+    task.delay(2,function()
+        if altar then
+            local filled=altar.Parent and altar:GetAttribute("Filled")
+            local gone=not prompt.Parent or not prompt.Enabled
+            entry.result=(filled==true or gone) and "ACEITA" or "RECUSADA"
+            entry.detail="Filled="..tostring(filled).." prompt="..(prompt.Parent and tostring(prompt.Enabled) or "removido")
+        end
+        if carry0 then entry.carry=MURIM_LATE.carryDiff(carry0,MURIM_LATE.carrySnapshot()) end
+    end)
+end
+MURIM_TRACE.offeringDump=function()
+    local list=MURIM_LATE.offerLog
+    if not list or #list==0 then return "" end
+    local out={"[OFERENDAS A08: pegar/colocar em ordem; resultado lido 2s depois (Filled/prompt); Auto ou manual pelo hold do script]"}
+    local per={}
+    for _,e in ipairs(list) do
+        local carry=e.carry and (" | personagem: "..e.carry) or ""
+        if e.kind=="take" then
+            out[#out+1]=string.format("[%s] %s PEGOU %s %s%s%s",e.stamp,e.who,e.food,e.where,e.note or "",carry)
+        elseif e.kind=="lay" then
+            out[#out+1]=string.format("[%s] %s COLOCOU %s no altar %s %s -> %s (%s)%s",e.stamp,e.who,tostring(e.food or "nada/desconhecido"),
+                tostring(e.index),e.where,e.result,tostring(e.detail or ""),carry)
+            local k=tostring(e.index);per[k]=per[k] or {no={}}
+            if e.result=="ACEITA" then per[k].ok=tostring(e.food) elseif e.result=="RECUSADA" then table.insert(per[k].no,tostring(e.food)) end
+        else
+            out[#out+1]=string.format("[%s] %s %s %s",e.stamp,e.who,e.food,e.where)
+        end
+    end
+    local summary={}
+    for _,k in ipairs({"1","2","3","4"}) do
+        local a=per[k]
+        summary[#summary+1]="altar "..k.."="..(a and ((a.ok or "?")..(#a.no>0 and (" (recusou "..table.concat(a.no,",")..")") or "")) or "sem tentativa")
+    end
+    out[#out+1]="RESUMO: "..table.concat(summary," | ")
+    return table.concat(out,"\n").."\n\n"
+end
 function MURIM_LATE.a08Tick(root,area)
     local state=MURIM_LATE.banquet or {altars={},tried={}}
     MURIM_LATE.banquet=state
@@ -5292,12 +5376,12 @@ function MURIM_LATE.a08Tick(root,area)
             or not p.altar.prompt.Parent or not p.altar.prompt.Enabled then
             state.altars[p.altar.id]=true
             state.used=state.used or {};state.used[p.food]=true
-            MURIM_TRACE.add("EVIDENCIA","OferendaA08","ACEITA altar="..p.altar.id.." alimento="..p.food)
+            MURIM_TRACE.add("EVIDENCIA","OferendaA08","ACEITA altar="..p.altar.id.." alimento="..p.food.." (altar Index="..tostring(p.altar.model:GetAttribute("Index"))..")")
             state.pending=nil;state.carry=nil
             return true
         elseif os.clock()-p.at<3 then return true
         else
-            MURIM_TRACE.add("AVISO","OferendaA08","SEM CONFIRMACAO altar="..p.altar.id.." alimento="..p.food.."; nao inferir entrega")
+            MURIM_TRACE.add("AVISO","OferendaA08","SEM CONFIRMACAO altar="..p.altar.id.." alimento="..p.food.." (altar Index="..tostring(p.altar.model:GetAttribute("Index"))..")".."; nao inferir entrega")
             state.tried[p.altar.id..":"..p.food]=os.clock()
             state.pending=nil;state.carry=nil
         end
