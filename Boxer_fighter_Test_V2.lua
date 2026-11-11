@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
+print("[Boxer_fighter_Test V2] V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -97,7 +97,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V19T | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V19U | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -768,10 +768,15 @@ function MURIM_SURVEY.notePromptTriggered(prompt)
             if action:lower():find("take",1,true) then MURIM_SURVEY.lastOffering=action end
             snapshot=snapshot.." | ultima coleta observada="..tostring(MURIM_SURVEY.lastOffering)
             MURIM_TRACE.add("EVIDENCIA","OferendaManual",snapshot.." | antes")
+            local carry0=MURIM_LATE.carrySnapshot and MURIM_LATE.carrySnapshot()
+            if MURIM_LATE.a08Dossier then pcall(MURIM_LATE.a08Dossier,prompt:FindFirstAncestor("A08_Banquet")) end
             task.delay(2,function()
                 MURIM_TRACE.add("EVIDENCIA","OferendaManual",snapshot.." | depois="..
                     (owner and owner.Parent and MURIM_SURVEY.readState(owner) or "modelo ausente")..
                     " | prompt="..(prompt.Parent and tostring(prompt.Enabled) or "removido"))
+                if carry0 then
+                    MURIM_TRACE.add("EVIDENCIA","CargaA08",action.." -> personagem/mochila em 2s: "..MURIM_LATE.carryDiff(carry0,MURIM_LATE.carrySnapshot()))
+                end
             end)
         end)
         if not okA08 then MURIM_TRACE.add("ERRO","OferendaManual","Detalhe da A08 falhou: "..MURIM_SURVEY.clean(errA08,160),20) end
@@ -5166,9 +5171,94 @@ function MURIM_LATE.offeringProps(area,position)
     end
     return found
 end
+function MURIM_LATE.attrList(obj)
+    local out={}
+    pcall(function()
+        for k,v in pairs(obj:GetAttributes()) do
+            local t=typeof(v)
+            if t=="string" or t=="number" or t=="boolean" then out[#out+1]=k.."="..MURIM_SURVEY.clean(v,40) end
+        end
+    end)
+    table.sort(out)
+    return #out>0 and table.concat(out," ") or "sem atributos"
+end
+function MURIM_LATE.a08Describe(obj)
+    local bits,seen={},{}
+    for _,d in ipairs(obj:GetDescendants()) do
+        local ok,txt=pcall(function()
+            if d:IsA("Decal") or d:IsA("Texture") then return d.ClassName..":"..d.Name.."="..tostring(d.Texture) end
+            if d:IsA("ImageLabel") or d:IsA("ImageButton") then return "Imagem:"..d.Name.."="..tostring(d.Image) end
+            if d:IsA("TextLabel") or d:IsA("TextButton") or d:IsA("TextBox") then return "Texto:"..d.Name.."="..MURIM_SURVEY.clean(d.Text,60) end
+            if d:IsA("StringValue") then return "Valor:"..d.Name.."="..MURIM_SURVEY.clean(d.Value,60) end
+            if d:IsA("Model") then return "Modelo:"..d.Name end
+        end)
+        if ok and txt and not seen[txt] then
+            seen[txt]=true
+            if #bits>=12 then bits[#bits+1]="...";break end
+            bits[#bits+1]=txt
+        end
+    end
+    return #bits>0 and table.concat(bits," ; ") or "sem decal/texto/modelo"
+end
+function MURIM_LATE.a08Dossier(area)
+    if not area or os.clock()-(MURIM_LATE.a08DossierAt or -1e9)<120 then return end
+    MURIM_LATE.a08DossierAt=os.clock()
+    local n=0
+    for _,d in ipairs(area:GetDescendants()) do
+        local kind=(d:IsA("Model") and d.Name=="HallowAltar" and "Altar")
+            or (d:IsA("BasePart") and d.Name=="Paper" and "Papel")
+            or (d:IsA("BasePart") and d.Name=="HallowOffering" and "Comida")
+            or (d:IsA("Model") and d.Name=="HallowSeat" and "Assento") or nil
+        if kind and n<24 then
+            n+=1
+            local extra=""
+            if kind=="Comida" or kind=="Altar" then
+                local p=d:FindFirstChildWhichIsA("ProximityPrompt",true)
+                extra=" | prompt="..(p and (MURIM_SURVEY.clean(p.ActionText,30).." Enabled="..tostring(p.Enabled)) or "nenhum")
+            elseif kind=="Papel" then
+                extra=string.format(" | cor=(%.0f,%.0f,%.0f)",d.Color.R*255,d.Color.G*255,d.Color.B*255)
+            end
+            MURIM_TRACE.add("EVIDENCIA","DossieA08",kind.." "..MURIM_SURVEY.positionLabel(MURIM_SURVEY.position(d))..extra
+                .." | "..MURIM_LATE.attrList(d).." | "..MURIM_LATE.a08Describe(d))
+        end
+    end
+    MURIM_TRACE.add("INFO","DossieA08",n.." objetos descritos (altares, papeis, comidas, assento); presenca nao prova a regra.")
+end
+-- TXT 23:35 (V19T): altar Index 1 aceitou laranja (manual), 2 aceitou cha (manual), 3 aceitou pessego (o proprio Auto,
+-- ACEITA 23:35:00); pessego e pao foram recusados no 1 e pao no 2. Na rodada manual de 21:56-22:01 as posicoes batem
+-- com a mesma combinacao (cha recusado no 4). O 4 = pao e por eliminacao. E so a primeira tentativa: recusou, testa o resto.
+MURIM_LATE.a08Seen={[1]="orange",[2]="tea",[3]="peach",[4]="bun"}
+MURIM_LATE.carryNoise={Stamina=true,Posture=true,Qi=true,ParryReadyAt=true,MassParryReadyAt=true,StunEnd=true,
+    ActT=true,ActN=true,ActR=true,ActW=true}
+function MURIM_LATE.carrySnapshot()
+    local snap={attrs={},kids={}}
+    pcall(function()
+        local plr=game:GetService("Players").LocalPlayer
+        local char=plr.Character
+        for k,v in pairs(char:GetAttributes()) do snap.attrs[k]=MURIM_SURVEY.clean(v,40) end
+        for _,c in ipairs(char:GetChildren()) do
+            if not c:IsA("BasePart") and not c:IsA("Humanoid") and not c:IsA("LuaSourceContainer") then
+                local key=c.ClassName..":"..c.Name;snap.kids[key]=(snap.kids[key] or 0)+1
+            end
+        end
+        local bp=plr:FindFirstChildOfClass("Backpack")
+        for _,c in ipairs(bp and bp:GetChildren() or {}) do local key="Mochila:"..c.Name;snap.kids[key]=(snap.kids[key] or 0)+1 end
+    end)
+    return snap
+end
+function MURIM_LATE.carryDiff(a,b)
+    local out,noise={},MURIM_LATE.carryNoise
+    for k,v in pairs(b.attrs) do if a.attrs[k]~=v and not noise[k] then out[#out+1]=k.."="..tostring(a.attrs[k]).."->"..v end end
+    for k,v in pairs(a.attrs) do if b.attrs[k]==nil and not noise[k] then out[#out+1]=k.."="..v.."->nil" end end
+    for k,n in pairs(b.kids) do if (a.kids[k] or 0)<n then out[#out+1]="+"..k end end
+    for k,n in pairs(a.kids) do if (b.kids[k] or 0)<n then out[#out+1]="-"..k end end
+    table.sort(out)
+    return #out>0 and MURIM_SURVEY.clean(table.concat(out,", "),300) or "nada mudou no personagem nem na mochila"
+end
 function MURIM_LATE.a08Tick(root,area)
     local state=MURIM_LATE.banquet or {altars={},tried={}}
     MURIM_LATE.banquet=state
+    pcall(MURIM_LATE.a08Dossier,area)
     local foods,altars,seat={},{},nil
     for _,p in ipairs(area:GetDescendants()) do
         if p:IsA("ProximityPrompt") then
@@ -5228,8 +5318,17 @@ function MURIM_LATE.a08Tick(root,area)
     if not food then
         -- Fixed mapping is unknown: bounded, labelled trials, never an invented mapping.
         local used=state.used or {}
-        for _,candidate in ipairs({"peach","bun","orange","tea"}) do
+        local order={"peach","bun","orange","tea"}
+        local index=target.model:GetAttribute("Index")
+        local seen=MURIM_LATE.a08Seen[index]
+        if seen then table.insert(order,1,seen) end
+        for _,candidate in ipairs(order) do
             if foods[candidate] and not used[candidate] and not state.tried[target.id..":"..candidate] then food=candidate;break end
+        end
+        if food and food==seen and state.seenLogged~=target.id then
+            state.seenLogged=target.id
+            MURIM_TRACE.add("DECISAO","OferendaA08","Altar Index "..tostring(index).." tenta primeiro "..seen
+                .." (aceito nesse altar nos TXT 22:01 e 23:35); se recusar, testa os outros.",5)
         end
         if not food then
             for _,candidate in ipairs({"peach","bun","orange","tea"}) do state.tried[target.id..":"..candidate]=nil end
