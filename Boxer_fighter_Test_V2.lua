@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
+print("[Boxer_fighter_Test V2] V19Z: A09 walks (no teleport) until the Matriarch appears, manual movement logged; V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -118,7 +118,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V19Y | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V19Z | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -4637,6 +4637,7 @@ function MURIM_LATE.reset()
     MURIM_LATE.passage=nil;MURIM_LATE.lastIndex=0
     if MURIM_LATE.bossTrack and MURIM_LATE.bossTrack.conn then pcall(function() MURIM_LATE.bossTrack.conn:Disconnect() end) end
     MURIM_LATE.bossDown={};MURIM_LATE.bossTrack=nil;MURIM_LATE.nextRoomAt=nil
+    MURIM_LATE.a09Stop();MURIM_LATE.a09=nil
 end
 -- V19K: tres ideias do script do Top76 (feito para PC), trazidas para o mobile sem teclado.
 -- 1) A02: abre os caixoes direto, sem parar para matar os mobs.
@@ -4676,6 +4677,15 @@ function MURIM_LATE.trackBoss(npc,index)
         end)
     end
     MURIM_LATE.bossTrack=track
+    if index==9 then
+        local w=MURIM_LATE.a09
+        local z=w and w.root.Parent and MURIM_LATE.origin and string.format("Z+%.0f",w.root.Position.Z-MURIM_LATE.origin.Z) or "?"
+        MURIM_TRACE.add("EVIDENCIA","A09Andar",w and string.format(
+            "Matriarca apareceu %.0fs depois de chegar na A09; %s; voltas completas=%d; personagem em %s.",
+            os.clock()-w.arrived,w.step>0 and ("andando para Z+"..MURIM_LATE.a09Route[w.step]) or "sem caminhada no momento",w.cycle,z)
+            or "Matriarca apareceu antes de o Auto andar na A09.")
+        MURIM_LATE.a09Stop()
+    end
     MURIM_TRACE.add("DECISAO","Boss",string.format("A%d %s: posicao atras do boss a %.0f studs.",index,npc.Name,MURIM_LATE.behindDist))
 end
 function MURIM_LATE.bossCF(index,npc,part)
@@ -4822,6 +4832,110 @@ function MURIM_LATE.moveDown(root,dest,label)
         if ok then return true end
     end
     return false
+end
+-- V19Z: TXT 06:31 e 06:35: na A09 a Matriarca so apareceu depois que o personagem ANDOU. Teleportado da A08, ou de
+-- volta na lampada depois de morrer, ele ficou parado em Z+1535 (uma vez por 20 min). As 06:34:45 o jogador subiu a
+-- escada ate Z+1517 e desceu ate Z+1565; as 06:35:08 ela estava la. No TXT 22:54 o personagem desceu a escada andando
+-- e ela apareceu em 7s. Sem ela: anda de verdade (Humanoid:MoveTo, sem teleporte), escada acima e sala adentro.
+MURIM_LATE.a09Route={1514,1566,1600}
+MURIM_LATE.a09Wait=5
+MURIM_LATE.a09StepTimeout=8
+function MURIM_LATE.a09Walking(root)
+    local w=MURIM_LATE.a09
+    return w~=nil and w.root==root and w.step>0
+end
+function MURIM_LATE.a09Stop()
+    local w=MURIM_LATE.a09
+    if not w or w.step==0 then return end
+    w.step=0
+    local hum=w.humanoid
+    if hum and hum.Parent and w.root.Parent then
+        hum:Move(Vector3.zero,false)
+        hum:MoveTo(w.root.Position)
+    end
+end
+function MURIM_LATE.a09Wake(root,origin,now)
+    local humanoid=root.Parent and root.Parent:FindFirstChildWhichIsA("Humanoid")
+    if not humanoid or humanoid.Health<=0 or root.Anchored then return false end
+    local w=MURIM_LATE.a09
+    if not w or w.root~=root then
+        w={root=root,humanoid=humanoid,since=now,arrived=now,step=0,cycle=0}
+        MURIM_LATE.a09=w
+    end
+    local route=MURIM_LATE.a09Route
+    if w.step==0 then
+        if now-w.since<MURIM_LATE.a09Wait then
+            MURIM_LATE.phase="A09: esperando a Matriarca aparecer"
+            return true
+        end
+        w.step=1;w.stepAt=now
+        MURIM_TRACE.add("DECISAO","A09Andar",string.format(
+            "Matriarca ausente %.0fs depois de chegar; personagem em Z+%.0f. Andando (MoveTo, sem teleporte) escada acima e sala adentro, volta %d.",
+            now-w.arrived,root.Position.Z-origin.Z,w.cycle+1))
+    end
+    local goal=route[w.step]
+    local flat=Vector3.new(origin.X-root.Position.X,0,origin.Z+goal-root.Position.Z).Magnitude
+    if flat<=4 or now-w.stepAt>=MURIM_LATE.a09StepTimeout then
+        MURIM_TRACE.add(flat<=4 and "MOVIMENTO" or "AVISO","A09Andar",string.format("Passo %d (Z+%d): %s; agora Z+%.0f Y=%.0f.",
+            w.step,goal,flat<=4 and "chegou andando" or ("nao chegou em "..MURIM_LATE.a09StepTimeout.."s"),
+            root.Position.Z-origin.Z,root.Position.Y))
+        w.step+=1;w.stepAt=now
+        if w.step>#route then
+            MURIM_LATE.a09Stop()
+            w.cycle+=1;w.since=now
+            MURIM_TRACE.add("AVISO","A09Andar",string.format("Volta %d terminou sem a Matriarca; anda de novo em %ds.",w.cycle,MURIM_LATE.a09Wait))
+            MURIM_LATE.phase="A09: volta sem a Matriarca; esperando para andar de novo"
+            return true
+        end
+        goal=route[w.step]
+    end
+    humanoid:MoveTo(Vector3.new(origin.X,root.Position.Y,origin.Z+goal))
+    MURIM_LATE.phase=string.format("A09: andando para Z+%d (passo %d, volta %d) para a Matriarca aparecer",goal,w.step,w.cycle+1)
+    return true
+end
+-- V19Z: no TXT 06:31 a caminhada manual nao aparecia (posicao so a cada 18s). Registra quando o JOGADOR mexe no
+-- joystick/teclado (vetor do ControlModule; sem ele, MoveDirection fora das caminhadas do Auto), com ou sem Auto.
+function MURIM_LATE.manualWatch(plr,root,origin,auto)
+    local m=MURIM_LATE.manual or {}
+    MURIM_LATE.manual=m
+    local now=os.clock()
+    if not auto and MURIM_LATE.a09 and MURIM_LATE.a09.step>0 then MURIM_LATE.a09Stop() end
+    if not m.controls and now-(m.lookAt or -1e9)>=10 then
+        m.lookAt=now
+        local scripts=plr and plr:FindFirstChild("PlayerScripts")
+        local module=scripts and scripts:FindFirstChild("PlayerModule")
+        local ok,controls=pcall(function() return module and require(module):GetControls() end)
+        m.controls=ok and controls or nil
+    end
+    if not root or math.abs(root.Position.X-origin.X)>145 then return end
+    local vec,via=nil,"joystick"
+    if m.controls then
+        local ok,v=pcall(function() return m.controls:GetMoveVector() end)
+        if ok and typeof(v)=="Vector3" then vec=v end
+    end
+    if not vec then
+        via="MoveDirection"
+        local hum=root.Parent and root.Parent:FindFirstChildWhichIsA("Humanoid")
+        local autoWalk=MURIM_LATE.a09Walking(root) or (MURIM_A04 and MURIM_A04.running)
+        vec=(hum and not autoWalk) and hum.MoveDirection or Vector3.zero
+    end
+    local moving=vec.Magnitude>0.2
+    if moving and not m.start then
+        m.start={at=now,pos=root.Position,auto=auto,via=via}
+    elseif not moving and m.start then
+        local s=m.start;m.start=nil
+        local d=(root.Position-s.pos).Magnitude
+        if d>=4 or now-s.at>=1.5 then
+            MURIM_TRACE.add("EVIDENCIA","MovimentoManual",string.format(
+                "Jogador moveu o personagem por %.1fs (%s): de Z+%.0f (%.0f,%.0f,%.0f) para Z+%.0f (%.0f,%.0f,%.0f), %.0f studs; Auto=%s.",
+                now-s.at,s.via,s.pos.Z-origin.Z,s.pos.X,s.pos.Y,s.pos.Z,root.Position.Z-origin.Z,
+                root.Position.X,root.Position.Y,root.Position.Z,d,s.auto and "ON" or "OFF"))
+            local p=MURIM_TRACE.progress or {};MURIM_TRACE.progress=p
+            p[#p+1]={label=string.format("MANUAL %.0fs Z+%.0f->Z+%.0f",now-s.at,s.pos.Z-origin.Z,root.Position.Z-origin.Z),
+                at=now,stamp=os.date("%H:%M:%S")}
+            if #p>120 then table.remove(p,1) end
+        end
+    end
 end
 -- V19N: o prompt do braseiro foi acionado 2x a 4 studs e continuou Enabled; registrar o estado real do braseiro.
 function MURIM_LATE.brazierState(prompt)
@@ -5598,6 +5712,11 @@ function MURIM_LATE.tick(root,raid,origin,index)
     local now=os.clock()
     if now-MURIM_LATE.lastTick<(index==5 and 0.25 or 1.1) then return true end
     MURIM_LATE.lastTick=now
+    -- V19Z: a caminhada da A09 passa pela escada (faixa de Z da A08); a travessia da A08 nao interrompe.
+    if (index==8 or index==9) and MURIM_LATE.a09Walking(root) then
+        if MURIM_LATE.bossDead(9) then MURIM_LATE.a09Stop()
+        else MURIM_LATE.a09Wake(root,origin,now);return true end
+    end
     if MURIM_LATE.lastIndex~=index then
         MURIM_LATE.stopWalk()
         MURIM_LATE.lastIndex=index
@@ -5800,6 +5919,7 @@ function MURIM_LATE.tick(root,raid,origin,index)
         MURIM_LATE.teleportA05(root,Vector3.new(origin.X,root.Position.Y,origin.Z+1102))
         return true
     end
+    if index==9 and not MURIM_LATE.bossDead(9) and MURIM_LATE.a09Wake(root,origin,now) then return true end
     MURIM_LATE.phase="A"..index.." sem prompt/porta liberada; aguardando estado real"
     MURIM_TRACE.add("INFO","AutoFases",string.format(
         "A%d: modelo presente, %d prompts de mecanica habilitados, nenhuma porta Open=true conhecida. Nao inventar objetivo nem saltar salas.",
@@ -9796,6 +9916,7 @@ externalConnections[#externalConnections+1]=RunService.Heartbeat:Connect(functio
         end
         MURIM_LATE.observeTeahouse(root,select(1,getActiveRaidInfo(player)),origin,isAutoHallowRaid)
         MURIM_LATE.observeEncounter(root,origin,isAutoHallowRaid)
+        pcall(MURIM_LATE.manualWatch,player,root,origin,isAutoHallowRaid)
     end)
     if not ok then
         e.lastPoll=os.clock()
@@ -10050,6 +10171,7 @@ local hallowRaidTask = task.spawn(function()
 
                     if currentRaidRoomIndex~=4 then MURIM_A04.stopRun() end
                     if currentRaidRoomIndex~=5 then MURIM_LATE.stopWalk() end
+                    if currentRaidRoomIndex~=8 and currentRaidRoomIndex~=9 then MURIM_LATE.a09Stop() end
                     pcall(MURIM_LATE.stallCheck,hrp,currentRaidRoomIndex,raidOrigin)
                     pcall(MURIM_LATE.hudWatch,player:FindFirstChild("PlayerGui"))
                     pcall(MURIM_LATE.ventWatch,hrp.Parent)
