@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
+print("[Boxer_fighter_Test V2] V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -97,7 +97,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V19R | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V19S | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -749,23 +749,33 @@ function MURIM_SURVEY.notePromptTriggered(prompt)
     local action=MURIM_SURVEY.clean(prompt.ActionText,60)
     local target=MURIM_SURVEY.clean(prompt.ObjectText,60)
     local label=roomName or "AREA NAO IDENTIFICADA"
-    if roomName=="A08_Banquet" and MURIM_LATE and MURIM_LATE.promptIdentity then
-        local owner=prompt:FindFirstAncestor("HallowAltar") or prompt:FindFirstAncestorWhichIsA("Model")
-        local snapshot=MURIM_LATE.promptIdentity(prompt).." | owner="..(owner and owner:GetFullName() or "?")
-        if owner then snapshot=snapshot.." | "..MURIM_SURVEY.readState(owner).." | requerido="..tostring(MURIM_LATE.altarRequirement(owner)) end
-        if action:lower():find("take",1,true) then MURIM_SURVEY.lastOffering=action end
-        snapshot=snapshot.." | ultima coleta observada="..tostring(MURIM_SURVEY.lastOffering)
-        MURIM_TRACE.add("EVIDENCIA","OferendaManual",snapshot.." | antes")
-        task.delay(2,function()
-            MURIM_TRACE.add("EVIDENCIA","OferendaManual",snapshot.." | depois="..
-                (owner and owner.Parent and MURIM_SURVEY.readState(owner) or "modelo ausente; inconclusivo")..
-                " | prompt="..(prompt.Parent and tostring(prompt.Enabled) or "ausente; inconclusivo"))
-        end)
-    end
+    -- V19S: TXT 22:54: o detalhe da A08 dava erro (tostring sem argumento) e apagava o evento inteiro, ate as oferendas
+    -- feitas a mao. O registro base vem primeiro, com a posicao do prompt; o detalhe da A08 fica isolado.
     MURIM_SURVEY.promptEvents=MURIM_SURVEY.promptEvents+1
-    MURIM_TRACE.add("ACAO", "DungeonPrompt", label.." | "..action.." / "..target
+    local where=""
+    pcall(function()
+        local anchor=prompt.Parent:IsA("BasePart") and prompt.Parent or prompt:FindFirstAncestorWhichIsA("BasePart")
+        if anchor then where=" | "..MURIM_SURVEY.positionLabel(anchor.Position) end
+    end)
+    MURIM_TRACE.add("ACAO", "DungeonPrompt", label.." | "..action.." / "..target..where
         .." | evento="..MURIM_SURVEY.promptEvents.." | Enabled="..tostring(prompt.Enabled)
         ..". Evento nao prova aceitacao pelo servidor.")
+    if roomName=="A08_Banquet" and MURIM_LATE and MURIM_LATE.promptIdentity then
+        local okA08,errA08=pcall(function()
+            local owner=prompt:FindFirstAncestor("HallowAltar") or prompt:FindFirstAncestorWhichIsA("Model")
+            local snapshot=MURIM_LATE.promptIdentity(prompt).." | owner="..(owner and owner:GetFullName() or "?")
+            if owner then snapshot=snapshot.." | "..MURIM_SURVEY.readState(owner).." | requerido="..tostring((MURIM_LATE.altarRequirement(owner))) end
+            if action:lower():find("take",1,true) then MURIM_SURVEY.lastOffering=action end
+            snapshot=snapshot.." | ultima coleta observada="..tostring(MURIM_SURVEY.lastOffering)
+            MURIM_TRACE.add("EVIDENCIA","OferendaManual",snapshot.." | antes")
+            task.delay(2,function()
+                MURIM_TRACE.add("EVIDENCIA","OferendaManual",snapshot.." | depois="..
+                    (owner and owner.Parent and MURIM_SURVEY.readState(owner) or "modelo ausente")..
+                    " | prompt="..(prompt.Parent and tostring(prompt.Enabled) or "removido"))
+            end)
+        end)
+        if not okA08 then MURIM_TRACE.add("ERRO","OferendaManual","Detalhe da A08 falhou: "..MURIM_SURVEY.clean(errA08,160),20) end
+    end
     task.delay(1, function()
         if not prompt.Parent then
             MURIM_TRACE.add("EVIDENCIA", "DungeonPrompt", label.." | prompt removido/nao carregado apos interacao; pode ser streaming.")
@@ -1853,7 +1863,7 @@ function MURIM_RAID_HIT.checkHealth(npc, area)
     end
     if rec.attempts>=12 and now-rec.lastDamageAt>=7 then
         local permanent=false -- V18I: sem exclusao PERMANENTE de Paper ainda exigido pela HUD.
-        local cooldown=paperPending and 5 or 24
+        local cooldown=paperPending and 5 or (area>=7 and 6 or 24) -- V19S: A07+ ghosts nao ficam 24s ignorados
         rec.skipUntil=now+cooldown
         rec.permanentSkip=false
         rec.attempts=0
@@ -4951,7 +4961,7 @@ function MURIM_LATE.otherLevel(index,pos,from)
     local c=index==7 and MURIM_LATE.a07Current
     local level=c and c.pos or from
     if index~=7 or math.abs(pos.Y-level.Y)<=12 then return false end
-    MURIM_TRACE.add("DECISAO","BraseiroA07","Hungry Ghost em outro nivel do poco ignorado (mais de 30 studs acima ou abaixo).",30)
+    MURIM_TRACE.add("DECISAO","BraseiroA07","Hungry Ghost em outro nivel do poco ignorado (mais de 12 studs do patamar do braseiro alvo).",30)
     return true
 end
 -- V19Q: TXT 20:58: VentOpen=true no personagem so durante o atordoamento da ult do Cerberus (20:52:36); logo depois o
@@ -5003,15 +5013,29 @@ function MURIM_LATE.holdPrompt(root,prompt)
     local part=MURIM_LATE.promptPart(prompt)
     if not part or not prompt.Enabled or (part.Position-root.Position).Magnitude>prompt.MaxActivationDistance then return false end
     MURIM_LATE.holding=true
+    local before=MURIM_SURVEY and MURIM_SURVEY.promptEvents or 0
     local ok,err=pcall(function()
         prompt:InputHoldBegin()
         task.wait(math.max(0,prompt.HoldDuration)+0.15)
     end)
     local ended=pcall(function() prompt:InputHoldEnd() end)
+    local fired=nil
+    if MURIM_SURVEY and MURIM_SURVEY.promptEvents then
+        pcall(function() task.wait(0.25) end)
+        fired=MURIM_SURVEY.promptEvents>before
+        if not fired and prompt.Parent and prompt.Enabled and tryHallowGuestPrompt then
+            local _,via=tryHallowGuestPrompt(prompt)
+            pcall(function() task.wait(0.25) end)
+            fired=MURIM_SURVEY.promptEvents>before
+            MURIM_TRACE.add(fired and "ACAO" or "AVISO","InteracaoA07A10",MURIM_LATE.promptIdentity(prompt)..
+                " hold sem PromptTriggered; reserva via "..tostring(via).." -> disparou="..tostring(fired))
+        end
+    end
     MURIM_LATE.holding=false
     MURIM_TRACE.add(ok and ended and "ACAO" or "ERRO","InteracaoA07A10",
-        MURIM_LATE.promptIdentity(prompt).." hold completo="..tostring(ok and ended).."; aceite ainda nao confirmado; "..tostring(err or ""))
-    return ok and ended
+        MURIM_LATE.promptIdentity(prompt).." hold completo="..tostring(ok and ended).."; PromptTriggered="..tostring(fired)..
+        "; aceite ainda nao confirmado; "..tostring(err or ""))
+    return ok and ended and fired~=false
 end
 function MURIM_LATE.finalExit(root,raid,index)
     if index~=9 and index~=10 then return false end
@@ -5169,8 +5193,10 @@ function MURIM_LATE.a08Tick(root,area)
                 if not p.props[obj] then newProp=true end
             end
         end
-        if MURIM_LATE.altarDone(p.altar.model,p.altar.prompt) or newProp then
+        if MURIM_LATE.altarDone(p.altar.model,p.altar.prompt) or newProp
+            or not p.altar.prompt.Parent or not p.altar.prompt.Enabled then
             state.altars[p.altar.id]=true
+            state.used=state.used or {};state.used[p.food]=true
             MURIM_TRACE.add("EVIDENCIA","OferendaA08","ACEITA altar="..p.altar.id.." alimento="..p.food)
             state.pending=nil;state.carry=nil
             return true
@@ -5196,8 +5222,13 @@ function MURIM_LATE.a08Tick(root,area)
     local food=requirement
     if not food then
         -- Fixed mapping is unknown: bounded, labelled trials, never an invented mapping.
+        local used=state.used or {}
         for _,candidate in ipairs({"peach","bun","orange","tea"}) do
-            if foods[candidate] and os.clock()-(state.tried[target.id..":"..candidate] or -100)>30 then food=candidate;break end
+            if foods[candidate] and not used[candidate] and not state.tried[target.id..":"..candidate] then food=candidate;break end
+        end
+        if not food then
+            for _,candidate in ipairs({"peach","bun","orange","tea"}) do state.tried[target.id..":"..candidate]=nil end
+            MURIM_TRACE.add("AVISO","OferendaA08","Todos os alimentos recusados no altar "..target.id.."; testando de novo (a coleta pode ter falhado).",10)
         end
     end
     if not food or not foods[food] then
