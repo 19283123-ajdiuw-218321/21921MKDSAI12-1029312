@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V19Q: A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
+print("[Boxer_fighter_Test V2] V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -97,7 +97,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V19Q | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V19R | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -517,7 +517,9 @@ function MURIM_SURVEY.readState(obj)
     for _, name in ipairs({
         "Open", "Opened", "IsOpen", "Locked", "Unlocked", "IsLocked", "HasKey", "KeyFound",
         "Collected", "Taken", "Used", "Activated", "Active", "Completed", "Cleared", "Solved",
-        "Lit", "Ignited", "IsLit", "Triggered", "State", "Progress", "Stage", "Room", "GateState"
+        "Lit", "Ignited", "IsLit", "Triggered", "State", "Progress", "Stage", "Room", "GateState",
+        "Index", "RequiredOffering", "RequiredFood", "OfferingType", "FoodType", "RequiredItem", "Requires",
+        "Filled", "Satisfied", "Accepted"
     }) do
         local value = obj:GetAttribute(name)
         if value ~= nil then
@@ -747,6 +749,19 @@ function MURIM_SURVEY.notePromptTriggered(prompt)
     local action=MURIM_SURVEY.clean(prompt.ActionText,60)
     local target=MURIM_SURVEY.clean(prompt.ObjectText,60)
     local label=roomName or "AREA NAO IDENTIFICADA"
+    if roomName=="A08_Banquet" and MURIM_LATE and MURIM_LATE.promptIdentity then
+        local owner=prompt:FindFirstAncestor("HallowAltar") or prompt:FindFirstAncestorWhichIsA("Model")
+        local snapshot=MURIM_LATE.promptIdentity(prompt).." | owner="..(owner and owner:GetFullName() or "?")
+        if owner then snapshot=snapshot.." | "..MURIM_SURVEY.readState(owner).." | requerido="..tostring(MURIM_LATE.altarRequirement(owner)) end
+        if action:lower():find("take",1,true) then MURIM_SURVEY.lastOffering=action end
+        snapshot=snapshot.." | ultima coleta observada="..tostring(MURIM_SURVEY.lastOffering)
+        MURIM_TRACE.add("EVIDENCIA","OferendaManual",snapshot.." | antes")
+        task.delay(2,function()
+            MURIM_TRACE.add("EVIDENCIA","OferendaManual",snapshot.." | depois="..
+                (owner and owner.Parent and MURIM_SURVEY.readState(owner) or "modelo ausente; inconclusivo")..
+                " | prompt="..(prompt.Parent and tostring(prompt.Enabled) or "ausente; inconclusivo"))
+        end)
+    end
     MURIM_SURVEY.promptEvents=MURIM_SURVEY.promptEvents+1
     MURIM_TRACE.add("ACAO", "DungeonPrompt", label.." | "..action.." / "..target
         .." | evento="..MURIM_SURVEY.promptEvents.." | Enabled="..tostring(prompt.Enabled)
@@ -4559,6 +4574,7 @@ end
 function MURIM_LATE.reset()
     MURIM_LATE.stopWalk()
     MURIM_LATE.cerberusFocus=nil
+    MURIM_LATE.a07Current=nil;MURIM_LATE.banquet=nil;MURIM_LATE.recovery7=nil;MURIM_LATE.holding=false;MURIM_LATE.exitTryAt=nil
     MURIM_LATE.soulUntil=nil;MURIM_LATE.lastSoulMove=nil
     MURIM_LATE.phase="aguardando objetivo replicado"
     MURIM_LATE.lastTick=0;MURIM_LATE.lastMove=0;MURIM_LATE.lastNotice=0
@@ -4636,6 +4652,7 @@ function MURIM_LATE.skipExit(prompt,index,now)
     return true
 end
 function MURIM_LATE.nextReady(index,now,hasWork)
+    if index==7 or index==8 then return false end -- quiet time is not completion
     if index<6 or index>9 or MURIM_LATE.exitAllowed(index,now) then return false end
     -- V19N: inimigo ignorado de proposito (braseiro) tambem conta como sala ocupada.
     local quiet=now-math.max(MURIM_LATE.lastAttackAt or 0,MURIM_LATE.roomAt or now,MURIM_LATE.pausedFoeAt or 0)
@@ -4659,6 +4676,11 @@ function MURIM_LATE.entryOf(raid,origin,index)
     return nil
 end
 function MURIM_LATE.goNext(root,raid,origin,index,now)
+    if index==9 then
+        if MURIM_LATE.finalExit(root,raid,index) then return true end
+        MURIM_LATE.phase="A09: aguardando prompt de saida habilitado"
+        return true
+    end
     if now<(MURIM_LATE.nextRoomAt or 0) then return true end
     MURIM_LATE.nextRoomAt=now+6
     MURIM_LATE.phase="A"..index.." concluida: indo para A"..(index+1)
@@ -4713,50 +4735,15 @@ end
 MURIM_LATE.brazierCap=25
 MURIM_LATE.brazierFoeRange=25
 function MURIM_LATE.brazierFirst(index,raid,origin,root,foeDist)
-    if index~=7 or not raid or not origin or not root then MURIM_LATE.brazier=nil return false end
-    local now=os.clock()
-    local b=MURIM_LATE.brazier
-    if b and now-b.scanAt<0.5 then return b.active end
-    b=b or {spent=setmetatable({},{__mode="k"})}
-    local prevAt,prevPrompt=b.scanAt,b.activePrompt
-    b.scanAt=now
-    b.active=false
-    b.activePrompt=nil
-    -- V19N: guia: mata os ghosts da porta e depois acende. TXT 19:43: parado no braseiro, HP caiu a 274 duas vezes.
-    if foeDist and foeDist<MURIM_LATE.brazierFoeRange then
-        MURIM_LATE.brazier=b
-        return false
-    end
-    local def=HALLOW_ROOM_DATA[7]
-    local area=def and raid:FindFirstChild(def.name,true)
-    -- V19Q: o mais alto primeiro (o proximo descendo a escada); os de baixo ficam atras das portas de papel.
-    local best,bestDist,bestY=nil,math.huge,-math.huge
-    if area then
-        for _,obj in ipairs(area:GetDescendants()) do
-            if obj:IsA("ProximityPrompt") and obj.Enabled and tostring(obj.ActionText):lower():find("brazier",1,true) then
-                local part=obj:FindFirstAncestorWhichIsA("BasePart")
-                if part and math.abs(part.Position.X-origin.X)<125 then
-                    local d=(part.Position-root.Position).Magnitude
-                    if part.Position.Y>bestY+0.5 or (math.abs(part.Position.Y-bestY)<=0.5 and d<bestDist) then
-                        best,bestDist,bestY=obj,d,part.Position.Y
-                    end
-                end
-            end
-        end
-    end
-    if best then
-        -- Conta so o tempo indo ao braseiro; a luta no meio nao gasta os 25s.
-        if prevPrompt==best and prevAt then b.spent[best]=(b.spent[best] or 0)+(now-prevAt) end
-        if (b.spent[best] or 0)<MURIM_LATE.brazierCap then
-            b.active=true
-            b.activePrompt=best
-            MURIM_TRACE.add("DECISAO","BraseiroA07",string.format("Braseiro primeiro (guia): combate pausado; braseiro a %.0f studs.",bestDist),15)
-        else
-            MURIM_TRACE.add("AVISO","BraseiroA07","Braseiro nao acendeu em 25s; voltando a lutar.",30)
-        end
-    end
-    MURIM_LATE.brazier=b
-    return b.active
+    if index~=7 then return false end
+    local c=MURIM_LATE.a07Target(raid)
+    if not c then return false end
+    if MURIM_LATE.holding then return true end
+    if not c.part.Parent then return true end
+    -- First reach the selected landing; only fight enemies on that landing.
+    if math.abs(root.Position.Y-c.part.Position.Y)>12 then return true end
+    if c.tryAt and os.clock()-c.tryAt<3 then return true end
+    return not foeDist or foeDist>18
 end
 -- V19N: TXT 19:43: o advance da A04 levou de volta para a borda da A07 um alvo que estava na A08.
 -- Da A07 em diante, portas e travessias usam o teleporte com piso conferido no proprio destino.
@@ -4911,8 +4898,8 @@ end
 function MURIM_LATE.toBrazier(root,part,toward,label)
     local ok,spot=pcall(MURIM_LATE.landingSpot,part,root.Parent,toward)
     if not ok or not spot then
-        MURIM_TRACE.add("AVISO","BraseiroA07",string.format("Sem piso conferido ao lado do braseiro (Y=%.0f); teleporte com piso no proprio braseiro.",part.Position.Y),10)
-        return MURIM_A01.safeWarp(root,part.Position,root.Parent,label)
+        MURIM_TRACE.add("AVISO","BraseiroA07",string.format("Sem piso conferido ao lado do braseiro (Y=%.0f); aguardando piso, sem salto no poco.",part.Position.Y),10)
+        return false
     end
     root.CFrame=CFrame.lookAt(spot,Vector3.new(part.Position.X,spot.Y,part.Position.Z))
     root.AssemblyLinearVelocity=Vector3.zero
@@ -4961,7 +4948,9 @@ end
 -- V19Q: TXT 20:58:19: o alvo foi um Hungry Ghost a 244 studs, no fundo do poco; o personagem desceu a Y 456,
 -- bateu sem tirar HP e 2s depois estava de volta na borda. Na A07 so luta com ghost do mesmo nivel (30 studs).
 function MURIM_LATE.otherLevel(index,pos,from)
-    if index~=7 or math.abs(pos.Y-from.Y)<=30 then return false end
+    local c=index==7 and MURIM_LATE.a07Current
+    local level=c and c.pos or from
+    if index~=7 or math.abs(pos.Y-level.Y)<=12 then return false end
     MURIM_TRACE.add("DECISAO","BraseiroA07","Hungry Ghost em outro nivel do poco ignorado (mais de 30 studs acima ou abaixo).",30)
     return true
 end
@@ -5002,6 +4991,274 @@ function MURIM_LATE.ventPress(char)
     end)
     return ok
 end
+-- V19R: controllers confined to A07, A08 and the final exit.
+function MURIM_LATE.promptPart(prompt)
+    return prompt and prompt:FindFirstAncestorWhichIsA("BasePart")
+end
+function MURIM_LATE.promptIdentity(prompt)
+    local part=MURIM_LATE.promptPart(prompt)
+    return prompt:GetFullName()..(part and string.format(" @ %.1f,%.1f,%.1f",part.Position.X,part.Position.Y,part.Position.Z) or "")
+end
+function MURIM_LATE.holdPrompt(root,prompt)
+    local part=MURIM_LATE.promptPart(prompt)
+    if not part or not prompt.Enabled or (part.Position-root.Position).Magnitude>prompt.MaxActivationDistance then return false end
+    MURIM_LATE.holding=true
+    local ok,err=pcall(function()
+        prompt:InputHoldBegin()
+        task.wait(math.max(0,prompt.HoldDuration)+0.15)
+    end)
+    local ended=pcall(function() prompt:InputHoldEnd() end)
+    MURIM_LATE.holding=false
+    MURIM_TRACE.add(ok and ended and "ACAO" or "ERRO","InteracaoA07A10",
+        MURIM_LATE.promptIdentity(prompt).." hold completo="..tostring(ok and ended).."; aceite ainda nao confirmado; "..tostring(err or ""))
+    return ok and ended
+end
+function MURIM_LATE.finalExit(root,raid,index)
+    if index~=9 and index~=10 then return false end
+    local area=raid:FindFirstChild("A10_MoonReturns",true)
+    if not area then return false end
+    for _,p in ipairs(area:GetDescendants()) do
+        if p:IsA("ProximityPrompt") and p.Enabled and p.ActionText=="Walk out into the morning" then
+            local part=MURIM_LATE.promptPart(p)
+            if not part then return false end
+            -- The enabled exit is the world signal; never infer it from quiet combat.
+            MURIM_LATE.phase="Saida final habilitada: Walk out into the morning"
+            if (part.Position-root.Position).Magnitude>math.max(2,p.MaxActivationDistance-2) then
+                MURIM_A01.safeWarp(root,part.Position+Vector3.new(0,3,0),root.Parent,"prompt real de saida A10")
+            elseif os.clock()-(MURIM_LATE.exitTryAt or 0)>4 then
+                MURIM_LATE.exitTryAt=os.clock()
+                MURIM_LATE.holdPrompt(root,p)
+            end
+            return true
+        end
+    end
+    return false
+end
+function MURIM_LATE.a07Target(raid)
+    local area=raid and raid:FindFirstChild("A07_Throat",true)
+    if not area then return nil end
+    local old=MURIM_LATE.a07Current
+    -- Streaming disappearance is not completion. Keep the same index/position.
+    if old and old.model.Parent and old.model:GetAttribute("Lit")==true then
+        MURIM_TRACE.add("EVIDENCIA","BraseiroA07","Lit=true confirmado: "..old.id)
+        MURIM_LATE.a07Current=nil;old=nil
+    end
+    local best
+    for _,p in ipairs(area:GetDescendants()) do
+        if p:IsA("ProximityPrompt") and tostring(p.ActionText):lower():find("brazier",1,true) then
+            local m=p:FindFirstAncestor("HallowBrazier")
+            local part=MURIM_LATE.promptPart(p)
+            if m and part then
+                local id=tostring(m:GetAttribute("Index") or string.format("%.0f",part.Position.Y))
+                if old and old.id==id then
+                    old.model=m;old.prompt=p;old.part=part
+                    if m:GetAttribute("Lit")==true then MURIM_LATE.a07Current=nil;return MURIM_LATE.a07Target(raid) end
+                    return old
+                end
+                if m:GetAttribute("Lit")~=true and (not best or part.Position.Y>best.part.Position.Y) then
+                    best={model=m,prompt=p,part=part,id=id,pos=part.Position}
+                end
+            end
+        end
+    end
+    MURIM_LATE.a07Current=old or best
+    return MURIM_LATE.a07Current
+end
+function MURIM_LATE.a07Tick(root,raid,origin)
+    local c=MURIM_LATE.a07Target(raid)
+    if not c then return false end
+    MURIM_LATE.phase="A07 braseiro "..c.id..": aguardando Lit=true"
+    if not c.part.Parent or not c.prompt.Parent then
+        if os.clock()-(MURIM_LATE.lastMove or 0)>3 then
+            MURIM_LATE.lastMove=os.clock()
+            pcall(function() game:GetService("Players").LocalPlayer:RequestStreamAroundAsync(c.pos,1) end)
+        end
+        return true
+    end
+    local d=(root.Position-c.part.Position).Magnitude
+    if d>math.max(2,c.prompt.MaxActivationDistance-2) then
+        if os.clock()-(c.moveAt or 0)>2 then
+            c.moveAt=os.clock()
+            MURIM_LATE.toBrazier(root,c.part,nil,"patamar do braseiro "..c.id)
+        end
+        return true
+    end
+    if os.clock()-(c.tryAt or 0)<3 then return true end
+    c.tryAt=os.clock()
+    local area=raid:FindFirstChild("A07_Throat",true)
+    local jar,part=MURIM_LATE.oilNear(c.part,area:GetDescendants())
+    if jar and jar.Enabled and not c.oilConfirmed then
+        if (part.Position-root.Position).Magnitude>jar.MaxActivationDistance-1 then
+            MURIM_LATE.toBrazier(root,c.part,part.Position,"oleo do patamar "..c.id)
+            return true
+        end
+        MURIM_LATE.holdPrompt(root,jar)
+        task.wait(0.3)
+        c.oilConfirmed=jar.Parent~=nil and not jar.Enabled
+        MURIM_TRACE.add("EVIDENCIA","BraseiroA07","Oil Jar desabilitado apos hold="..tostring(c.oilConfirmed).."; nao mede combustivel")
+        if not c.oilConfirmed then return true end
+    end
+    MURIM_LATE.noteBrazier(c.prompt)
+    MURIM_LATE.holdPrompt(root,c.prompt)
+    return true
+end
+function MURIM_LATE.foodName(text)
+    text=tostring(text or ""):lower()
+    for _,food in ipairs({"peach","bun","orange","tea"}) do
+        if text:match("%f[%a]"..food.."%f[%A]") then return food end
+    end
+end
+function MURIM_LATE.altarRequirement(model)
+    for _,key in ipairs({"RequiredOffering","RequiredFood","OfferingType","FoodType","RequiredItem","Requires"}) do
+        local food=MURIM_LATE.foodName(model:GetAttribute(key))
+        if food then return food end
+    end
+    for _,obj in ipairs(model:GetDescendants()) do
+        if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("StringValue") then
+            local food=MURIM_LATE.foodName(obj:IsA("StringValue") and obj.Value or obj.Text)
+            if food then return food end
+        end
+    end
+end
+function MURIM_LATE.altarDone(model,prompt)
+    for _,key in ipairs({"Completed","Solved","Filled","Satisfied","Accepted"}) do
+        if model:GetAttribute(key)==true then return true end
+    end
+    -- A vanished instance can be streaming; do not call that acceptance.
+    return model.Parent~=nil and prompt and prompt.Parent~=nil and not prompt.Enabled
+end
+function MURIM_LATE.offeringProps(area,position)
+    local found={}
+    for _,obj in ipairs(area:GetDescendants()) do
+        if obj:IsA("Model") and obj.Name=="HallowOfferingProp" then
+            local part=obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart",true)
+            if part and (part.Position-position).Magnitude<5 then found[obj]=true end
+        end
+    end
+    return found
+end
+function MURIM_LATE.a08Tick(root,area)
+    local state=MURIM_LATE.banquet or {altars={},tried={}}
+    MURIM_LATE.banquet=state
+    local foods,altars,seat={},{},nil
+    for _,p in ipairs(area:GetDescendants()) do
+        if p:IsA("ProximityPrompt") then
+            local part=MURIM_LATE.promptPart(p)
+            local food=MURIM_LATE.foodName(p.ActionText)
+            if part and food and tostring(p.ActionText):lower():find("take",1,true) and p.Enabled then foods[food]=p end
+            if part and p.ActionText=="Lay the offering" then
+                local m=p:FindFirstAncestor("HallowAltar") or p:FindFirstAncestorWhichIsA("Model")
+                if m then
+                    local id=string.format("%.1f,%.1f,%.1f",part.Position.X,part.Position.Y,part.Position.Z)
+                    altars[#altars+1]={model=m,prompt=p,part=part,id=id}
+                end
+            elseif p.ActionText=="Sit" and p.Enabled then seat=p end
+        end
+    end
+    table.sort(altars,function(a,b) return a.id<b.id end)
+    local target
+    for _,a in ipairs(altars) do
+        if MURIM_LATE.altarDone(a.model,a.prompt) then state.altars[a.id]=true end
+        if not state.altars[a.id] and a.prompt.Enabled and not target then target=a end
+    end
+    if state.pending then
+        local p=state.pending
+        local newProp=false
+        if p.altar.model.Parent then
+            for obj in pairs(MURIM_LATE.offeringProps(area,p.altar.part.Position)) do
+                if not p.props[obj] then newProp=true end
+            end
+        end
+        if MURIM_LATE.altarDone(p.altar.model,p.altar.prompt) or newProp then
+            state.altars[p.altar.id]=true
+            MURIM_TRACE.add("EVIDENCIA","OferendaA08","ACEITA altar="..p.altar.id.." alimento="..p.food)
+            state.pending=nil;state.carry=nil
+            return true
+        elseif os.clock()-p.at<3 then return true
+        else
+            MURIM_TRACE.add("AVISO","OferendaA08","SEM CONFIRMACAO altar="..p.altar.id.." alimento="..p.food.."; nao inferir entrega")
+            state.tried[p.altar.id..":"..p.food]=os.clock()
+            state.pending=nil;state.carry=nil
+        end
+    end
+    if not target then
+        -- Generic navigation may cross an observed open door, but cannot invent completion.
+        local count=0;for _ in pairs(state.altars) do count+=1 end
+        if count>=4 and seat then
+            local part=MURIM_LATE.promptPart(seat)
+            if part and (root.Position-part.Position).Magnitude>seat.MaxActivationDistance-1 then
+                MURIM_A01.safeWarp(root,part.Position,root.Parent,"A08 assento apos oferendas")
+            elseif os.clock()-(state.seatAt or 0)>8 then state.seatAt=os.clock();MURIM_LATE.holdPrompt(root,seat) end
+        end
+        return false
+    end
+    local requirement=MURIM_LATE.altarRequirement(target.model)
+    local food=requirement
+    if not food then
+        -- Fixed mapping is unknown: bounded, labelled trials, never an invented mapping.
+        for _,candidate in ipairs({"peach","bun","orange","tea"}) do
+            if foods[candidate] and os.clock()-(state.tried[target.id..":"..candidate] or -100)>30 then food=candidate;break end
+        end
+    end
+    if not food or not foods[food] then
+        MURIM_LATE.phase="A08: aguardando oferenda/atributos do altar "..target.id
+        MURIM_TRACE.add("AVISO","OferendaA08",MURIM_LATE.phase,8)
+        return true
+    end
+    local p=state.carry==food and target.prompt or foods[food]
+    local part=MURIM_LATE.promptPart(p)
+    if (part.Position-root.Position).Magnitude>math.max(1,p.MaxActivationDistance-1) then
+        MURIM_A01.safeWarp(root,part.Position,root.Parent,"A08 "..p.ActionText)
+        return true
+    end
+    MURIM_LATE.phase="A08 altar="..target.id.." alimento="..food
+    if os.clock()-(state.tryAt or 0)<2 then return true end
+    state.tryAt=os.clock()
+    local props=MURIM_LATE.offeringProps(area,target.part.Position)
+    local ok=MURIM_LATE.holdPrompt(root,p)
+    if ok and p==target.prompt then state.pending={altar=target,food=food,at=os.clock(),props=props}
+    elseif ok then state.carry=food end -- attempted pickup; acceptance is only proved at the altar
+    return true
+end
+function MURIM_LATE.recoverA07(char,root)
+    local hum=char:FindFirstChildOfClass("Humanoid")
+    if not hum then return true end
+    if hum.Health<=0 then MURIM_LATE.recovery7=nil;MURIM_RAID_DEFENSE.release();return true end
+    local r=MURIM_LATE.recovery7
+    if not r and hum.Health>hum.MaxHealth*0.4 then return false end
+    r=r or {hp=hum.Health,at=-100};MURIM_LATE.recovery7=r
+    MURIM_RAID_DEFENSE.release()
+    if hum.Health>=hum.MaxHealth*0.85 then
+        MURIM_LATE.recovery7=nil
+        MURIM_RAID_DEFENSE.retreating=false
+        return false
+    end
+    MURIM_RAID_DEFENSE.phase="A07 recuperacao no piso; HP "..math.floor(hum.Health)
+    local c=MURIM_LATE.a07Current
+    local base=c and c.part and c.part.Parent and c.part or root
+    if os.clock()-r.at>3 and (not r.pos or hum.Health<r.hp-0.5) then
+        r.at=os.clock()
+        local best,score=nil,-math.huge
+        local npcs=workspace:FindFirstChild("Murim_NPCs")
+        for _,delta in ipairs({Vector3.new(12,0,0),Vector3.new(-12,0,0),Vector3.new(0,0,12),Vector3.new(0,0,-12)}) do
+            local spot=MURIM_LATE.landingSpot(base,char,base.Position+delta)
+            if spot then
+                local distance=math.huge
+                for _,npc in ipairs(npcs and npcs:GetChildren() or {}) do
+                    local h=npc:FindFirstChildOfClass("Humanoid")
+                    local part=npc:FindFirstChild("HumanoidRootPart") or npc.PrimaryPart
+                    if h and h.Health>0 and part then distance=math.min(distance,(part.Position-spot).Magnitude) end
+                end
+                if distance>score then best,score=spot,distance end
+            end
+        end
+        if best then root.CFrame=CFrame.new(best);root.AssemblyLinearVelocity=Vector3.zero;r.pos=best end
+        MURIM_TRACE.add("AVISO","CuraA07","Reposicao em piso verificado; distancia ao inimigo="..tostring(score).."; seguranca depende de HP real",3)
+    end
+    r.hp=hum.Health
+    return true
+end
+
 function MURIM_LATE.tick(root,raid,origin,index)
     if not root or not raid or not origin or index<5 or index>10 then return true end
     if index==6 and MURIM_LATE.liveCerberus(root,raid,origin) then
@@ -5028,6 +5285,9 @@ function MURIM_LATE.tick(root,raid,origin,index)
         MURIM_TRACE.add("AVISO","AutoFases","A"..index.." nao carregada; sem teleporte especulativo.",15)
         return true
     end
+    if MURIM_LATE.finalExit(root,raid,index) then return true end
+    if index==7 and MURIM_LATE.a07Tick(root,raid,origin) then return true end
+    if index==8 and MURIM_LATE.a08Tick(root,area) then return true end
     local objects=MURIM_LATE.objects(area,raid,origin,index)
     if index==5 then
         -- A real open exit overrides optional conversation and stale prompt waits.
@@ -5086,6 +5346,7 @@ function MURIM_LATE.tick(root,raid,origin,index)
                 and anchor.Position.Z-origin.Z>=HALLOW_AREA_Z[index]-12
                 and anchor.Position.Z-origin.Z<=HALLOW_AREA_Z[index+1]+12
                 and (not barrierZ or anchor.Position.Z-origin.Z<=barrierZ-4)
+                and index~=8
                 and not action:find("hide",1,true)
                 and not action:find("refill",1,true)
                 and not MURIM_LATE.skipExit(obj,index,now) then
@@ -9478,6 +9739,9 @@ local hallowRaidTask = task.spawn(function()
                             MURIM_RAID_DEFENSE.release()
                             MURIM_RAID_DEFENSE.reset()
                         end
+                    elseif currentRaidRoomIndex==7 then
+                        MURIM_LATE.a07Target(activeRaidModel)
+                        defenseBlocking=MURIM_LATE.recoverA07(char,hrp)
                     else
                         defenseBlocking=MURIM_RAID_DEFENSE.tick(char,hrp,tailorCenter,MURIM_LATE.cerberusFocus)
                     end
@@ -9677,6 +9941,13 @@ local hallowRaidTask = task.spawn(function()
                                     attackCF,canAttack=MURIM_A03.tailorCombatPosition(hrp,targetPart,raidOrigin,activeRaidModel)
                                 else
                                     attackCF=MURIM_LATE.bossCF(currentRaidRoomIndex,bestFoe,targetPart) or targetPart.CFrame*getFarmOffsetCFrame()
+                                end
+                                if currentRaidRoomIndex==7 and attackCF then
+                                    local c=MURIM_LATE.a07Current
+                                    local spot=c and c.part.Parent and MURIM_LATE.landingSpot(c.part,hrp.Parent,targetPart.Position)
+                                    if spot and (spot-targetPart.Position).Magnitude<=18 then
+                                        attackCF=CFrame.lookAt(spot,Vector3.new(targetPart.Position.X,spot.Y,targetPart.Position.Z))
+                                    else attackCF=nil;canAttack=false end
                                 end
                                 if attackCF then
                                     hrp.CFrame=attackCF
