@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
+print("[Boxer_fighter_Test V2] V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -97,7 +97,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V19S | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V19T | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -4217,8 +4217,13 @@ function MURIM_LATE.soulTick(root,origin,automatic,gui,ownGui,sendParry)
             local name=obj.Name:lower()
             if name:find("ring",1,true) or name:find("parry",1,true) or name:find("telegraph",1,true) then
                 state.effects[obj]=true
-                MURIM_LATE.soulNote("Indicador proximo: "..obj:GetFullName().." Act="..tostring(obj:GetAttribute("Act"))
-                    .." ActT="..tostring(obj:GetAttribute("ActT")).." ActW="..tostring(obj:GetAttribute("ActW")))
+                local full=obj:GetFullName()
+                local decor=full:find(".Dress.",1,true) or obj:IsDescendantOf(root.Parent)
+                    or (workspace.CurrentCamera and obj:IsDescendantOf(workspace.CurrentCamera))
+                if not decor then
+                    MURIM_LATE.soulNote("Indicador proximo: "..full.." Act="..tostring(obj:GetAttribute("Act"))
+                        .." ActT="..tostring(obj:GetAttribute("ActT")).." ActW="..tostring(obj:GetAttribute("ActW")))
+                end
             end
         end
         if obj.Name~="HBSoul" or not obj:IsA("BasePart") or not obj:IsDescendantOf(workspace)
@@ -5251,6 +5256,20 @@ function MURIM_LATE.a08Tick(root,area)
     elseif ok then state.carry=food end -- attempted pickup; acceptance is only proved at the altar
     return true
 end
+-- V19T: inimigo vivo e combatente no mesmo patamar (ate 12 studs de altura) dentro do raio.
+function MURIM_LATE.foeNearA07(root,radius)
+    local npcs=workspace:FindFirstChild("Murim_NPCs")
+    local best,gap=nil,radius
+    for _,npc in ipairs(npcs and npcs:GetChildren() or {}) do
+        local h=npc:FindFirstChildOfClass("Humanoid")
+        local part=npc:FindFirstChild("HumanoidRootPart") or npc.PrimaryPart
+        if h and h.Health>0 and part and (npc:GetAttribute("Combatant")==true or npc:GetAttribute("HallowKind")=="HG_Hungry") then
+            local d=part.Position-root.Position
+            if math.abs(d.Y)<=12 and d.Magnitude<=gap then best,gap=npc,d.Magnitude end
+        end
+    end
+    return best,gap
+end
 function MURIM_LATE.recoverA07(char,root)
     local hum=char:FindFirstChildOfClass("Humanoid")
     if not hum then return true end
@@ -5263,6 +5282,20 @@ function MURIM_LATE.recoverA07(char,root)
         MURIM_LATE.recovery7=nil
         MURIM_RAID_DEFENSE.retreating=false
         return false
+    end
+    local foe,gap=MURIM_LATE.foeNearA07(root,20)
+    if foe then
+        if not r.fighting then
+            r.fighting=true
+            MURIM_TRACE.add("DECISAO","CuraA07",string.format("HP %d/%d (abaixo de 40%%), mas %s esta a %.0f studs: continua lutando. Parado, o ghost bate livre (TXT 23:20: HP 137 -> 1 em 36s sem revidar).",
+                math.floor(hum.Health),math.floor(hum.MaxHealth),foe.Name,gap),3)
+        end
+        MURIM_RAID_DEFENSE.phase="A07 HP baixo ("..math.floor(hum.Health).."); lutando com "..foe.Name.." a "..math.floor(gap).." studs"
+        return false
+    end
+    if r.fighting then
+        r.fighting=false
+        MURIM_TRACE.add("INFO","CuraA07","Nenhum inimigo a 20 studs no patamar; pausa para recuperar HP ("..math.floor(hum.Health)..").",3)
     end
     MURIM_RAID_DEFENSE.phase="A07 recuperacao no piso; HP "..math.floor(hum.Health)
     local c=MURIM_LATE.a07Current
