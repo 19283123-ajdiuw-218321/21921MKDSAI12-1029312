@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V19P: A05 waits right at the exit door, back turned, camera on the door; clean A05 dialog log; V19N A07; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
+print("[Boxer_fighter_Test V2] V19Q: A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -97,7 +97,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V19P | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V19Q | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -4729,14 +4729,17 @@ function MURIM_LATE.brazierFirst(index,raid,origin,root,foeDist)
     end
     local def=HALLOW_ROOM_DATA[7]
     local area=def and raid:FindFirstChild(def.name,true)
-    local best,bestDist=nil,math.huge
+    -- V19Q: o mais alto primeiro (o proximo descendo a escada); os de baixo ficam atras das portas de papel.
+    local best,bestDist,bestY=nil,math.huge,-math.huge
     if area then
         for _,obj in ipairs(area:GetDescendants()) do
             if obj:IsA("ProximityPrompt") and obj.Enabled and tostring(obj.ActionText):lower():find("brazier",1,true) then
                 local part=obj:FindFirstAncestorWhichIsA("BasePart")
                 if part and math.abs(part.Position.X-origin.X)<125 then
                     local d=(part.Position-root.Position).Magnitude
-                    if d<bestDist then best,bestDist=obj,d end
+                    if part.Position.Y>bestY+0.5 or (math.abs(part.Position.Y-bestY)<=0.5 and d<bestDist) then
+                        best,bestDist,bestY=obj,d,part.Position.Y
+                    end
                 end
             end
         end
@@ -4863,6 +4866,142 @@ function MURIM_LATE.cameraToDoor(root,now)
     end
     return true
 end
+-- V19Q: TXT 20:58: na A07 o advance da A04 procura piso perto da altura atual e pousava na borda (Y 680),
+-- 52 studs acima do primeiro braseiro (Y 628). Em 3m45s nunca chegou a 10 studs, o prompt nunca foi acionado
+-- e os 4 braseiros ficaram Enabled. Pouso no patamar do proprio braseiro: raycast curto ao redor dele.
+function MURIM_LATE.landingSpot(part,char,toward)
+    local base=part.Position
+    local params=RaycastParams.new()
+    params.FilterType=Enum.RaycastFilterType.Exclude
+    local skip={}
+    if char then skip[#skip+1]=char end
+    skip[#skip+1]=part:FindFirstAncestor("HallowBrazier") or part
+    local npcs=workspace:FindFirstChild("Murim_NPCs")
+    if npcs then skip[#skip+1]=npcs end
+    params.FilterDescendantsInstances=skip
+    params.IgnoreWater=true
+    local dirs={}
+    for i=0,7 do
+        local a=i*math.pi/4
+        dirs[#dirs+1]=Vector3.new(math.cos(a),0,math.sin(a))
+    end
+    -- Do lado do Oil Jar do patamar: alcanca o oleo e o braseiro do mesmo lugar.
+    if toward then
+        local flat=Vector3.new(toward.X-base.X,0,toward.Z-base.Z)
+        if flat.Magnitude>0.5 then
+            flat=flat.Unit
+            table.sort(dirs,function(a,b) return a:Dot(flat)>b:Dot(flat) end)
+        end
+    end
+    for _,r in ipairs({4,6,2.5}) do
+        for _,d in ipairs(dirs) do
+            local p=base+d*r
+            -- Parede entre o braseiro e o ponto: descarta. Sem piso na altura do braseiro (vazio do poco): descarta.
+            if not workspace:Raycast(base+Vector3.new(0,1,0),d*r,params) then
+                local hit=workspace:Raycast(Vector3.new(p.X,base.Y+2.5,p.Z),Vector3.new(0,-14,0),params)
+                if hit and hit.Instance and hit.Instance.CanCollide and hit.Normal.Y>=0.65
+                    and hit.Position.Y>=base.Y-10 then
+                    return hit.Position+Vector3.new(0,3.5,0)
+                end
+            end
+        end
+    end
+    return nil
+end
+function MURIM_LATE.toBrazier(root,part,toward,label)
+    local ok,spot=pcall(MURIM_LATE.landingSpot,part,root.Parent,toward)
+    if not ok or not spot then
+        MURIM_TRACE.add("AVISO","BraseiroA07",string.format("Sem piso conferido ao lado do braseiro (Y=%.0f); teleporte com piso no proprio braseiro.",part.Position.Y),10)
+        return MURIM_A01.safeWarp(root,part.Position,root.Parent,label)
+    end
+    root.CFrame=CFrame.lookAt(spot,Vector3.new(part.Position.X,spot.Y,part.Position.Z))
+    root.AssemblyLinearVelocity=Vector3.zero
+    MURIM_TRACE.add("MOVIMENTO","BraseiroA07",string.format("Pouso no patamar do braseiro: Y=%.0f, a %.1f studs dele%s.",
+        spot.Y,(spot-part.Position).Magnitude,toward and "; lado do Oil Jar" or ""),3)
+    -- O jogo devolve para a lamparina quem desce alem de uma porta de papel fechada (TXT 20:58:19 -> 20:58:23).
+    task.delay(1.5,function()
+        pcall(function()
+            local d=(root.Position-spot).Magnitude
+            MURIM_TRACE.add("EVIDENCIA","BraseiroA07",d<6 and string.format("1.5s depois: ficou no patamar (a %.0f studs do pouso).",d)
+                or string.format("1.5s depois: saiu do patamar; agora Y=%.0f, a %.0f studs do pouso (devolvido ou caiu).",root.Position.Y,d))
+        end)
+    end)
+    return true
+end
+function MURIM_LATE.oilNear(part,objects)
+    for _,obj in ipairs(objects) do
+        if obj:IsA("ProximityPrompt") and obj.Enabled and tostring(obj.ActionText):lower():find("refill",1,true) then
+            local p=obj:FindFirstAncestorWhichIsA("BasePart")
+            if p and (p.Position-part.Position).Magnitude<=14 then return obj,p end
+        end
+    end
+    return nil
+end
+-- V19Q: cada patamar tem um Oil Jar a ~7 studs do braseiro (mapa 20:58: Y 626 e Y 566) e a A01 comeca enchendo a
+-- lanterna. Teste: encher a lanterna ali antes de acender. true = o tick ja foi usado (movimento ou oleo).
+function MURIM_LATE.brazierStep(root,c,objects,now)
+    local jar,jarPart=MURIM_LATE.oilNear(c.part,objects)
+    local reach=math.max(2,(c.prompt.MaxActivationDistance or 10)-1.5)
+    if c.dist>reach then
+        if now-MURIM_LATE.lastMove>2 then
+            MURIM_LATE.lastMove=now
+            MURIM_LATE.toBrazier(root,c.part,jarPart and jarPart.Position,"A7 prompt: "..c.action)
+        end
+        return true
+    end
+    if jar and not MURIM_LATE.attempts[jar]
+        and (jarPart.Position-root.Position).Magnitude<=math.max(2,(jar.MaxActivationDistance or 8)-1) then
+        local ok,via=tryHallowGuestPrompt(jar)
+        MURIM_LATE.attempts[jar]={count=1,at=now}
+        MURIM_TRACE.add(ok and "ACAO" or "AVISO","BraseiroA07","Lanterna reabastecida no Oil Jar do patamar antes do braseiro (teste) via "..tostring(via)..".")
+        return true
+    end
+    return false
+end
+-- V19Q: TXT 20:58:19: o alvo foi um Hungry Ghost a 244 studs, no fundo do poco; o personagem desceu a Y 456,
+-- bateu sem tirar HP e 2s depois estava de volta na borda. Na A07 so luta com ghost do mesmo nivel (30 studs).
+function MURIM_LATE.otherLevel(index,pos,from)
+    if index~=7 or math.abs(pos.Y-from.Y)<=30 then return false end
+    MURIM_TRACE.add("DECISAO","BraseiroA07","Hungry Ghost em outro nivel do poco ignorado (mais de 30 studs acima ou abaixo).",30)
+    return true
+end
+-- V19Q: TXT 20:58: VentOpen=true no personagem so durante o atordoamento da ult do Cerberus (20:52:36); logo depois o
+-- MassParryReadyAt reiniciou (~16s, o mesmo intervalo que o Talisman Jiangshi ganhou apos o MassParry dele).
+-- O usuario acha que o G faz o Vent. Teste: com VentOpen=true e o Auto rodando, aperta G e registra o efeito.
+function MURIM_LATE.ventWatch(char)
+    MURIM_LATE.ventLive=os.clock()
+    if not char or MURIM_LATE.ventChar==char then return end
+    if MURIM_LATE.ventConn then pcall(function() MURIM_LATE.ventConn:Disconnect() end) end
+    MURIM_LATE.ventChar=char
+    MURIM_LATE.ventConn=char:GetAttributeChangedSignal("VentOpen"):Connect(function()
+        if char:GetAttribute("VentOpen")==true and os.clock()-(MURIM_LATE.ventLive or -1e9)<2 then
+            pcall(MURIM_LATE.ventPress,char)
+        end
+    end)
+    if char:GetAttribute("VentOpen")==true then pcall(MURIM_LATE.ventPress,char) end
+end
+function MURIM_LATE.ventPress(char)
+    local now=os.clock()
+    if now-(MURIM_LATE.ventAt or -1e9)<3 then return false end
+    MURIM_LATE.ventAt=now
+    local before=char:GetAttribute("MassParryReadyAt")
+    local hum=char:FindFirstChildOfClass("Humanoid")
+    local ok=pcall(function()
+        local vim=game:GetService("VirtualInputManager")
+        vim:SendKeyEvent(true,Enum.KeyCode.G,false,game)
+        task.delay(0.1,function() pcall(function() vim:SendKeyEvent(false,Enum.KeyCode.G,false,game) end) end)
+    end)
+    MURIM_TRACE.add("ACAO","Vent",string.format("VentOpen=true (HP %d): G enviado=%s; MassParryReadyAt=%s.",
+        hum and math.floor(hum.Health) or -1,tostring(ok),tostring(before)))
+    task.delay(1,function()
+        pcall(function()
+            local after=char:GetAttribute("MassParryReadyAt")
+            MURIM_TRACE.add("EVIDENCIA","Vent",string.format("1s depois do G: VentOpen=%s; MassParryReadyAt %s -> %s (%s; o parry automatico tambem pode mudar).",
+                tostring(char:GetAttribute("VentOpen")),tostring(before),tostring(after),after~=before and "mudou" or "sem mudanca"))
+        end)
+    end)
+    return ok
+end
 function MURIM_LATE.tick(root,raid,origin,index)
     if not root or not raid or not origin or index<5 or index>10 then return true end
     if index==6 and MURIM_LATE.liveCerberus(root,raid,origin) then
@@ -4957,6 +5096,7 @@ function MURIM_LATE.tick(root,raid,origin,index)
         end
     end
     table.sort(candidates,function(a,b) return a.dist<b.dist end)
+    if index==7 then table.sort(candidates,function(a,b) return a.part.Position.Y>b.part.Position.Y end) end
     -- V19K: boss morto e sala quieta: segue para a proxima sala, como o Top76 faz.
     if MURIM_LATE.nextReady(index,now,#candidates>0) then
         return MURIM_LATE.goNext(root,raid,origin,index,now)
@@ -4970,7 +5110,9 @@ function MURIM_LATE.tick(root,raid,origin,index)
         if allowed and (not record or record.count<2 or now-record.at>20) then
             MURIM_LATE.phase="A"..index.." interagir: "..c.action
             local reach=math.max(2,(c.prompt.MaxActivationDistance or 7)-1.5)
-            if c.dist>reach then
+            if index==7 and c.action:lower():find("brazier",1,true) and MURIM_LATE.brazierStep(root,c,objects,now) then
+                -- V19Q: pouso no patamar do braseiro ou oleo da lanterna; nada mais neste tick.
+            elseif c.dist>reach then
                 if now-MURIM_LATE.lastMove>(index==5 and 0.4 or 2) then
                     MURIM_LATE.lastMove=now
                     if index==5 then MURIM_LATE.teleportA05(root,c.part.Position)
@@ -4990,6 +5132,8 @@ function MURIM_LATE.tick(root,raid,origin,index)
             end
             return true
         end
+        -- V19Q: na A07 so o prompt mais alto conta; os de baixo ficam atras das portas de papel.
+        if index==7 then break end
     end
     -- Porta liberada ja atravessada pode fechar atras de nos: continuar ate
     -- ultrapassar a fronteira da proxima sala, sem voltar ao inicio.
@@ -9318,6 +9462,7 @@ local hallowRaidTask = task.spawn(function()
                     if currentRaidRoomIndex~=5 then MURIM_LATE.stopWalk() end
                     pcall(MURIM_LATE.stallCheck,hrp,currentRaidRoomIndex,raidOrigin)
                     pcall(MURIM_LATE.hudWatch,player:FindFirstChild("PlayerGui"))
+                    pcall(MURIM_LATE.ventWatch,hrp.Parent)
                     if currentRaidRoomIndex==6 then
                         MURIM_LATE.cerberusFocus=MURIM_LATE.liveCerberus(hrp,activeRaidModel,raidOrigin)
                     else MURIM_LATE.cerberusFocus=nil end
@@ -9430,7 +9575,8 @@ local hallowRaidTask = task.spawn(function()
                                     local part = getNPCRootPart(npc)
                                     if part then
                                         local d = (part.Position - hrpPos).Magnitude
-                                        if d <= 250 and isHallowEnemyInArea(part.Position,raidOrigin,currentRaidRoomIndex) then
+                                        if d <= 250 and isHallowEnemyInArea(part.Position,raidOrigin,currentRaidRoomIndex)
+                                            and not MURIM_LATE.otherLevel(currentRaidRoomIndex,part.Position,hrpPos) then
                                             local nLow = npc.Name:lower()
                                             if nLow:find("cerberus") or nLow:find("matriarch") then
                                                 d = d - 500
@@ -9454,7 +9600,8 @@ local hallowRaidTask = task.spawn(function()
                                     local part = getNPCRootPart(desc)
                                     if part then
                                         local d = (part.Position - hrpPos).Magnitude
-                                        if d <= 250 and isHallowEnemyInArea(part.Position,raidOrigin,currentRaidRoomIndex) then
+                                        if d <= 250 and isHallowEnemyInArea(part.Position,raidOrigin,currentRaidRoomIndex)
+                                            and not MURIM_LATE.otherLevel(currentRaidRoomIndex,part.Position,hrpPos) then
                                             local nLow = desc.Name:lower()
                                             if nLow:find("cerberus") or nLow:find("matriarch") then
                                                 d = d - 500
