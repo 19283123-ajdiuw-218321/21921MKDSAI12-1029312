@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
+print("[Boxer_fighter_Test V2] V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -118,7 +118,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V19X | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V19Y | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -4803,8 +4803,25 @@ end
 -- V19N: TXT 19:43: o advance da A04 levou de volta para a borda da A07 um alvo que estava na A08.
 -- Da A07 em diante, portas e travessias usam o teleporte com piso conferido no proprio destino.
 function MURIM_LATE.move(root,index,dest,label)
+    if index==8 then return MURIM_LATE.moveDown(root,dest,label) end
     if index>=7 then return MURIM_A01.safeWarp(root,dest,root.Parent,label) end
     return MURIM_A04.advance(root,dest,label)
+end
+-- V19Y: TXT 00:20: da A08 (piso Y 392) para a A09 (piso Base Y 370) o destino na altura atual nao tinha piso
+-- ate 16 studs abaixo e a travessia falhou por 12 min. No TXT 22:54 passou porque o personagem ja estava
+-- descendo (Y ~387). Tenta a altura atual e depois 12 e 24 studs abaixo; cada tentativa confere o piso.
+MURIM_LATE.dropSteps={0,12,24}
+function MURIM_LATE.moveDown(root,dest,label)
+    local warnAt=MURIM_A01.noFloorWarnAt
+    for i,drop in ipairs(MURIM_LATE.dropSteps) do
+        local last=i==#MURIM_LATE.dropSteps
+        if not last then MURIM_A01.noFloorWarnAt=os.clock() end -- so a ultima tentativa avisa "Sem piso seguro"
+        local ok=MURIM_A01.safeWarp(root,dest-Vector3.new(0,drop,0),root.Parent,
+            drop==0 and label or (tostring(label).."; altura "..drop.." studs abaixo"))
+        if not last then MURIM_A01.noFloorWarnAt=warnAt end
+        if ok then return true end
+    end
+    return false
 end
 -- V19N: o prompt do braseiro foi acionado 2x a 4 studs e continuou Enabled; registrar o estado real do braseiro.
 function MURIM_LATE.brazierState(prompt)
@@ -5178,7 +5195,8 @@ function MURIM_LATE.foodName(text)
     end
 end
 function MURIM_LATE.altarRequirement(model)
-    for _,key in ipairs({"RequiredOffering","RequiredFood","OfferingType","FoodType","RequiredItem","Requires"}) do
+    -- V19Y: TXT 00:20: o altar diz o que quer no atributo Want; a combinacao muda a cada raid.
+    for _,key in ipairs({"Want","RequiredOffering","RequiredFood","OfferingType","FoodType","RequiredItem","Requires"}) do
         local food=MURIM_LATE.foodName(model:GetAttribute(key))
         if food then return food end
     end
@@ -5373,7 +5391,7 @@ function MURIM_LATE.a08Tick(root,area)
     local state=MURIM_LATE.banquet or {altars={},tried={}}
     MURIM_LATE.banquet=state
     pcall(MURIM_LATE.a08Dossier,area)
-    local foods,altars,seat={},{},nil
+    local foods,altars,seat,doorOpen={},{},nil,false
     for _,p in ipairs(area:GetDescendants()) do
         if p:IsA("ProximityPrompt") then
             local part=MURIM_LATE.promptPart(p)
@@ -5386,6 +5404,7 @@ function MURIM_LATE.a08Tick(root,area)
                     altars[#altars+1]={model=m,prompt=p,part=part,id=id}
                 end
             elseif p.ActionText=="Sit" and p.Enabled then seat=p end
+        elseif p.Name=="HallowDoor" and p:IsA("Model") and p:GetAttribute("Open")==true then doorOpen=true
         end
     end
     table.sort(altars,function(a,b) return a.id<b.id end)
@@ -5435,15 +5454,32 @@ function MURIM_LATE.a08Tick(root,area)
     if not target then
         -- Generic navigation may cross an observed open door, but cannot invent completion.
         local count=0;for _ in pairs(state.altars) do count+=1 end
+        if count>=4 then state.doneAt=state.doneAt or os.clock() end
+        if doorOpen then
+            if not state.doorLogged then
+                state.doorLogged=true
+                MURIM_TRACE.add("EVIDENCIA","PortaA08",string.format("Saida da A08 Open=true; %d altares cheios; %s; Sit usado %d vez(es) pelo Auto. Sem mais Sit: atravessando para a A09.",
+                    count,state.doneAt and string.format("%.0fs depois da 4a oferenda aceita",os.clock()-state.doneAt) or "sem as 4 oferendas registradas",state.sits or 0))
+            end
+            return false
+        end
         if count>=4 and seat then
             local part=MURIM_LATE.promptPart(seat)
             if part and (root.Position-part.Position).Magnitude>seat.MaxActivationDistance-1 then
                 MURIM_A01.safeWarp(root,part.Position,root.Parent,"A08 assento apos oferendas")
-            elseif os.clock()-(state.seatAt or 0)>8 then state.seatAt=os.clock();MURIM_LATE.holdPrompt(root,seat) end
+            elseif os.clock()-(state.seatAt or 0)>8 then state.seatAt=os.clock();state.sits=(state.sits or 0)+1;MURIM_LATE.holdPrompt(root,seat) end
         end
         return false
     end
     local requirement=MURIM_LATE.altarRequirement(target.model)
+    if requirement and state.tried[target.id..":"..requirement] then
+        MURIM_TRACE.add("AVISO","OferendaA08","Altar "..target.id.." recusou "..requirement.." (pedido pelo atributo); testando os outros alimentos.",10)
+        requirement=nil
+    elseif requirement and state.wantLogged~=target.id then
+        state.wantLogged=target.id
+        MURIM_TRACE.add("DECISAO","OferendaA08","Altar Index "..tostring(target.model:GetAttribute("Index")).." pede "..requirement
+            .." (atributo Want="..tostring(target.model:GetAttribute("Want"))..").",5)
+    end
     local food=requirement
     if not food then
         -- Fixed mapping is unknown: bounded, labelled trials, never an invented mapping.
@@ -5465,7 +5501,7 @@ function MURIM_LATE.a08Tick(root,area)
             MURIM_TRACE.add("AVISO","OferendaA08","Todos os alimentos recusados no altar "..target.id.."; testando de novo (a coleta pode ter falhado).",10)
         end
     end
-    if not food or not foods[food] then
+    if not food or (not foods[food] and state.carry~=food) then
         MURIM_LATE.phase="A08: aguardando oferenda/atributos do altar "..target.id
         MURIM_TRACE.add("AVISO","OferendaA08",MURIM_LATE.phase,8)
         return true
