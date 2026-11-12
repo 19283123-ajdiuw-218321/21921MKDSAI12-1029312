@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V19Z: A09 walks (no teleport) until the Matriarch appears, manual movement logged; V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
+print("[Boxer_fighter_Test V2] V20A: full log at the top of the TXT (errors with traceback, one line per raid, deaths with the 8s before, boss fights with no-damage gaps, HP pauses, time stopped), raid loop survives errors, HP pause that does not heal is cancelled, A07 keeps fighting the same ghost, A05 lights the lamp first and jumps to A06 (Top76) with fallback, A09 does not walk while the Matriarch is alive, farm boss chest and loot filter from Top76; V19Z: A09 walks (no teleport) until the Matriarch appears, manual movement logged; V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -71,7 +71,11 @@ function MURIM_TRACE.add(level, area, message, minInterval, eventKey)
     for _, handler in ipairs(MURIM_TRACE.listeners) do
         task.defer(handler)
     end
-    if level == "ERRO" then warn("[Murim] " .. entry) end
+    if level == "ERRO" then
+        warn("[Murim] " .. entry)
+        -- V20A: ERRO tambem entra na secao [ERROS] no topo do TXT (o MURIM_LOG.try ja conta os dele).
+        if MURIM_LOG and MURIM_LOG.error and not tostring(eventKey or ""):find("^try%-") then pcall(MURIM_LOG.error, area, safeMessage) end
+    end
 end
 function MURIM_TRACE.stageTo(stage)
     if MURIM_TRACE.stage == stage then return end
@@ -118,11 +122,12 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V19Z | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V20A | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
         .. "\nLog local; nao inclui keys, tokens, HWID nem URLs.\n\n"
+        .. (MURIM_LOG and MURIM_LOG.safeDump and MURIM_LOG.safeDump() or "") -- V20A: erros, raids, mortes, lutas, pausas
         .. (MURIM_TRACE.encounterDump and MURIM_TRACE.encounterDump(type(maxBytes)~="number") or "")
         .. (MURIM_TRACE.progressDump and MURIM_TRACE.progressDump() or "")
         .. (MURIM_TRACE.offeringDump and MURIM_TRACE.offeringDump() or "")
@@ -1029,6 +1034,412 @@ end
 -- ==========================================================================
 local MURIM_A02
 local MURIM_RAID_HIT, MURIM_A03, MURIM_A04
+-- V20A: log para achar o erro na hora, sem precisar de outro teste. No topo do TXT: [ERROS] (com traceback),
+-- [RESUMO DAS RAIDS] (resultado, tempo em cada sala, mortes, chefes, pulo da A05, pausas de HP, tempo parado),
+-- [MORTES] (HP e golpes dos 8s anteriores, quem estava perto, alvo, fase, legendas da HUD), [LUTAS] (chefes:
+-- duracao, maior intervalo sem causar dano e o motivo) e [PAUSAS DE HP]. Tudo numa tabela global (nenhum local novo
+-- no chunk, por causa do limite de 200 registradores) e com limite de tamanho em cada lista.
+MURIM_LOG={hp={},hits={},hud={},deaths={},fights={},pauses={},stalls={},events={},errors={},errorOrder={},
+    fightOf=setmetatable({},{__mode="k"}),lastSample=-1e9,lastNear=-1e9}
+function MURIM_LOG.onError(e) return debug.traceback(tostring(e),2) end
+function MURIM_LOG.push(list,item,limit)
+    list[#list+1]=item
+    if #list>limit then table.remove(list,1) end
+    return item
+end
+function MURIM_LOG.clean(text,limit)
+    return (tostring(text or ""):gsub("[\r\n]+"," "):sub(1,limit or 200))
+end
+function MURIM_LOG.secs(s)
+    s=math.max(0,math.floor((tonumber(s) or 0)+0.5))
+    if s>=60 then return string.format("%dm%02ds",s//60,s%60) end
+    return s.."s"
+end
+function MURIM_LOG.error(area,message)
+    local text=tostring(message or "")
+    local key=tostring(area).."|"..(text:match("^[^\n]*") or ""):sub(1,140)
+    local e=MURIM_LOG.errors[key]
+    if not e then
+        e={area=tostring(area),text=MURIM_LOG.clean(text,900),count=0,first=os.date("%H:%M:%S")}
+        MURIM_LOG.errors[key]=e
+        MURIM_LOG.push(MURIM_LOG.errorOrder,key,60)
+    end
+    e.count+=1
+    e.last=os.date("%H:%M:%S")
+end
+-- pcall que nao engole o erro: conta todos e registra com traceback (no maximo 1 linha a cada 10s por area).
+function MURIM_LOG.try(area,fn,...)
+    local ok,err=xpcall(fn,MURIM_LOG.onError,...)
+    if not ok then
+        MURIM_LOG.error(area,err)
+        MURIM_TRACE.add("ERRO",area,tostring(err),10,"try-"..tostring(area))
+    end
+    return ok,err
+end
+function MURIM_LOG.aim(npc)
+    local t=MURIM_LOG.target
+    if t and t.npc==npc then t.at=os.clock() return end
+    MURIM_LOG.target={npc=npc,name=tostring(npc.Name),at=os.clock()}
+end
+function MURIM_LOG.event(kind,text)
+    MURIM_LOG.push(MURIM_LOG.events,{kind=kind,at=os.clock(),stamp=os.date("%H:%M:%S"),text=MURIM_LOG.clean(text,200)},200)
+end
+function MURIM_LOG.caption(text)
+    MURIM_LOG.push(MURIM_LOG.hud,{t=os.clock(),stamp=os.date("%H:%M:%S"),text=MURIM_LOG.clean(text,90)},40)
+end
+-- Quem esta perto (ate 120 studs): distancia, altura, para onde olha (frente 1 = olhando para o jogador) e HP.
+-- Na A04 entram tambem Watchman, procissao e faceless (MURIM_A04.threats), que o combate ignora.
+function MURIM_LOG.nearby(root,room,count)
+    if not root then return "?" end
+    local rows,seen={},{}
+    local pos=root.Position
+    local function add(model,part,tag)
+        if not model or not part or seen[model] then return end
+        seen[model]=true
+        local d=part.Position-pos
+        local dist=d.Magnitude
+        if dist>120 then return end
+        local hum=model:FindFirstChildOfClass("Humanoid")
+        if hum and hum.Health<=0 then return end
+        local facing=1
+        if dist>0.1 and part.CFrame then facing=part.CFrame.LookVector:Dot((pos-part.Position).Unit) end
+        rows[#rows+1]={dist=dist,text=string.format("%s%s %.0f studs dy=%+.0f frente=%.2f%s",tag or "",tostring(model.Name),
+            dist,d.Y,facing,hum and string.format(" HP=%.0f",hum.Health) or "")}
+    end
+    if room==4 and MURIM_A04 and MURIM_A04.threats and MURIM_LOG.raid and MURIM_LOG.origin then
+        local ok,list=pcall(MURIM_A04.threats,MURIM_LOG.raid,MURIM_LOG.origin)
+        if ok and type(list)=="table" then
+            for _,t in ipairs(list) do add(t.model,t.part,t.procession and "[procissao] " or "[A04] ") end
+        end
+    end
+    local npcs=workspace:FindFirstChild("Murim_NPCs")
+    for _,npc in ipairs(npcs and npcs:GetChildren() or {}) do
+        if npc:IsA("Model") then add(npc,npc:FindFirstChild("HumanoidRootPart") or npc.PrimaryPart) end
+    end
+    table.sort(rows,function(a,b) return a.dist<b.dist end)
+    local out={}
+    for i=1,math.min(count or 4,#rows) do out[i]=rows[i].text end
+    return #out>0 and table.concat(out,"; ") or "ninguem a 120 studs"
+end
+-- HP do jogador a cada 0,2s (ultimos ~18s). Cada queda vira um golpe; golpe grande (12%+ do HP) ou recebido durante
+-- uma pausa de HP registra quem estava perto (no maximo uma varredura por segundo).
+function MURIM_LOG.sample(char,root,room,raid,origin)
+    local now=os.clock()
+    MURIM_LOG.room=room;MURIM_LOG.raid=raid;MURIM_LOG.origin=origin
+    if now-MURIM_LOG.lastSample<0.2 then return end
+    MURIM_LOG.lastSample=now
+    local hum=char and char:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+    local hp,maxHP=hum.Health,math.max(hum.MaxHealth,1)
+    local last=MURIM_LOG.hp[#MURIM_LOG.hp]
+    MURIM_LOG.push(MURIM_LOG.hp,{t=now,hp=hp,char=char},90)
+    if not last or last.char~=char or hp>=last.hp-0.5 then return end
+    local p=MURIM_LOG.openPause
+    local hit={t=now,stamp=os.date("%H:%M:%S"),from=last.hp,to=hp,room=room,paused=p~=nil}
+    if (last.hp-hp>=maxHP*0.12 or p) and now-MURIM_LOG.lastNear>=1 then
+        MURIM_LOG.lastNear=now
+        local ok,near=pcall(MURIM_LOG.nearby,root,room,3)
+        if ok then hit.near=near end
+    end
+    MURIM_LOG.push(MURIM_LOG.hits,hit,80)
+    if p then
+        p.hurt+=1;p.lost+=last.hp-hp
+        if hit.near then p.near=hit.near end
+    end
+end
+function MURIM_LOG.death(char,text)
+    local now=os.clock()
+    local root=char and char:FindFirstChild("HumanoidRootPart")
+    local room=MURIM_LOG.room
+    local d={at=now,stamp=os.date("%H:%M:%S"),room=room,text=MURIM_LOG.clean(text,300)}
+    local hp={}
+    for _,s in ipairs(MURIM_LOG.hp) do
+        if s.char==char and now-s.t<=8 then hp[#hp+1]=s end
+    end
+    local pts={}
+    local step=math.max(1,math.ceil(#hp/9))
+    for i=1,#hp,step do pts[#pts+1]=string.format("%.0f(-%.1fs)",hp[i].hp,now-hp[i].t) end
+    pts[#pts+1]="0(morte)"
+    d.hp=table.concat(pts," ")
+    local hits={}
+    for _,h in ipairs(MURIM_LOG.hits) do
+        if now-h.t<=8 then
+            hits[#hits+1]=string.format("-%.1fs %.0f->%.0f%s%s",now-h.t,h.from,h.to,h.paused and " (na pausa)" or "",
+                h.near and (" perto: "..h.near) or "")
+        end
+    end
+    d.hits=#hits>0 and table.concat(hits," | ") or "nenhum golpe lido nos 8s (morte de uma vez ou HP fora da amostra)"
+    local ok,near=pcall(MURIM_LOG.nearby,root,room,4)
+    d.near=ok and near or "?"
+    local caps={}
+    for _,c in ipairs(MURIM_LOG.hud) do
+        if now-c.t<=15 then caps[#caps+1]=c.text end
+    end
+    while #caps>5 do table.remove(caps,1) end
+    d.hud=#caps>0 and table.concat(caps," / ") or "-"
+    local def=MURIM_RAID_DEFENSE
+    d.defense=def and def.retreating and ("pausa de HP ativa: "..tostring(def.phase)) or "sem pausa de HP"
+    local t=MURIM_LOG.target
+    d.target=t and now-t.at<5 and string.format("%s (atacado ha %.1fs)",t.name,now-t.at) or "nenhum nos ultimos 5s"
+    local phase=room==4 and MURIM_A04 and MURIM_A04.phase or (MURIM_LATE and MURIM_LATE.phase)
+    d.phase=MURIM_LOG.clean(phase or "?",160)
+    MURIM_LOG.push(MURIM_LOG.deaths,d,40)
+    if MURIM_LOG.openPause then MURIM_LOG.pauseEnd(MURIM_LOG.openPause,"morreu durante a pausa",0) end
+    MURIM_TRACE.add("EVIDENCIA","MorteDetalhe",string.format("A%s | HP: %s | golpes: %s | perto: %s | alvo: %s | %s | fase: %s | HUD: %s",
+        tostring(room or "?"),d.hp,d.hits,d.near,d.target,d.defense,d.phase,d.hud))
+end
+function MURIM_LOG.isBoss(name)
+    local n=tostring(name or ""):lower()
+    return n:find("paper tailor",1,true)~=nil or n:find("hg_tailor",1,true)~=nil
+        or n:find("cerberus",1,true)~=nil or n:find("matriarch",1,true)~=nil
+end
+function MURIM_LOG.fightStart(npc,area,hp)
+    if not npc or MURIM_LOG.fightOf[npc] or not MURIM_LOG.isBoss(npc.Name) then return end
+    local now=os.clock()
+    local f={name=tostring(npc.Name),area=area,at=now,stamp=os.date("%H:%M:%S"),hp0=hp,hp=hp,lastHit=now,reads=0,
+        maxGap=0,gaps=0,gapSecs=0,pauses=0,pauseSecs=0,pauseHurt=0,immune=0,resets=0}
+    MURIM_LOG.fightOf[npc]=f
+    MURIM_LOG.push(MURIM_LOG.fights,f,60)
+    MURIM_LOG.fight=f
+end
+-- Motivo provavel de um intervalo sem causar dano: pausa de HP, morte do jogador, chefe imune, ou nenhum desses.
+function MURIM_LOG.gapWhy(f,a,b)
+    local why={}
+    local paused=0
+    for _,p in ipairs(MURIM_LOG.pauses) do
+        local e=p.endAt or b
+        if e>a and p.at<b then paused+=math.min(e,b)-math.max(p.at,a) end
+    end
+    if paused>=1 then why[#why+1]=string.format("pausa de HP %.0fs",paused) end
+    for _,d in ipairs(MURIM_LOG.deaths) do
+        if d.at>a and d.at<b then why[#why+1]="morte do jogador";break end
+    end
+    if f.immuneAt and f.immuneAt>a and f.immuneAt<=b then why[#why+1]="chefe sem perder HP (imune)" end
+    return #why>0 and table.concat(why,", ") or "sem pausa nem morte: chefe fora de alcance ou nao selecionado"
+end
+function MURIM_LOG.gap(f,now)
+    local gap=now-f.lastHit
+    if gap>=15 then f.gaps+=1;f.gapSecs+=gap end
+    if gap>f.maxGap then f.maxGap=gap;f.maxGapStamp=os.date("%H:%M:%S");f.maxGapWhy=MURIM_LOG.gapWhy(f,f.lastHit,now) end
+end
+function MURIM_LOG.fightHit(npc,from,to)
+    local f=npc and MURIM_LOG.fightOf[npc]
+    if not f or f.endAt then return end
+    local now=os.clock()
+    MURIM_LOG.gap(f,now)
+    f.reads+=1;f.lastHit=now;f.hp=to
+end
+function MURIM_LOG.fightNote(npc,kind)
+    local f=npc and MURIM_LOG.fightOf[npc]
+    if not f then return end
+    if kind=="imune" then f.immune+=1;f.immuneAt=os.clock() elseif kind=="reset" then f.resets+=1 end
+end
+function MURIM_LOG.fightEnd(key,result)
+    local f
+    if type(key)=="string" then
+        for i=#MURIM_LOG.fights,1,-1 do
+            local x=MURIM_LOG.fights[i]
+            if not x.endAt and x.name==key then f=x;break end
+        end
+    else f=key and MURIM_LOG.fightOf[key] end
+    if not f or f.endAt then return end
+    local now=os.clock()
+    MURIM_LOG.gap(f,now)
+    f.endAt=now;f.endStamp=os.date("%H:%M:%S");f.result=result
+end
+function MURIM_LOG.bossDown(index,name)
+    MURIM_LOG.fightEnd(tostring(name),"morto")
+    MURIM_LOG.event("chefe","A"..tostring(index).." "..tostring(name).." morto")
+end
+function MURIM_LOG.pauseStart(kind,hp,maxHP,room)
+    if MURIM_LOG.openPause then MURIM_LOG.pauseEnd(MURIM_LOG.openPause,"substituida por outra pausa",hp) end
+    local p={kind=kind,at=os.clock(),stamp=os.date("%H:%M:%S"),room=room or MURIM_LOG.room,hp0=hp,
+        max=math.max(maxHP or 1,1),hurt=0,lost=0}
+    local f=MURIM_LOG.fight
+    if f and not f.endAt and f.area==p.room then p.fight=f;f.pauses+=1 end
+    MURIM_LOG.openPause=p
+    MURIM_LOG.push(MURIM_LOG.pauses,p,200)
+    return p
+end
+function MURIM_LOG.pauseEnd(p,result,hp)
+    if not p or p.endAt then return end
+    p.endAt=os.clock();p.result=result;p.hp1=hp
+    if p.fight then p.fight.pauseSecs+=p.endAt-p.at;p.fight.pauseHurt+=p.hurt end
+    if MURIM_LOG.openPause==p then MURIM_LOG.openPause=nil end
+end
+function MURIM_LOG.stall(room,since,now,why,healing)
+    MURIM_LOG.push(MURIM_LOG.stalls,{room=room,at=since,endAt=now,secs=now-since,why=MURIM_LOG.clean(why,140),
+        healing=healing==true},120)
+end
+function MURIM_LOG.errorDump()
+    local order=MURIM_LOG.errorOrder
+    if #order==0 then return "[ERROS: nenhum erro do script registrado nesta sessao]\n\n" end
+    local out={string.format("[ERROS: %d tipo(s) de erro do script; o Auto pode ter parado ou pulado algo. Mande este TXT.]",#order)}
+    for _,key in ipairs(order) do
+        local e=MURIM_LOG.errors[key]
+        if e then out[#out+1]=string.format("[%s..%s] x%d %s: %s",e.first,e.last or e.first,e.count,e.area,e.text) end
+    end
+    return table.concat(out,"\n").."\n\n"
+end
+-- Raids a partir do [PROGRESSO]: comeca em A01 (ou na primeira sala, se o Auto foi ligado no meio) e termina na
+-- proxima A01 ou no Auto OFF. MORTE e MANUAL nao trocam de sala: o tempo continua na ultima sala.
+function MURIM_LOG.raids()
+    local p=MURIM_TRACE.progress or {}
+    local now=os.clock()
+    local raids,cur={},nil
+    for i,e in ipairs(p) do
+        local nxt=p[i+1]
+        local dur=(nxt and nxt.at or now)-e.at
+        local label=tostring(e.label)
+        if label=="Auto OFF" then
+            if cur then cur.endAt=e.at;cur.how="Auto desligado" end
+            cur=nil
+        elseif label:match("^A%d%d$") then
+            if label=="A01" and cur and cur.last~="A01" then cur.endAt=e.at;cur.how="nova raid";cur=nil end
+            if not cur then
+                cur={at=e.at,stamp=e.stamp,rooms={},order={},deaths=0,deathRooms={},first=label}
+                raids[#raids+1]=cur
+            end
+            if not cur.rooms[label] then cur.rooms[label]=0;cur.order[#cur.order+1]=label end
+            cur.rooms[label]+=dur
+            cur.last=label
+        elseif cur and label~="Auto ON" then
+            if label=="MORTE" then
+                cur.deaths+=1
+                cur.deathRooms[cur.last]=(cur.deathRooms[cur.last] or 0)+1
+            end
+            cur.rooms[cur.last]+=dur
+        end
+    end
+    return raids
+end
+function MURIM_LOG.findEvent(kind,a,b)
+    for _,e in ipairs(MURIM_LOG.events) do
+        if e.kind==kind and e.at>=a and e.at<b then return e end
+    end
+    return nil
+end
+function MURIM_LOG.roomKey(room)
+    return string.format("A%02d",tonumber(room) or 0)
+end
+function MURIM_LOG.raidDump()
+    local raids=MURIM_LOG.raids()
+    if #raids==0 then return "" end
+    local out={"[RESUMO DAS RAIDS: uma linha por raid; resultado, tempo em cada sala, mortes, chefes, pulo da A05, pausas de HP e tempo parado]"}
+    local now=os.clock()
+    for i,r in ipairs(raids) do
+        local a,b=r.at,r.endAt or now
+        local rooms={}
+        for _,k in ipairs(r.order) do rooms[#rooms+1]=k.." "..MURIM_LOG.secs(r.rooms[k]) end
+        local deaths={}
+        for room,n in pairs(r.deathRooms) do deaths[#deaths+1]=room.." x"..n end
+        table.sort(deaths)
+        local exit=MURIM_LOG.findEvent("saida",a,b)
+        local result
+        if exit then result="CONCLUIDA (saida "..exit.stamp..")"
+        elseif r.how=="nova raid" and r.deaths>=3 then result="PERDIDA ("..r.deaths.." mortes)"
+        elseif r.how=="Auto desligado" then result="Auto desligado na "..tostring(r.last)
+        elseif not r.endAt then result="EM ANDAMENTO na "..tostring(r.last)
+        else result="terminou sem saida registrada" end
+        local marks={}
+        for _,e in ipairs(MURIM_LOG.events) do
+            if e.at>=a and e.at<b and e.kind~="saida" then marks[#marks+1]=e.text.." "..e.stamp end
+        end
+        local pauseRooms,pauseOrder={},{}
+        for _,p in ipairs(MURIM_LOG.pauses) do
+            if p.at>=a and p.at<b then
+                local key=MURIM_LOG.roomKey(p.room)
+                local x=pauseRooms[key]
+                if not x then x={n=0,secs=0,hurt=0,useless=0};pauseRooms[key]=x;pauseOrder[#pauseOrder+1]=key end
+                x.n+=1;x.secs+=(p.endAt or now)-p.at;x.hurt+=p.hurt
+                if tostring(p.result):find("nao curava",1,true) then x.useless+=1 end
+            end
+        end
+        local pauses={}
+        for _,key in ipairs(pauseOrder) do
+            local x=pauseRooms[key]
+            pauses[#pauses+1]=string.format("%s %dx %s (%d golpes durante%s)",key,x.n,MURIM_LOG.secs(x.secs),x.hurt,
+                x.useless>0 and (", "..x.useless.." canceladas por nao curar") or "")
+        end
+        local stallRooms,stallOrder={},{}
+        local function addStall(s,secs)
+            local key=MURIM_LOG.roomKey(s.room)
+            local x=stallRooms[key]
+            if not x then x={secs=0,big=0,why=s.why,healing=false};stallRooms[key]=x;stallOrder[#stallOrder+1]=key end
+            x.secs+=secs;x.healing=x.healing or s.healing==true
+            if secs>=x.big then x.big=secs;x.why=s.why end
+        end
+        for _,s in ipairs(MURIM_LOG.stalls) do
+            if s.at>=a and s.at<b then addStall(s,s.secs) end
+        end
+        local live=MURIM_LATE and MURIM_LATE.stall
+        if live and live.why and live.since>=a and live.since<b then
+            addStall({room=live.index,why=live.why,healing=live.healing},now-live.since)
+        end
+        local stalls={}
+        for _,key in ipairs(stallOrder) do
+            local x=stallRooms[key]
+            stalls[#stalls+1]=string.format("%s %s%s (%s)",key,MURIM_LOG.secs(x.secs),x.healing and " recuperando HP" or "",
+                MURIM_LOG.clean(x.why,90))
+        end
+        out[#out+1]=string.format("Raid %d | %s (%s)%s | %s%s | salas: %s",i,tostring(r.stamp),MURIM_LOG.secs(b-a),
+            r.first~="A01" and (" [Auto ligado no meio, desde a "..r.first.."]") or "",
+            result,#deaths>0 and (" | mortes: "..table.concat(deaths,", ")) or "",table.concat(rooms,", "))
+        if #marks>0 then out[#out+1]="   eventos: "..table.concat(marks,"; ") end
+        if #pauses>0 then out[#out+1]="   pausas de HP: "..table.concat(pauses,"; ") end
+        if #stalls>0 then out[#out+1]="   parado 12s+ (sem andar e sem atacar): "..table.concat(stalls,"; ") end
+    end
+    return table.concat(out,"\n").."\n\n"
+end
+function MURIM_LOG.deathDump()
+    if #MURIM_LOG.deaths==0 then return "" end
+    local out={"[MORTES: os 8s antes de cada morte; HP, golpes (com quem estava perto nos golpes grandes), alvo, pausa de HP, fase e legendas da HUD]"}
+    for i,d in ipairs(MURIM_LOG.deaths) do
+        out[#out+1]=string.format("%d) %s A%s | %s",i,d.stamp,tostring(d.room or "?"),d.text)
+        out[#out+1]="   HP: "..d.hp
+        out[#out+1]="   golpes: "..d.hits
+        out[#out+1]="   perto na hora: "..d.near
+        out[#out+1]="   alvo: "..d.target.." | "..d.defense.." | fase: "..d.phase
+        out[#out+1]="   HUD: "..d.hud
+    end
+    return table.concat(out,"\n").."\n\n"
+end
+function MURIM_LOG.fightDump()
+    if #MURIM_LOG.fights==0 then return "" end
+    local out={"[LUTAS: chefes; duracao; maior intervalo sem causar dano e o motivo; pausas de HP durante a luta]"}
+    local now=os.clock()
+    for _,f in ipairs(MURIM_LOG.fights) do
+        out[#out+1]=string.format("%s A%02d %s: %s, %s | HP %.0f -> %.0f | dano lido %dx | maior intervalo sem dano %s%s | intervalos de 15s+: %d (%s) | pausas de HP: %d (%s, %d golpes durante) | imune: %dx%s",
+            f.stamp,tonumber(f.area) or 0,f.name,MURIM_LOG.secs((f.endAt or now)-f.at),f.result or "sem morte registrada",
+            f.hp0 or 0,f.hp or 0,f.reads,MURIM_LOG.secs(f.maxGap),
+            f.maxGapStamp and (" (ate "..f.maxGapStamp..": "..tostring(f.maxGapWhy)..")") or "",
+            f.gaps,MURIM_LOG.secs(f.gapSecs),f.pauses,MURIM_LOG.secs(f.pauseSecs),f.pauseHurt,f.immune,
+            f.resets>0 and (" | HP do chefe subiu (reset?): "..f.resets.."x") or "")
+    end
+    return table.concat(out,"\n").."\n\n"
+end
+function MURIM_LOG.pauseDump()
+    local list=MURIM_LOG.pauses
+    if #list==0 then return "" end
+    local out={"[PAUSAS DE HP: ultimas 40; duracao, HP no inicio e no fim, golpes recebidos DURANTE a pausa e quem estava perto, como terminou]"}
+    local now=os.clock()
+    for i=math.max(1,#list-39),#list do
+        local p=list[i]
+        out[#out+1]=string.format("%s A%02d %s %s: HP %.0f -> %s | golpes na pausa: %d (-%.0f HP)%s | %s",
+            p.stamp,tonumber(p.room) or 0,tostring(p.kind),MURIM_LOG.secs((p.endAt or now)-p.at),p.hp0 or 0,
+            p.hp1 and string.format("%.0f",p.hp1) or "?",p.hurt,p.lost,p.near and (" | perto: "..p.near) or "",
+            p.result or "em andamento")
+    end
+    return table.concat(out,"\n").."\n\n"
+end
+function MURIM_LOG.dump()
+    return MURIM_LOG.errorDump()..MURIM_LOG.raidDump()..MURIM_LOG.deathDump()..MURIM_LOG.fightDump()..MURIM_LOG.pauseDump()
+end
+function MURIM_LOG.safeDump()
+    local ok,text=pcall(MURIM_LOG.dump)
+    if ok then return text end
+    return "[RESUMO V20A falhou ao montar: "..MURIM_LOG.clean(text,300).."]\n\n"
+end
 MURIM_A01 = {
     enabled = true,
     phase = "aguardando raid",
@@ -1845,7 +2256,9 @@ function MURIM_RAID_HIT.checkHealth(npc, area)
             paperSlot=(area==3 and MURIM_RAID_HIT.isSpecialPaper(npc,area)) and MURIM_RAID_HIT.paperSlot(npc) or nil}
         MURIM_RAID_HIT.records[npc]=rec
         MURIM_TRACE.add("DECISAO","DanoRaid",string.format("A%02d alvo=%s HP=%.0f; aguardando dano REAL, morte e contador HUD.",area,npc.Name,hum.Health))
+        if MURIM_LOG then MURIM_LOG.fightStart(npc,area,hum.Health) end
     elseif hum.Health < rec.hp-0.1 then
+        if MURIM_LOG then MURIM_LOG.fightHit(npc,rec.hp,hum.Health) end
         rec.didDamage=true
         rec.lastDamageAt=now
         rec.attempts=0
@@ -1859,6 +2272,7 @@ function MURIM_RAID_HIT.checkHealth(npc, area)
         MURIM_TRACE.add("AVISO","TailorLeash",string.format(
             "HP do Paper Tailor subiu de %.0f para %.0f no mesmo modelo. Possivel cura/reset do chefe; origem nao comprovada.",
             rec.hp,hum.Health),8)
+        if MURIM_LOG then MURIM_LOG.fightNote(npc,"reset") end
         rec.attempts=0
         rec.lastDamageAt=now
     end
@@ -1904,6 +2318,7 @@ function MURIM_RAID_HIT.checkHealth(npc, area)
         MURIM_TRACE.add("AVISO","DanoRaid",string.format(
             "A%02d %s: ataques sem queda de HP (%.0f). Pausa temporaria de %ds; nao marcou como derrotado nem excluiu da raid.",
             area,npc.Name,hum.Health,cooldown))
+        if MURIM_LOG then MURIM_LOG.fightNote(npc,"imune") end
         return false
     end
     return now>=rec.skipUntil
@@ -2026,8 +2441,10 @@ function MURIM_RAID_HIT.onNoLongerTarget(npc)
             MURIM_TRACE.add("AVISO","TailorLeash",string.format(
                 "Modelo antigo do Paper Tailor desapareceu; ultimo HP observado %.0f. Reset/despawn possivel; morte NAO confirmada.",
                 rec.hp or -1))
+            if MURIM_LOG then MURIM_LOG.fightEnd(npc,string.format("modelo sumiu com HP %.0f (reset?)",rec.hp or -1)) end
         else
             MURIM_TRACE.add("EVIDENCIA","DanoRaid",string.format("A%02d %s morreu/desapareceu. Dano antes=%s; nao inferir variacao de Painted eyes.",rec.area or 0,npc.Name,tostring(rec.didDamage)))
+            if MURIM_LOG and isBoss then MURIM_LOG.fightEnd(npc,"morto");MURIM_LOG.event("chefe","A03 "..npc.Name.." morto") end
         end
     end
 end
@@ -2537,6 +2954,8 @@ function MURIM_RAID_DEFENSE.reset()
     MURIM_RAID_DEFENSE.retreatStartedAt=0
     MURIM_RAID_DEFENSE.cerberusRecovery=nil
     MURIM_RAID_DEFENSE.lastCerberusFallback=0
+    if MURIM_LOG and MURIM_RAID_DEFENSE.logPause then MURIM_LOG.pauseEnd(MURIM_RAID_DEFENSE.logPause,"cancelada (nova raid, A04 ou reset)",nil) end
+    MURIM_RAID_DEFENSE.logPause=nil;MURIM_RAID_DEFENSE.hist=nil;MURIM_RAID_DEFENSE.noPauseUntil=0
 end
 function MURIM_RAID_DEFENSE.clearance(char,root,up)
     local p=RaycastParams.new()
@@ -2638,6 +3057,53 @@ function MURIM_RAID_DEFENSE.cerberusFallback(char,root,hp,maxHP)
     return true
 end
 
+-- V20A: pausa de HP que nao cura (TXT 11/11 06:33: a subida seguiu levando dano ate a morte na Matriarca). Na A03 as
+-- pausas curavam mesmo com golpes (41 de 41 na sessao 06:50-07:55, ~18s cada, ~12 HP/s de cura), entao a regra so olha
+-- se o HP SOBE: com 14s+ de pausa e o HP sem subir nos ultimos 10s, volta a atacar e nao pausa de novo por 30s.
+MURIM_RAID_DEFENSE.uselessAfter=14
+MURIM_RAID_DEFENSE.slopeWindow=10
+MURIM_RAID_DEFENSE.noPauseFor=30
+function MURIM_RAID_DEFENSE.uselessPause(hp,maxHP)
+    local now=os.clock()
+    local started=MURIM_RAID_DEFENSE.retreatStartedAt or 0
+    if not MURIM_RAID_DEFENSE.retreating or started<=0 then return false end
+    local hist=MURIM_RAID_DEFENSE.hist or {}
+    MURIM_RAID_DEFENSE.hist=hist
+    if #hist==0 or now-hist[#hist].t>=0.5 then
+        hist[#hist+1]={t=now,hp=hp}
+        if #hist>80 then table.remove(hist,1) end
+    end
+    if now-started<MURIM_RAID_DEFENSE.uselessAfter then return false end
+    local ref=nil
+    for i=#hist,1,-1 do
+        if now-hist[i].t>=MURIM_RAID_DEFENSE.slopeWindow then ref=hist[i];break end
+    end
+    if not ref or hp>ref.hp+0.5 then return false end
+    local why=string.format("%.0fs de pausa; HP %.0f agora e %.0f ha %.0fs",now-started,hp,ref.hp,now-ref.t)
+    MURIM_RAID_DEFENSE.release()
+    MURIM_RAID_DEFENSE.retreating=false
+    MURIM_RAID_DEFENSE.tailorMode=false
+    MURIM_RAID_DEFENSE.tailorAnchor=nil
+    MURIM_RAID_DEFENSE.retreatStartedAt=0
+    MURIM_RAID_DEFENSE.hist=nil
+    MURIM_RAID_DEFENSE.noPauseUntil=now+MURIM_RAID_DEFENSE.noPauseFor
+    MURIM_RAID_DEFENSE.phase="pausa de HP nao curava; voltando a atacar"
+    MURIM_TRACE.add("AVISO","SegurancaHP","V20A: pausa de HP NAO cura ("..why.."). Voltando a atacar; sem nova pausa por "
+        ..MURIM_RAID_DEFENSE.noPauseFor.."s.")
+    if MURIM_LOG then MURIM_LOG.pauseEnd(MURIM_RAID_DEFENSE.logPause,"nao curava: voltou a atacar ("..why..")",hp) end
+    MURIM_RAID_DEFENSE.logPause=nil
+    return true
+end
+function MURIM_RAID_DEFENSE.skipRetreat(hp,maxHP)
+    local untilAt=MURIM_RAID_DEFENSE.noPauseUntil or 0
+    local now=os.clock()
+    if now>=untilAt then return false end
+    MURIM_RAID_DEFENSE.phase="sem pausa de HP: a ultima nao curava"
+    MURIM_TRACE.add("DECISAO","SegurancaHP",string.format(
+        "HP %.0f/%.0f abaixo do gatilho, mas a ultima pausa nao curava: continua atacando (pausa liberada em %.0fs).",
+        hp,maxHP,untilAt-now),8,"sem-pausa-v20a")
+    return true
+end
 function MURIM_RAID_DEFENSE.tick(char,root,tailorCenter,cerberus)
     local hum=char and char:FindFirstChildOfClass("Humanoid")
     if not hum or not root then return false end
@@ -2652,11 +3118,12 @@ function MURIM_RAID_DEFENSE.tick(char,root,tailorCenter,cerberus)
     local resume=math.max(trigger+1,maxHP*resumePct)
     MURIM_RAID_DEFENSE.resumeAt=resume
     if hp<=0 then
+        if MURIM_LOG and MURIM_RAID_DEFENSE.logPause then MURIM_LOG.pauseEnd(MURIM_RAID_DEFENSE.logPause,"morreu durante a pausa",0) end
         MURIM_RAID_DEFENSE.reset()
         MURIM_RAID_DEFENSE.phase="derrotado; aguardando respawn"
         return true
     end
-    if not MURIM_RAID_DEFENSE.retreating and hp<=trigger then
+    if not MURIM_RAID_DEFENSE.retreating and hp<=trigger and not MURIM_RAID_DEFENSE.skipRetreat(hp,maxHP) then
         MURIM_RAID_DEFENSE.retreating=true
         MURIM_RAID_DEFENSE.retreatStartedAt=os.clock()
         MURIM_RAID_DEFENSE.longRetreatWarned=false
@@ -2674,6 +3141,10 @@ function MURIM_RAID_DEFENSE.tick(char,root,tailorCenter,cerberus)
         MURIM_TRACE.add("AVISO","SegurancaHP",string.format(
             "HP %.0f/%.0f <=%.0f%% (%.0f): ATAQUES SUSPENSOS. Recuo=%s (%s); retomar em %.0f HP (%.0f%%). Recuperacao curta=%s.",
             hp,maxHP,triggerPct*100,trigger,tostring(ok),tostring(height),resume,resumePct*100,tostring(MURIM_RAID_DEFENSE.tailorMode)))
+        MURIM_RAID_DEFENSE.hist={{t=os.clock(),hp=hp}}
+        if MURIM_LOG then
+            MURIM_RAID_DEFENSE.logPause=MURIM_LOG.pauseStart(MURIM_RAID_DEFENSE.tailorMode and "Tailor" or (cerberus and "Cerberus" or "subida"),hp,maxHP)
+        end
     end
     if not MURIM_RAID_DEFENSE.retreating then
         MURIM_RAID_DEFENSE.phase=string.format("monitorando (gatilho %.0f/%.0f)",trigger,maxHP)
@@ -2692,6 +3163,8 @@ function MURIM_RAID_DEFENSE.tick(char,root,tailorCenter,cerberus)
         MURIM_RAID_DEFENSE.retreatStartedAt=0
         MURIM_RAID_DEFENSE.phase="HP recuperado; retomando combate"
         MURIM_TRACE.add("EVIDENCIA","SegurancaHP",string.format("Cura real confirmada: %.0f/%.0f HP em %.1fs de pausa. Defesa liberou combate na V18E.",hp,maxHP,duration))
+        if MURIM_LOG then MURIM_LOG.pauseEnd(MURIM_RAID_DEFENSE.logPause,"curou",hp) end
+        MURIM_RAID_DEFENSE.logPause=nil;MURIM_RAID_DEFENSE.hist=nil
         return false
     end
     if MURIM_RAID_DEFENSE.hoverRoot~=root then
@@ -2742,6 +3215,7 @@ function MURIM_RAID_DEFENSE.tick(char,root,tailorCenter,cerberus)
         end
     end
     MURIM_RAID_DEFENSE.prevHP=hp
+    if MURIM_RAID_DEFENSE.uselessPause(hp,maxHP) then return false end
     if MURIM_RAID_DEFENSE.hoverPos and MURIM_RAID_DEFENSE.hoverRoot==root
         and (root.Position-MURIM_RAID_DEFENSE.hoverPos).Magnitude>4
         and os.clock()-MURIM_RAID_DEFENSE.lastSnapAt>0.8 then
@@ -4638,6 +5112,7 @@ function MURIM_LATE.reset()
     if MURIM_LATE.bossTrack and MURIM_LATE.bossTrack.conn then pcall(function() MURIM_LATE.bossTrack.conn:Disconnect() end) end
     MURIM_LATE.bossDown={};MURIM_LATE.bossTrack=nil;MURIM_LATE.nextRoomAt=nil
     MURIM_LATE.a09Stop();MURIM_LATE.a09=nil
+    MURIM_LATE.skip5=nil
 end
 -- V19K: tres ideias do script do Top76 (feito para PC), trazidas para o mobile sem teclado.
 -- 1) A02: abre os caixoes direto, sem parar para matar os mobs.
@@ -4664,6 +5139,7 @@ function MURIM_LATE.markBossDown(index,name)
     if MURIM_LATE.bossDown[index] then return end
     MURIM_LATE.bossDown[index]=os.clock()
     MURIM_TRACE.add("EVIDENCIA","Boss","A"..index.." "..tostring(name).." com HP zero; depois dos drops segue para a A"..(index+1)..".")
+    if MURIM_LOG then pcall(MURIM_LOG.bossDown,index,name) end
 end
 function MURIM_LATE.trackBoss(npc,index)
     local track=MURIM_LATE.bossTrack
@@ -4783,13 +5259,17 @@ function MURIM_LATE.stallCheck(root,index,origin)
     local s=MURIM_LATE.stall
     MURIM_LATE.stallIndex=index
     if not s or s.root~=root or (pos-s.pos).Magnitude>3 or now-(MURIM_LATE.lastAttackAt or -1e9)<5 then
-        MURIM_LATE.stall={root=root,pos=pos,since=now,reported=now}
+        -- V20A: cada episodio de 12s+ parado entra no [RESUMO DAS RAIDS] (sala, quanto tempo, motivo, curando HP).
+        if s and s.why and MURIM_LOG then MURIM_LOG.stall(s.index,s.since,now,s.why,s.healing) end
+        MURIM_LATE.stall={root=root,pos=pos,since=now,reported=now,index=index}
         return false
     end
     if now-s.since>=12 and now-s.reported>=12 then
         s.reported=now
+        s.why=MURIM_LATE.phaseText(index)
+        s.healing=s.healing or MURIM_RAID_DEFENSE.retreating==true
         MURIM_TRACE.add("AVISO","Parado",string.format("Parado ha %.0fs em A%s Z+%.0f: sem andar e sem atacar. %s%s",
-            now-s.since,tostring(index),pos.Z-origin.Z,MURIM_LATE.phaseText(index),
+            now-s.since,tostring(index),pos.Z-origin.Z,s.why,
             MURIM_RAID_DEFENSE.retreating and " | recuperando HP" or ""))
         return true
     end
@@ -4854,6 +5334,15 @@ function MURIM_LATE.a09Stop()
         hum:MoveTo(w.root.Position)
     end
 end
+-- V20A: TXT 07:16:49 e 07:52:40: na pausa de 6s sem dano a Matriarca sai da lista de alvos, o tick da A09 roda e a
+-- caminhada recomecava ("Matriarca ausente 18s"), levando o personagem escada acima. Viva = nao anda (ate 30s).
+function MURIM_LATE.matriarchAlive()
+    local t=MURIM_LATE.bossTrack
+    local npc=t and t.index==9 and t.npc
+    if not npc or not npc.Parent then return false end
+    local h=npc:FindFirstChildOfClass("Humanoid")
+    return h~=nil and h.Health>0
+end
 function MURIM_LATE.a09Wake(root,origin,now)
     local humanoid=root.Parent and root.Parent:FindFirstChildWhichIsA("Humanoid")
     if not humanoid or humanoid.Health<=0 or root.Anchored then return false end
@@ -4861,6 +5350,19 @@ function MURIM_LATE.a09Wake(root,origin,now)
     if not w or w.root~=root then
         w={root=root,humanoid=humanoid,since=now,arrived=now,step=0,cycle=0}
         MURIM_LATE.a09=w
+    end
+    if MURIM_LATE.matriarchAlive() then
+        w.heldAt=w.heldAt or now
+        if now-w.heldAt<30 then
+            if w.step>0 then MURIM_LATE.a09Stop() end
+            w.since=now
+            MURIM_LATE.phase="A09: Matriarca viva fora da lista de alvos (pausa sem dano); sem andar"
+            MURIM_TRACE.add("INFO","A09Andar","Matriarca viva, mas fora da lista de alvos (pausa de 6s sem dano): a caminhada NAO recomeca.",15)
+            return true
+        end
+        MURIM_TRACE.add("AVISO","A09Andar","Matriarca viva ha 30s fora da lista de alvos: volta a andar para ela reaparecer.",30)
+    else
+        w.heldAt=nil
     end
     local route=MURIM_LATE.a09Route
     if w.step==0 then
@@ -4975,6 +5477,7 @@ function MURIM_LATE.hudWatch(gui)
                 if #text>=4 and #text<200 and text:find("%a%a") then
                     if not seen[text] and not (MURIM_LATE.hudSeen or {})[text] then
                         MURIM_TRACE.add("INFO","HUD",text.." ["..tostring(obj.Name).."]")
+                        if MURIM_LOG then MURIM_LOG.caption(text) end
                     end
                     seen[text]=true
                 end
@@ -4990,6 +5493,95 @@ MURIM_LATE.backHold=90
 MURIM_LATE.circleFor=20
 -- V19P: TXT 20:27: o usuario parou colado na porta (Z+1058) de costas e ela abriu em 3s; a V19O esperava a 18 studs.
 MURIM_LATE.backSpot={0,1055}
+-- V20A: Top76 (A05): aciona os prompts e aos 12s teleporta para a entrada da A06, com a porta aberta ou fechada.
+-- Aqui: lampada primeiro (e onde ele renasce), 12s na sala e lampada vista acesa; entao safeWarp para A06
+-- Markers.HallowEntry. O a05SkipCheck decide: Cerberus apareceu = aceito; voltou para a A05 = o servidor puxou;
+-- 20s na A06 sem Cerberus = volta para a porta da A05 (metodo antigo). 2 falhas na sessao desligam o pulo.
+MURIM_LATE.a05SkipAfter=12
+MURIM_LATE.a05SkipWait=20
+MURIM_LATE.a05SkipFails=0
+function MURIM_LATE.isLampPrompt(prompt)
+    return tostring(prompt.ActionText or ""):lower():find("lamp",1,true)~=nil
+end
+function MURIM_LATE.lampFirst(candidates)
+    for i,c in ipairs(candidates) do
+        if MURIM_LATE.isLampPrompt(c.prompt) then
+            if i>1 then table.remove(candidates,i);table.insert(candidates,1,c) end
+            return true
+        end
+    end
+    return false
+end
+function MURIM_LATE.a05Skip(root,raid,origin,objects,now)
+    if MURIM_LATE.a05SkipFails>=2 then return false end
+    local s=MURIM_LATE.skip5
+    if not s then s={lampSeen=false,tries=0};MURIM_LATE.skip5=s end
+    if s.result then return false end
+    for _,obj in ipairs(objects) do
+        if obj:IsA("ProximityPrompt") and obj.Enabled and MURIM_LATE.isLampPrompt(obj) then
+            s.lampSeen=true
+            return false
+        end
+    end
+    local inRoom=now-(MURIM_LATE.roomAt or now)
+    if not s.lampSeen or inRoom<MURIM_LATE.a05SkipAfter then return false end
+    local dest,how=MURIM_LATE.entryOf(raid,origin,6)
+    if not dest then
+        s.result="sem entrada"
+        MURIM_TRACE.add("AVISO","A05Pulo","A06 sem Markers.HallowEntry nem posicao conhecida: sem pulo, metodo antigo.")
+        return false
+    end
+    if now-(s.tryAt or -1e9)<2 then return false end
+    s.tryAt=now;s.tries+=1
+    local from=root.Position
+    local ok=MURIM_A01.safeWarp(root,dest+Vector3.new(0,3,0),root.Parent,"A05Pulo para a entrada da A06")
+    if not ok then
+        if s.tries>=3 then
+            s.result="sem piso"
+            MURIM_TRACE.add("AVISO","A05Pulo","3 tentativas sem piso seguro na entrada da A06 ("..tostring(how).."): sem pulo, metodo antigo.")
+        end
+        return false
+    end
+    s.result="tentando";s.at=now;s.inRoom=inRoom
+    MURIM_LATE.stopWalk()
+    MURIM_TRACE.add("ACAO","A05Pulo",string.format(
+        "Lampada acesa e %.0fs na A05: teleporte para a A06 (%s) com a porta da A05 FECHADA, como o Top76. De Z+%.0f para Z+%.0f. Esperando o Cerberus aparecer.",
+        inRoom,tostring(how),from.Z-origin.Z,dest.Z-origin.Z))
+    return true
+end
+function MURIM_LATE.a05SkipCheck(root,raid,origin,index)
+    local s=MURIM_LATE.skip5
+    if not s or s.result~="tentando" or not root or not origin then return end
+    local now=os.clock()
+    local wait=now-s.at
+    local rel=root.Position.Z-origin.Z
+    if index==6 and MURIM_LATE.cerberusFocus then
+        s.result="aceito"
+        MURIM_TRACE.add("EVIDENCIA","A05Pulo",string.format(
+            "ACEITO: o Cerberus apareceu %.1fs depois do teleporte. A05 levou %.0fs (antes: 73-145s esperando a porta).",wait,s.inRoom+wait))
+        if MURIM_LOG then MURIM_LOG.event("A05Pulo","pulo A05->A06 aceito") end
+        return
+    end
+    if rel<HALLOW_AREA_Z[6]-5 and wait>=1.5 then
+        s.result="puxado"
+        MURIM_LATE.a05SkipFails+=1
+        MURIM_TRACE.add("AVISO","A05Pulo",string.format(
+            "PUXADO DE VOLTA: %.1fs depois do teleporte o personagem esta na A05 (Z+%.0f). Segue o metodo antigo (de costas para a porta). Falhas na sessao: %d/2.",
+            wait,rel,MURIM_LATE.a05SkipFails))
+        if MURIM_LOG then MURIM_LOG.event("A05Pulo","pulo A05->A06 puxado de volta") end
+        return
+    end
+    if wait>=MURIM_LATE.a05SkipWait then
+        s.result="sem Cerberus"
+        MURIM_LATE.a05SkipFails+=1
+        local back=Vector3.new(origin.X+MURIM_LATE.backSpot[1],root.Position.Y,origin.Z+MURIM_LATE.backSpot[2])
+        local ok=MURIM_A01.safeWarp(root,back,root.Parent,"A05Pulo: volta para a porta da A05")
+        MURIM_TRACE.add("AVISO","A05Pulo",string.format(
+            "%.0fs na A06 sem o Cerberus aparecer: com a porta fechada o pulo nao vale. Voltando para a porta da A05 (teleporte=%s), metodo antigo. Falhas na sessao: %d/2.",
+            wait,tostring(ok),MURIM_LATE.a05SkipFails))
+        if MURIM_LOG then MURIM_LOG.event("A05Pulo","pulo A05->A06 sem Cerberus em 20s (voltou)") end
+    end
+end
 function MURIM_LATE.backToDoorA05(root,origin,now)
     local spot=Vector3.new(origin.X+MURIM_LATE.backSpot[1],root.Position.Y,origin.Z+MURIM_LATE.backSpot[2])
     local dx,dz=spot.X-root.Position.X,spot.Z-root.Position.Z
@@ -5228,6 +5820,7 @@ function MURIM_LATE.finalExit(root,raid,index)
             elseif os.clock()-(MURIM_LATE.exitTryAt or 0)>4 then
                 MURIM_LATE.exitTryAt=os.clock()
                 MURIM_LATE.holdPrompt(root,p)
+                if MURIM_LOG then MURIM_LOG.event("saida","Walk out into the morning acionado") end
             end
             return true
         end
@@ -5442,6 +6035,7 @@ function MURIM_LATE.deathWatch(char)
         local p=MURIM_TRACE.progress or {};MURIM_TRACE.progress=p
         p[#p+1]={label="MORTE",at=os.clock(),stamp=os.date("%H:%M:%S")}
         if MURIM_LATE.mark then pcall(MURIM_LATE.mark,text) end
+        if MURIM_LOG then pcall(MURIM_LOG.death,char,text) end
     end)
 end
 function MURIM_LATE.offerNote(prompt)
@@ -5658,12 +6252,24 @@ function MURIM_LATE.recoverA07(char,root)
     r=r or {hp=hum.Health,at=-100};MURIM_LATE.recovery7=r
     MURIM_RAID_DEFENSE.release()
     if hum.Health>=hum.MaxHealth*0.85 then
+        if MURIM_LOG and r.logPause then MURIM_LOG.pauseEnd(r.logPause,"curou",hum.Health) end
         MURIM_LATE.recovery7=nil
         MURIM_RAID_DEFENSE.retreating=false
         return false
     end
     local foe,gap=MURIM_LATE.foeNearA07(root,20)
+    -- V20A: TXT 07:36:07 e 07:36:47: o ghost que estava a 10 e a 4 studs saiu da faixa (raio 20 / 12 de altura) e no
+    -- mesmo segundo a pausa comecava, com HP 1 e 47; morreu nas duas. O MESMO ghost, vivo a ate 30 studs e 25 de
+    -- altura, continua sendo combatido.
+    if not foe and r.fighting and r.foe then
+        local fh=r.foe.Parent and r.foe:FindFirstChildOfClass("Humanoid")
+        local fp=r.foe.Parent and (r.foe:FindFirstChild("HumanoidRootPart") or r.foe.PrimaryPart)
+        local d=fp and fp.Position-root.Position
+        if fh and fh.Health>0 and d and math.abs(d.Y)<=25 and d.Magnitude<=30 then foe,gap=r.foe,d.Magnitude end
+    end
     if foe then
+        r.foe=foe
+        if MURIM_LOG and r.logPause then MURIM_LOG.pauseEnd(r.logPause,"ghost perto: voltou a lutar",hum.Health);r.logPause=nil end
         if not r.fighting then
             r.fighting=true
             MURIM_TRACE.add("DECISAO","CuraA07",string.format("HP %d/%d (abaixo de 40%%), mas %s esta a %.0f studs: continua lutando. Parado, o ghost bate livre (TXT 23:20: HP 137 -> 1 em 36s sem revidar).",
@@ -5676,6 +6282,7 @@ function MURIM_LATE.recoverA07(char,root)
         r.fighting=false
         MURIM_TRACE.add("INFO","CuraA07","Nenhum inimigo a 20 studs no patamar; pausa para recuperar HP ("..math.floor(hum.Health)..").",3)
     end
+    if MURIM_LOG and not r.logPause then r.logPause=MURIM_LOG.pauseStart("A07",hum.Health,hum.MaxHealth,7) end
     MURIM_RAID_DEFENSE.phase="A07 recuperacao no piso; HP "..math.floor(hum.Health)
     local c=MURIM_LATE.a07Current
     local base=c and c.part and c.part.Parent and c.part or root
@@ -5706,6 +6313,11 @@ function MURIM_LATE.tick(root,raid,origin,index)
     if not root or not raid or not origin or index<5 or index>10 then return true end
     if index==6 and MURIM_LATE.liveCerberus(root,raid,origin) then
         MURIM_LATE.phase="Cerberus vivo: navegacao e oferendas suspensas"
+        return true
+    end
+    -- V20A: depois do pulo da A05 espera parado (o a05SkipCheck decide), sem a A05 puxar o personagem de volta.
+    if (index==5 or index==6) and MURIM_LATE.skip5 and MURIM_LATE.skip5.result=="tentando" then
+        MURIM_LATE.phase="A05Pulo: na A06 esperando o Cerberus (porta da A05 fechada)"
         return true
     end
     MURIM_LATE.origin=origin
@@ -5771,6 +6383,7 @@ function MURIM_LATE.tick(root,raid,origin,index)
             MURIM_LATE.pending=nil
         else return true end
     end
+    if index==5 and MURIM_LATE.a05Skip(root,raid,origin,objects,now) then return true end
     local rel=root.Position.Z-origin.Z
     if MURIM_LATE.passage and MURIM_LATE.passage.index~=index then
         MURIM_LATE.passage=nil
@@ -5805,6 +6418,7 @@ function MURIM_LATE.tick(root,raid,origin,index)
         end
     end
     table.sort(candidates,function(a,b) return a.dist<b.dist end)
+    if index==5 then MURIM_LATE.lampFirst(candidates) end -- V20A: a lampada (ponto de renascer) antes do pulo
     if index==7 then table.sort(candidates,function(a,b) return a.part.Position.Y>b.part.Position.Y end) end
     -- V19K: boss morto e sala quieta: segue para a proxima sala, como o Top76 faz.
     if MURIM_LATE.nextReady(index,now,#candidates>0) then
@@ -6487,34 +7101,38 @@ end
 
 local function shouldLootItem(drop)
     if not drop or not drop.Parent then return false end
-    local personal = drop:GetAttribute("Personal")
-    local owner = drop:GetAttribute("Owner")
+    -- V20A (Top76 6f042e3): em drops que sao Model os atributos ficam na peca de dentro; ler do drop e da peca.
+    -- Sem isso o loot pessoal de outro jogador passava no filtro (tentava pegar e perdia tempo).
+    local attrPart = drop:IsA("BasePart") and drop or drop:FindFirstChildWhichIsA("BasePart", true)
+    local function attr(key)
+        local v = drop:GetAttribute(key)
+        if v == nil and attrPart and attrPart ~= drop then v = attrPart:GetAttribute(key) end
+        return v
+    end
+    local personal = attr("Personal")
+    local owner = attr("Owner")
     if personal == true and owner ~= player.UserId then
         return false
     end
     if currentLootFilterIdx <= 1 then
         return true
     end
-    local itemId = drop:GetAttribute("ItemId")
-    if not itemId then
-        local p = drop:IsA("BasePart") and drop or drop:FindFirstChildWhichIsA("BasePart", true)
-        if p then itemId = p:GetAttribute("ItemId") end
-    end
+    local itemId = attr("ItemId")
     if type(itemId) ~= "string" then
         return true
     end
-    local held = drop:GetAttribute("Held")
+    local held = attr("Held")
     if held and owner == player.UserId then
         return true
     end
-    if drop:GetAttribute("Enchant") then
+    if attr("Enchant") then
         return true
     end
-    local grade = tonumber(drop:GetAttribute("Grade"))
+    local grade = tonumber(attr("Grade"))
     if grade and grade >= heavenGradeThreshold then
         return true
     end
-    local seaColor = drop:GetAttribute("SeaColor")
+    local seaColor = attr("SeaColor")
     if type(seaColor) == "string" and murimItemColors and murimItemColors.tier then
         local ok, tier = pcall(murimItemColors.tier, seaColor)
         if ok and (tonumber(tier) or 0) >= 2 then
@@ -9350,6 +9968,25 @@ local function startFarming()
 
 
                         if hrp then
+                -- V20A (Top76 0ee8f91): depois de matar um boss, abrir o bau ou esperar ele aparecer ANTES de escolher
+                -- o proximo boss. Antes, com 2+ bosses marcados, ia direto para o proximo e perdia o bau.
+                if isAutoLooting and lastBossCFrame and os.clock() < bossLootWaitUntil then
+                    local bossChestObj, bossChestPart = getBossChest()
+                    currentTarget = nil
+                    if bossChestObj and bossChestPart then
+                        local bTxt = "🎁 Abrindo baú do chefe: " .. tostring(bossChestObj.Name)
+                        if startBtn.Text ~= bTxt then startBtn.Text = bTxt end
+                        interactWithDrop(bossChestObj)
+                        task.wait(0.1)
+                    else
+                        if startBtn.Text ~= "⏳ Aguardando o baú do chefe aparecer..." then
+                            startBtn.Text = "⏳ Aguardando o baú do chefe aparecer..."
+                        end
+                        hrp.CFrame = lastBossCFrame * CFrame.new(0, 3, 0)
+                        task.wait(0.25)
+                    end
+                    continue
+                end
                 local bossCF, bossAlive, bossObj = chooseBossTarget()
                 local targetCF, aliveStatus, npcObj
                 local isBoss = false
@@ -9916,7 +10553,7 @@ externalConnections[#externalConnections+1]=RunService.Heartbeat:Connect(functio
         end
         MURIM_LATE.observeTeahouse(root,select(1,getActiveRaidInfo(player)),origin,isAutoHallowRaid)
         MURIM_LATE.observeEncounter(root,origin,isAutoHallowRaid)
-        pcall(MURIM_LATE.manualWatch,player,root,origin,isAutoHallowRaid)
+        MURIM_LOG.try("MovimentoManual",MURIM_LATE.manualWatch,player,root,origin,isAutoHallowRaid)
     end)
     if not ok then
         e.lastPoll=os.clock()
@@ -9939,6 +10576,10 @@ externalConnections[#externalConnections+1]=RunService.Heartbeat:Connect(functio
 end)
 
 local hallowRaidTask = task.spawn(function()
+    -- V20A: um erro no loop da raid matava esta tarefa sem aparecer no TXT (o Auto parava calado). Agora o erro vai
+    -- para [ERROS] com traceback, a navegacao e cancelada e o loop recomeca em 1s.
+    while not destroyed do
+    local loopOk,loopErr=xpcall(function()
     while not destroyed do
         if isAutoHallowRaid and not (hubUI.isBusy and hubUI.isBusy()) then
             local char = player.Character
@@ -10172,13 +10813,16 @@ local hallowRaidTask = task.spawn(function()
                     if currentRaidRoomIndex~=4 then MURIM_A04.stopRun() end
                     if currentRaidRoomIndex~=5 then MURIM_LATE.stopWalk() end
                     if currentRaidRoomIndex~=8 and currentRaidRoomIndex~=9 then MURIM_LATE.a09Stop() end
-                    pcall(MURIM_LATE.stallCheck,hrp,currentRaidRoomIndex,raidOrigin)
-                    pcall(MURIM_LATE.hudWatch,player:FindFirstChild("PlayerGui"))
-                    pcall(MURIM_LATE.ventWatch,hrp.Parent)
-                    pcall(MURIM_LATE.deathWatch,hrp.Parent)
+                    -- V20A: estes ganchos rodavam em pcall mudo; agora um erro vai para [ERROS] com traceback.
+                    MURIM_LOG.try("Parado",MURIM_LATE.stallCheck,hrp,currentRaidRoomIndex,raidOrigin)
+                    MURIM_LOG.try("HUD",MURIM_LATE.hudWatch,player:FindFirstChild("PlayerGui"))
+                    MURIM_LOG.try("Vent",MURIM_LATE.ventWatch,hrp.Parent)
+                    MURIM_LOG.try("Morte",MURIM_LATE.deathWatch,hrp.Parent)
+                    MURIM_LOG.try("AmostraHP",MURIM_LOG.sample,char,hrp,currentRaidRoomIndex,activeRaidModel,raidOrigin)
                     if currentRaidRoomIndex==6 then
                         MURIM_LATE.cerberusFocus=MURIM_LATE.liveCerberus(hrp,activeRaidModel,raidOrigin)
                     else MURIM_LATE.cerberusFocus=nil end
+                    MURIM_LOG.try("A05Pulo",MURIM_LATE.a05SkipCheck,hrp,activeRaidModel,raidOrigin,currentRaidRoomIndex)
                     local tailorCenter=nil
                     if currentRaidRoomIndex==3 and MURIM_RAID_HIT.yardObjective
                         and hrp.Position.Z-raidOrigin.Z>=488 and hrp.Position.Z-raidOrigin.Z<=538 then
@@ -10381,6 +11025,7 @@ local hallowRaidTask = task.spawn(function()
                             local targetPart = getNPCRootPart(bestFoe)
                             if targetPart then
                                 currentTarget = bestFoe
+                                MURIM_LOG.aim(bestFoe)
                                 applyHitboxToNPC(bestFoe)
                                 revealInvisibleNPC(bestFoe)
 
@@ -10507,6 +11152,14 @@ local hallowRaidTask = task.spawn(function()
             end
             task.wait(0.5)
         end
+    end
+    end,MURIM_LOG.onError)
+    if not loopOk then
+        MURIM_LOG.error("LoopRaid",loopErr)
+        MURIM_TRACE.add("ERRO","LoopRaid","Erro no loop da raid (reiniciando em 1s): "..tostring(loopErr),5,"try-LoopRaid")
+        pcall(MURIM_A04.cancelHold);pcall(MURIM_A04.stopRun);pcall(MURIM_LATE.stopWalk)
+        task.wait(1)
+    end
     end
 end)
 
