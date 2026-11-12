@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V20A: full log at the top of the TXT (errors with traceback, one line per raid, deaths with the 8s before, boss fights with no-damage gaps, HP pauses, time stopped), raid loop survives errors, HP pause that does not heal is cancelled, A07 keeps fighting the same ghost, A05 lights the lamp first and jumps to A06 (Top76) with fallback, A09 does not walk while the Matriarch is alive, farm boss chest and loot filter from Top76; V19Z: A09 walks (no teleport) until the Matriarch appears, manual movement logged; V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
+print("[Boxer_fighter_Test V2] V20B: A03 sends the Paper Effigy seen also during HP pauses, A04 keeps 55 studs from the Watchman (facing or not) and leaves him before crossing the open exit, A05 jump off (server pulls back), A04 death shows the most dangerous Watchman reading of the last 3s, raid lost by leaving the arena shown as PERDIDA; V20A: full log at the top of the TXT (errors with traceback, one line per raid, deaths with the 8s before, boss fights with no-damage gaps, HP pauses, time stopped), raid loop survives errors, HP pause that does not heal is cancelled, A07 keeps fighting the same ghost, A05 lights the lamp first and jumps to A06 (Top76) with fallback, A09 does not walk while the Matriarch is alive, farm boss chest and loot filter from Top76; V19Z: A09 walks (no teleport) until the Matriarch appears, manual movement logged; V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -122,7 +122,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V20A | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V20B | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -1182,11 +1182,25 @@ function MURIM_LOG.death(char,text)
     local t=MURIM_LOG.target
     d.target=t and now-t.at<5 and string.format("%s (atacado ha %.1fs)",t.name,now-t.at) or "nenhum nos ultimos 5s"
     local phase=room==4 and MURIM_A04 and MURIM_A04.phase or (MURIM_LATE and MURIM_LATE.phase)
+    if room==4 and MURIM_A04 and MURIM_A04.watchHist then
+        local worst,closest=nil,nil
+        for _,w in ipairs(MURIM_A04.watchHist) do
+            if now-w.at<=3 then
+                if not closest or w.dist<closest.dist then closest=w end
+                if w.dist<60 and (not worst or w.facing>worst.facing) then worst=w end
+            end
+        end
+        if closest then
+            d.watch=string.format("Watchman nos 3s antes: %s; mais perto %.0f studs (frente=%.2f, ha %.1fs)",
+                worst and string.format("mais virado para o jogador frente=%.2f a %.0f studs (ha %.1fs)",worst.facing,worst.dist,now-worst.at)
+                    or "nenhuma leitura a menos de 60 studs",closest.dist,closest.facing,now-closest.at)
+        end
+    end
     d.phase=MURIM_LOG.clean(phase or "?",160)
     MURIM_LOG.push(MURIM_LOG.deaths,d,40)
     if MURIM_LOG.openPause then MURIM_LOG.pauseEnd(MURIM_LOG.openPause,"morreu durante a pausa",0) end
-    MURIM_TRACE.add("EVIDENCIA","MorteDetalhe",string.format("A%s | HP: %s | golpes: %s | perto: %s | alvo: %s | %s | fase: %s | HUD: %s",
-        tostring(room or "?"),d.hp,d.hits,d.near,d.target,d.defense,d.phase,d.hud))
+    MURIM_TRACE.add("EVIDENCIA","MorteDetalhe",string.format("A%s | HP: %s | golpes: %s | perto: %s | alvo: %s | %s | fase: %s | HUD: %s%s",
+        tostring(room or "?"),d.hp,d.hits,d.near,d.target,d.defense,d.phase,d.hud,d.watch and (" | "..d.watch) or ""))
 end
 function MURIM_LOG.isBoss(name)
     local n=tostring(name or ""):lower()
@@ -1335,15 +1349,18 @@ function MURIM_LOG.raidDump()
         for room,n in pairs(r.deathRooms) do deaths[#deaths+1]=room.." x"..n end
         table.sort(deaths)
         local exit=MURIM_LOG.findEvent("saida",a,b)
+        local left=MURIM_LOG.findEvent("arena",a,b)
         local result
         if exit then result="CONCLUIDA (saida "..exit.stamp..")"
+        elseif left and r.deaths>0 then result="PERDIDA ("..r.deaths.." mortes; saiu da arena "..left.stamp..")"
+        elseif left then result="saiu da arena "..left.stamp.." sem saida registrada"
         elseif r.how=="nova raid" and r.deaths>=3 then result="PERDIDA ("..r.deaths.." mortes)"
         elseif r.how=="Auto desligado" then result="Auto desligado na "..tostring(r.last)
         elseif not r.endAt then result="EM ANDAMENTO na "..tostring(r.last)
         else result="terminou sem saida registrada" end
         local marks={}
         for _,e in ipairs(MURIM_LOG.events) do
-            if e.at>=a and e.at<b and e.kind~="saida" then marks[#marks+1]=e.text.." "..e.stamp end
+            if e.at>=a and e.at<b and e.kind~="saida" and e.kind~="arena" then marks[#marks+1]=e.text.." "..e.stamp end
         end
         local pauseRooms,pauseOrder={},{}
         for _,p in ipairs(MURIM_LOG.pauses) do
@@ -1401,6 +1418,7 @@ function MURIM_LOG.deathDump()
         out[#out+1]="   perto na hora: "..d.near
         out[#out+1]="   alvo: "..d.target.." | "..d.defense.." | fase: "..d.phase
         out[#out+1]="   HUD: "..d.hud
+        if d.watch then out[#out+1]="   "..d.watch end
     end
     return table.concat(out,"\n").."\n\n"
 end
@@ -3287,7 +3305,7 @@ function MURIM_A04.reset()
     MURIM_A04.hideState="nao acionado";MURIM_A04.lastDebugAt=0
     MURIM_A04.exitStartPos=nil;MURIM_A04.exitCheckAt=0;MURIM_A04.exitReportAt=0
     MURIM_A04.navOrigin=nil; MURIM_A04.pendingMove=nil; MURIM_A04.lastFloorFailure=0
-    MURIM_A04.lastLitCount=0; MURIM_A04.lastWatch=nil
+    MURIM_A04.lastLitCount=0; MURIM_A04.lastWatch=nil; MURIM_A04.watchHist=nil
     MURIM_A04.exitSeenOpen=false; MURIM_A04.exitDoorZ=nil
     MURIM_A04.comeOutVisible=false;MURIM_A04.comeOutAwaiting=false
     MURIM_A04.comeOutAttempts=0;MURIM_A04.comeOutAttemptAt=0
@@ -3705,14 +3723,15 @@ function MURIM_A04.riskAt(pos,root,threats,holding)
         nearest=math.min(nearest,dist)
         local radius=t.procession and 100 or (holding and 100 or 75)
         local facing=dist>0 and t.part.CFrame.LookVector:Dot(offset.Unit) or 1
-        if dist<radius and (t.procession or facing>0.05 or dist<32) then
+        if dist<radius and (t.procession or facing>0.05 or dist<MURIM_A04.closeDist) then
             local params=RaycastParams.new()
             params.FilterType=Enum.RaycastFilterType.Exclude
             params.FilterDescendantsInstances={root.Parent,t.model}
             pcall(function() params.RespectCanCollide=true end)
             local hit=workspace:Raycast(t.part.Position,offset,params)
             if not hit or (hit.Position-pos).Magnitude<2
-                or (not t.procession and dist<MURIM_A04.seenDist and facing>MURIM_A04.seenFacing) then
+                or (not t.procession and dist<MURIM_A04.seenDist and facing>MURIM_A04.seenFacing)
+                or (not t.procession and dist<MURIM_A04.closeDist) then
                 worst=math.max(worst,1-dist/radius)
             end
         end
@@ -3933,7 +3952,11 @@ end
 -- holdAbortDist e estimativa dos logs: resets vieram com ele a 24-32 studs; a 53 studs ainda nao houve reset.
 MURIM_A04.holdAbortDist=40
 -- V19X: mortes a 16-44 studs com ele virado (frente 0.40-0.93); a 55-60 studs de frente nunca. Visto sem conferir obstaculo.
-MURIM_A04.seenDist=50
+-- V20B: TXT 09:00: morte 08:54:47 com o Watchman a 40 studs de costas, mas 0,8s antes ele virou (frente 0.70) com o
+-- personagem a 25 studs na frente dele; nos dois TXT de 11/11 as mortes foram de 11 a 44 studs e a 55-60 studs nunca
+-- houve morte. A menos de 55 studs conta como perigo, de frente ou de costas, e o "visto" tambem vai ate 55.
+MURIM_A04.closeDist=55
+MURIM_A04.seenDist=55
 MURIM_A04.seenFacing=0.2
 function MURIM_A04.watchedNow()
     local w=MURIM_A04.lastWatch
@@ -3974,6 +3997,11 @@ function MURIM_A04.watchSample(root,world,threats,now)
     local offset=root.Position-nearest.part.Position
     local facing=dist>0 and nearest.part.CFrame.LookVector:Dot(offset.Unit) or 1
     MURIM_A04.lastWatch={dist=dist,facing=facing,at=now}
+    -- V20B: ultimas leituras (6s); a morte mostra a mais perigosa, nao so a ultima (TXT 09:00: a ultima enganava).
+    local hist=MURIM_A04.watchHist or {}
+    MURIM_A04.watchHist=hist
+    if not hist[#hist] or now-hist[#hist].at>=0.1 then hist[#hist+1]={dist=dist,facing=facing,at=now} end
+    while #hist>0 and now-hist[1].at>6 do table.remove(hist,1) end
     if now-(MURIM_A04.lastSample or -1e9)>=0.25 then
         MURIM_A04.lastSample=now
         MURIM_LATE.mark(string.format("WATCHMAN pos=(%.0f,%.0f) dist=%.1f frente=%.2f jogador=(%.0f,%.0f) Lit=%d fase=%s",
@@ -4199,6 +4227,17 @@ function MURIM_A04.tick(root,raid,origin)
         MURIM_A04.cancelHold()
         if root.Position.Z-origin.Z>=world.gate.z-4 or MURIM_A04.houndNear(root,origin) then
             return MURIM_A04.runExit(root,origin,now)
+        end
+        -- V20B: TXT 09:00 (morte 08:52:28): Lit=3, porta aberta, "sem rota local" em Z+808 e o Watchman em Z+815 virou
+        -- (frente 0.92) e veio de 24 para 11 studs em 2s; o personagem ficou parado esperando rota e morreu. Com ele a
+        -- menos de 55 studs (risco>0), sai para as costas dele antes de seguir para a saida.
+        if risk>0 then
+            MURIM_A04.phase="porta Open=true, mas o Watchman esta perto: saindo de perto antes de atravessar"
+            if now-MURIM_A04.lastMove>=0.4 then
+                MURIM_A04.lastMove=now
+                MURIM_A04.avoidThreat(root,world,threats,now)
+            end
+            return true
         end
         MURIM_A04.phase="porta Open=true: atravessando saida A04"
         if now-MURIM_A04.lastMove>=0.4 then
@@ -5497,6 +5536,9 @@ MURIM_LATE.backSpot={0,1055}
 -- Aqui: lampada primeiro (e onde ele renasce), 12s na sala e lampada vista acesa; entao safeWarp para A06
 -- Markers.HallowEntry. O a05SkipCheck decide: Cerberus apareceu = aceito; voltou para a A05 = o servidor puxou;
 -- 20s na A06 sem Cerberus = volta para a porta da A05 (metodo antigo). 2 falhas na sessao desligam o pulo.
+-- V20B: TXT 09:00:12: teleporte de 95 studs com a porta fechada desfeito em 1,6s (voltou para Z+1005); as 09:00:05
+-- um teleporte de 40 studs dentro da propria A05 tambem foi corrigido pelo jogo. Pulo desligado; codigo mantido.
+MURIM_LATE.a05SkipOn=false
 MURIM_LATE.a05SkipAfter=12
 MURIM_LATE.a05SkipWait=20
 MURIM_LATE.a05SkipFails=0
@@ -5513,7 +5555,7 @@ function MURIM_LATE.lampFirst(candidates)
     return false
 end
 function MURIM_LATE.a05Skip(root,raid,origin,objects,now)
-    if MURIM_LATE.a05SkipFails>=2 then return false end
+    if not MURIM_LATE.a05SkipOn or MURIM_LATE.a05SkipFails>=2 then return false end
     local s=MURIM_LATE.skip5
     if not s then s={lampSeen=false,tries=0};MURIM_LATE.skip5=s end
     if s.result then return false end
@@ -6418,7 +6460,7 @@ function MURIM_LATE.tick(root,raid,origin,index)
         end
     end
     table.sort(candidates,function(a,b) return a.dist<b.dist end)
-    if index==5 then MURIM_LATE.lampFirst(candidates) end -- V20A: a lampada (ponto de renascer) antes do pulo
+    if index==5 and MURIM_LATE.a05SkipOn then MURIM_LATE.lampFirst(candidates) end -- V20A: lampada antes do pulo (V20B: so com o pulo ligado)
     if index==7 then table.sort(candidates,function(a,b) return a.part.Position.Y>b.part.Position.Y end) end
     -- V19K: boss morto e sala quieta: segue para a proxima sala, como o Top76 faz.
     if MURIM_LATE.nextReady(index,now,#candidates>0) then
@@ -10589,6 +10631,7 @@ local hallowRaidTask = task.spawn(function()
                 if not isInsideRaid then
                     if HallowEntryState.wasInsideRaid then
                         MURIM_TRACE.add("INFO", "Raid", "Personagem saiu da regiao da arena; estado de salas reiniciado.")
+                        MURIM_LOG.event("arena","saiu da arena")
                         MURIM_A04.stopRun()
                         HallowEntryState.wasInsideRaid = false
                         HallowEntryState.verifiedRoomIndex = nil
@@ -10847,15 +10890,9 @@ local hallowRaidTask = task.spawn(function()
                         if dodgeOk and dodging then defenseBlocking=true
                         elseif not dodgeOk then MURIM_TRACE.add("ERRO","DesvioA06",tostring(dodging),5,"desvio-a06") end
                     end
-                    if defenseBlocking then
-                        MURIM_LATE.stopWalk()
-                        currentTarget=nil
-                        if hallowStatusLabel then
-                            hallowStatusLabel.Text=currentRaidRoomIndex==6 and os.clock()<(MURIM_LATE.soulUntil or 0)
-                                and "Three Souls: ataques pausados; aguardando parry das souls"
-                                or "Recuperacao de HP: ataques pausados ate atingir HP alvo"
-                        end
-                    else
+                    -- V20B: TXT 09:00: nas 20 pausas de HP da A03 vieram 174 golpes (6-12 por pausa), com 2-3 Paper Effigy
+                    -- virados para o personagem (frente 0.75-0.96) e o Tailor 15 studs abaixo olhando para o lado (frente ~0.1).
+                    -- O "seen" que deixa os Paper Effigy parados so era enviado fora da pausa; agora vai tambem durante ela.
                     if currentRaidRoomIndex~=4 and currentRaidRoomIndex~=5 and isHallowPacifySeen and os.clock() - lastSeenPacifyTime >= 0.5 then
                         lastSeenPacifyTime = os.clock()
                         pcall(function()
@@ -10873,6 +10910,15 @@ local hallowRaidTask = task.spawn(function()
                             end
                         end)
                     end
+                    if defenseBlocking then
+                        MURIM_LATE.stopWalk()
+                        currentTarget=nil
+                        if hallowStatusLabel then
+                            hallowStatusLabel.Text=currentRaidRoomIndex==6 and os.clock()<(MURIM_LATE.soulUntil or 0)
+                                and "Three Souls: ataques pausados; aguardando parry das souls"
+                                or "Recuperacao de HP: ataques pausados ate atingir HP alvo"
+                        end
+                    else
 
 
                     if currentRaidRoomIndex==3 or (HallowEntryState.furthestArea or 1)>=3 then
