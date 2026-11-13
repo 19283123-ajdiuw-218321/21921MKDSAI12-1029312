@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V20F: Heart Demon waits up to 30s standing in the circle after the difficulty (SpiritCircle checked against the spot that entered in the 11:48 TXT); game teleport right after our placement still counts; V20E: Heart Demon difficulty like Halloween (Normal/Hard/Hardcore in the tab, chosen in the MurimDialog), gate prompt not refired while the dialog is open, chat ignored; V20D: Heart Demon entrance = only the Heart-Demon prompt near the verified gate (16461,129,-491); wrong saved spot ignored; V20C: new Heart Demon tab (The Heart-Demon Abyss): Auto teleports to the entrance prompt, fires it and the dialog, inside fights/uses prompts and records the quest HUD; log field in the tab, Save TXT/Copy, auto TXT every 2 min; V20B: A03 sends the Paper Effigy seen also during HP pauses, A04 keeps 55 studs from the Watchman (facing or not) and leaves him before crossing the open exit, A05 jump off (server pulls back), A04 death shows the most dangerous Watchman reading of the last 3s, raid lost by leaving the arena shown as PERDIDA; V20A: full log at the top of the TXT (errors with traceback, one line per raid, deaths with the 8s before, boss fights with no-damage gaps, HP pauses, time stopped), raid loop survives errors, HP pause that does not heal is cancelled, A07 keeps fighting the same ghost, A05 lights the lamp first and jumps to A06 (Top76) with fallback, A09 does not walk while the Matriarch is alive, farm boss chest and loot filter from Top76; V19Z: A09 walks (no teleport) until the Matriarch appears, manual movement logged; V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
+print("[Boxer_fighter_Test V2] V20G: Heart Demon boss door: stands in the circle in front of the doors, fires Enter the Heart Chamber from there and waits (no loot) until it opens; own HP in the fight log; player list/quest guide out of the HUD log; V20F: Heart Demon waits up to 30s standing in the circle after the difficulty (SpiritCircle checked against the spot that entered in the 11:48 TXT); game teleport right after our placement still counts; V20E: Heart Demon difficulty like Halloween (Normal/Hard/Hardcore in the tab, chosen in the MurimDialog), gate prompt not refired while the dialog is open, chat ignored; V20D: Heart Demon entrance = only the Heart-Demon prompt near the verified gate (16461,129,-491); wrong saved spot ignored; V20C: new Heart Demon tab (The Heart-Demon Abyss): Auto teleports to the entrance prompt, fires it and the dialog, inside fights/uses prompts and records the quest HUD; log field in the tab, Save TXT/Copy, auto TXT every 2 min; V20B: A03 sends the Paper Effigy seen also during HP pauses, A04 keeps 55 studs from the Watchman (facing or not) and leaves him before crossing the open exit, A05 jump off (server pulls back), A04 death shows the most dangerous Watchman reading of the last 3s, raid lost by leaving the arena shown as PERDIDA; V20A: full log at the top of the TXT (errors with traceback, one line per raid, deaths with the 8s before, boss fights with no-damage gaps, HP pauses, time stopped), raid loop survives errors, HP pause that does not heal is cancelled, A07 keeps fighting the same ghost, A05 lights the lamp first and jumps to A06 (Top76) with fallback, A09 does not walk while the Matriarch is alive, farm boss chest and loot filter from Top76; V19Z: A09 walks (no teleport) until the Matriarch appears, manual movement logged; V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -122,7 +122,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V20F | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V20G | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -11822,6 +11822,7 @@ function MURIM_HD.setInside(v,why,pos)
     if MURIM_HD.inside==v then return end
     MURIM_HD.inside=v
     MURIM_HD.insideAt=v and os.clock() or nil
+    MURIM_HD.door=nil
     if v then MURIM_HD.stats.entries+=1;MURIM_HD.choiceAttempts=0;MURIM_HD.awaitUntil=0;MURIM_HD.promptWaitUntil=0 end
     MURIM_HD.log("EVIDENCIA",(v and "DENTRO da dungeon: " or "FORA da dungeon: ")..tostring(why).." em "..MURIM_HD.fmt(pos),0)
 end
@@ -11832,7 +11833,8 @@ function MURIM_HD.readHud(now)
     local pg=player:FindFirstChild("PlayerGui")
     local seen,logged={},0
     for _,g in ipairs(pg and pg:GetChildren() or {}) do
-        if g:IsA("ScreenGui") and g.Enabled and g~=MURIM_HD.ownGui and not g.Name:find("Chat") then
+        if g:IsA("ScreenGui") and g.Enabled and g~=MURIM_HD.ownGui and not g.Name:find("Chat") and not g.Name:find("PlayerList")
+            and not g.Name:find("Quest") then
             for _,obj in ipairs(g:GetDescendants()) do
                 if obj:IsA("TextLabel") and isHallowGuiVisible(obj) then
                     local t=tostring(obj.Text or ""):gsub("<[^>]+>",""):gsub("%s+"," ")
@@ -11889,7 +11891,9 @@ function MURIM_HD.attack(root,mob,now)
         MURIM_HD.stats.attacks+=1
         pcall(function() remote:FireServer("Attack") end)
     end
-    MURIM_HD.log("INFO",string.format("Lutando com %s: HP %.0f (comecou com %.0f)",mob.Name,h.Health,MURIM_HD.targetHp0 or -1),3,"luta")
+    local myHum=root.Parent and root.Parent:FindFirstChildOfClass("Humanoid")
+    MURIM_HD.log("INFO",string.format("Lutando com %s: HP %.0f (comecou com %.0f) | meu HP %.0f/%.0f",mob.Name,h.Health,
+        MURIM_HD.targetHp0 or -1,myHum and myHum.Health or -1,myHum and myHum.MaxHealth or -1),3,"luta")
     MURIM_HD.state="dentro: lutando com "..mob.Name
 end
 function MURIM_HD.pickPrompt(root,now)
@@ -11898,7 +11902,8 @@ function MURIM_HD.pickPrompt(root,now)
         local p=c.prompt
         local t=MURIM_HD.promptTry[p]
         local text=tostring(p.ActionText).." "..tostring(p.ObjectText)
-        if p.Parent and p.Enabled and c.pos and not MURIM_HD.hasWord(text,MURIM_HD.exitWords) and (not t or now-t.at>=8) then
+        if p.Parent and p.Enabled and c.pos and not MURIM_HD.hasWord(text,MURIM_HD.exitWords) and (not t or now-t.at>=8)
+            and not MURIM_HD.isDoor(c) then
             local d=(c.pos-root.Position).Magnitude
             if d<bd then best,bd=c,d end
         end
@@ -12139,10 +12144,131 @@ function MURIM_HD.entryTick(root,now)
         MURIM_HD.entryTryAt=now
     end
 end
+-- V20G: TXT 13/11 12:05 e prints: a porta da Camara do Coracao (Raids.HeartDemonAbyss.BossDoor.DoorL.DoorSeal.
+-- BossDoorPrompt, 'Enter the Heart Chamber', Hold 1.2, MaxDist 40) so abre com o personagem DENTRO do circulo diante
+-- das portas ("Fique no circulo diante das portas para abri-las"). O Auto acionou a 3 studs da porta, fora do circulo,
+-- e saiu para pegar loot. Agora: acha o circulo perto da porta, fica no centro, aciona a porta de la (de novo a cada
+-- 12s) e espera ate 40s sem pegar loot, ate a porta desabilitar/sumir. Inimigo perto interrompe (luta primeiro).
+MURIM_HD.doorDone=setmetatable({},{__mode="k"})
+function MURIM_HD.isDoor(c)
+    local p=c.prompt
+    local text=tostring(p.ActionText).." "..tostring(p.ObjectText)
+    if MURIM_HD.hasWord(text,MURIM_HD.exitWords) then return false end
+    return MURIM_HD.hasWord(text,{"enter","descend","chamber"})~=nil or p:GetFullName():find("Door",1,true)~=nil
+end
+-- Circulo perto de pos dentro do modelo HeartDemonAbyss do prompt: peca baixa e larga com circle/gather/muster/rally
+-- no nome (dela ou de um pai); senao Part cilindrica fina (disco) de 6 a 40 studs. A mais perto de pos.
+function MURIM_HD.circleNear(prompt,pos,maxDist)
+    local model=prompt.Parent
+    while model and model.Name~="HeartDemonAbyss" do model=model.Parent end
+    if not model then return nil,"modelo HeartDemonAbyss nao achado",{} end
+    local named,shaped,seen=nil,nil,{}
+    local nd,sd=math.huge,math.huge
+    for _,part in ipairs(model:GetDescendants()) do
+        if part:IsA("BasePart") then
+            local dist=Vector3.new(part.Position.X-pos.X,0,part.Position.Z-pos.Z).Magnitude
+            if dist<=maxDist then
+                local x,y,z=MURIM_HD.extent(part)
+                if y<=4 and math.min(x,z)>=4 then
+                    local node,isNamed=part,false
+                    while node and node~=model do
+                        local n=tostring(node.Name):lower()
+                        if n:find("circle",1,true) or n:find("gather",1,true) or n:find("muster",1,true) or n:find("rally",1,true) then
+                            isNamed=true
+                            break
+                        end
+                        node=node.Parent
+                    end
+                    local disc=not isNamed and y<=1.5 and math.abs(x-z)<=1 and x>=6 and x<=40
+                        and part:IsA("Part") and part.Shape==Enum.PartType.Cylinder
+                    if (isNamed or disc) and #seen<12 then
+                        seen[#seen+1]=string.format("%s %s %.1fx%.1fx%.1f a %.0f",part.Name,MURIM_HD.fmt(part.Position),x,y,z,dist)
+                    end
+                    if isNamed and dist<nd then named,nd=part,dist end
+                    if disc and dist<sd then shaped,sd=part,dist end
+                end
+            end
+        end
+    end
+    if named then return named,"nome",seen end
+    if shaped then return shaped,"forma redonda",seen end
+    return nil,"nenhum",seen
+end
+function MURIM_HD.doorSpot(d,root)
+    local part,how,seen=MURIM_HD.circleNear(d.prompt,d.pos,45)
+    local foot,why
+    if part then
+        foot=part.Position
+        why="centro de "..part:GetFullName().." ("..how..")"
+    else
+        local flat=Vector3.new(root.Position.X-d.pos.X,0,root.Position.Z-d.pos.Z)
+        local dir=flat.Magnitude>0.5 and flat.Unit or Vector3.new(0,0,-1)
+        foot=d.pos+dir*12
+        why="circulo nao achado: 12 studs na frente da porta"
+    end
+    local params=RaycastParams.new()
+    params.FilterType=Enum.RaycastFilterType.Exclude
+    params.FilterDescendantsInstances={root.Parent}
+    local hit=workspace:Raycast(foot+Vector3.new(0,15,0),Vector3.new(0,-40,0),params)
+    local spot=hit and (hit.Position+Vector3.new(0,3.2,0)) or (foot+Vector3.new(0,3,0))
+    MURIM_HD.log("EVIDENCIA",string.format("Porta %s em %s | ponto no circulo %s (%s) | candidatos: %s",MURIM_HD.promptText(d.prompt),
+        MURIM_HD.fmt(d.pos),MURIM_HD.fmt(spot),why,#seen>0 and table.concat(seen,"; ") or "nenhum"),0)
+    return spot
+end
+function MURIM_HD.doorTick(root,now)
+    local d=MURIM_HD.door
+    if d and (not d.prompt.Parent or not d.prompt.Enabled or now-d.since>40) then
+        local why=not d.prompt.Parent and "prompt sumiu" or (not d.prompt.Enabled and "prompt desabilitou (porta aberta?)" or "40s sem abrir")
+        MURIM_HD.log("EVIDENCIA",string.format("Porta %s: fim da espera no circulo (%s) depois de %.0fs, %d acionamentos",
+            MURIM_HD.promptText(d.prompt),why,now-d.since,d.fires),0)
+        MURIM_HD.doorDone[d.prompt]=now
+        MURIM_HD.door=nil
+        d=nil
+    end
+    if not d then
+        local best,bd=nil,200
+        for _,c in ipairs(MURIM_HD.prompts) do
+            local p=c.prompt
+            if p.Parent and p.Enabled and c.pos and MURIM_HD.isDoor(c) and now-(MURIM_HD.doorDone[p] or -1e9)>=20 then
+                local dist=(c.pos-root.Position).Magnitude
+                if dist<bd then best,bd=c,dist end
+            end
+        end
+        if not best then return false end
+        d={prompt=best.prompt,pos=best.pos,since=now,fires=0,lastFire=-1e9}
+        MURIM_HD.door=d
+        d.spot=MURIM_HD.doorSpot(d,root)
+    end
+    local away=Vector3.new(root.Position.X-d.spot.X,0,root.Position.Z-d.spot.Z).Magnitude
+    if away>2 or math.abs(root.Position.Y-d.spot.Y)>6 then
+        root.AssemblyLinearVelocity=Vector3.zero
+        root.CFrame=CFrame.new(d.spot)
+        MURIM_HD.ownTeleportAt=now
+        MURIM_HD.ownTeleportTo=root.Position
+        MURIM_HD.log("ACAO",string.format("No circulo da porta: %s (estava a %.1f studs)",MURIM_HD.fmt(d.spot),away),2,"circulo-porta")
+        MURIM_HD.state="dentro: indo para o circulo da porta "..MURIM_HD.promptText(d.prompt)
+        return true
+    end
+    if now-d.lastFire>=12 then
+        d.lastFire=now
+        d.fires+=1
+        MURIM_HD.tryPrompt(d.prompt,"Porta (no circulo)")
+    end
+    MURIM_HD.state=string.format("dentro: no circulo da porta, acionou %d vez(es), esperando abrir (%.0fs)",d.fires,now-d.since)
+    MURIM_HD.log("INFO",MURIM_HD.state,8,"espera-porta")
+    return true
+end
 function MURIM_HD.insideTick(root,now)
     MURIM_HD.readHud(now)
     local mob=MURIM_HD.pickMob(root)
-    if mob then return MURIM_HD.attack(root,mob,now) end
+    if mob then
+        if MURIM_HD.door then
+            MURIM_HD.log("INFO","Inimigo perto ("..mob.Name.."): espera no circulo da porta interrompida",0)
+            MURIM_HD.door=nil
+        end
+        return MURIM_HD.attack(root,mob,now)
+    end
+    if MURIM_HD.doorTick(root,now) then return end
     local c=MURIM_HD.pickPrompt(root,now)
     if c then
         local reach=math.max(3,(c.prompt.MaxActivationDistance or 8)-2)
@@ -12298,7 +12424,7 @@ function MURIM_HD.install(host)
         if class=="TextButton" then Instance.new("UICorner",o).CornerRadius=UDim.new(0,7) end
         return o
     end
-    local title=node("TextLabel",0,6,1,22,"😈 The Heart-Demon Abyss • Auto + Log (V20F)")
+    local title=node("TextLabel",0,6,1,22,"😈 The Heart-Demon Abyss • Auto + Log (V20G)")
     title.TextXAlignment=Enum.TextXAlignment.Left
     local toggle=node("TextButton",0,32,1,34,"",Color3.fromRGB(120,50,60))
     local function paint()
@@ -13404,7 +13530,7 @@ report("Menu principal aberto • carregando Alquimia / Forja / Avanço", false)
 task.spawn(function()
     local ok, reason = xpcall(function() mountWorkshop(hub) end, function(e) return tostring(e) end)
     if ok then
-        report("Pronto para usar • 11 abas (V20F: Heart Demon)", false)
+        report("Pronto para usar • 11 abas (V20G: Heart Demon)", false)
         task.delay(3, finishNotice)
     else
         report("Falha ao carregar o módulo de minijogos: " .. tostring(reason), true)
