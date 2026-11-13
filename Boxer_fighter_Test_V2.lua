@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V20L: Heart Demon repeat (MurimRunEnd Go again / Sair, toggle like Halloween), never Climb out of the Abyss, retreat at 60% until 90% toward the arena middle (edge being eaten = 20 studs inside), artifact logged and paused in mirror/retreat, no player targets while Heart Demon is on; V20K: Heart Demon boss: Heart Mirror = back turned to the boss and no attacks; retreat at low HP; mobs in the void / without damage skipped; boss door fired 1.5s after reaching the circle and the circle kept after it opens; big damage logged; V20J: Heart Demon fall fix: loot only with floor under the drop and not 30+ studs below, upright teleport onto the floor (no item rotation), loot teleports logged, fall guard brings the character back to the last floor; V20I: Heart Demon loot = Halloween logic (Murim_Drops within 120 studs, shouldLootItem also for chests, chest retry timers, collected before fighting, teleport on top + touch + every prompt of the drop); V20H: Heart Demon loot uses the same item filter as the farm (Settings > Filtro de itens: chosen rarity and up + enchant/heaven grade/colored/currency/quest/keys; never another player personal loot), chests always, skipped items logged; V20G: Heart Demon boss door: stands in the circle in front of the doors, fires Enter the Heart Chamber from there and waits (no loot) until it opens; own HP in the fight log; player list/quest guide out of the HUD log; V20F: Heart Demon waits up to 30s standing in the circle after the difficulty (SpiritCircle checked against the spot that entered in the 11:48 TXT); game teleport right after our placement still counts; V20E: Heart Demon difficulty like Halloween (Normal/Hard/Hardcore in the tab, chosen in the MurimDialog), gate prompt not refired while the dialog is open, chat ignored; V20D: Heart Demon entrance = only the Heart-Demon prompt near the verified gate (16461,129,-491); wrong saved spot ignored; V20C: new Heart Demon tab (The Heart-Demon Abyss): Auto teleports to the entrance prompt, fires it and the dialog, inside fights/uses prompts and records the quest HUD; log field in the tab, Save TXT/Copy, auto TXT every 2 min; V20B: A03 sends the Paper Effigy seen also during HP pauses, A04 keeps 55 studs from the Watchman (facing or not) and leaves him before crossing the open exit, A05 jump off (server pulls back), A04 death shows the most dangerous Watchman reading of the last 3s, raid lost by leaving the arena shown as PERDIDA; V20A: full log at the top of the TXT (errors with traceback, one line per raid, deaths with the 8s before, boss fights with no-damage gaps, HP pauses, time stopped), raid loop survives errors, HP pause that does not heal is cancelled, A07 keeps fighting the same ghost, A05 lights the lamp first and jumps to A06 (Top76) with fallback, A09 does not walk while the Matriarch is alive, farm boss chest and loot filter from Top76; V19Z: A09 walks (no teleport) until the Matriarch appears, manual movement logged; V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
+print("[Boxer_fighter_Test V2] V20M: Heart Demon shadow (Your Heart Demon) attacked first, back turned to the boss during the mirror; NPC list refreshed every 1s inside; no retreat when the boss is under 12% and HP 30%+; big damage logs nearby mobs and boss animations; picked loot logged with rarity/enchant; V20L: Heart Demon repeat (MurimRunEnd Go again / Sair, toggle like Halloween), never Climb out of the Abyss, retreat at 60% until 90% toward the arena middle (edge being eaten = 20 studs inside), artifact logged and paused in mirror/retreat, no player targets while Heart Demon is on; V20K: Heart Demon boss: Heart Mirror = back turned to the boss and no attacks; retreat at low HP; mobs in the void / without damage skipped; boss door fired 1.5s after reaching the circle and the circle kept after it opens; big damage logged; V20J: Heart Demon fall fix: loot only with floor under the drop and not 30+ studs below, upright teleport onto the floor (no item rotation), loot teleports logged, fall guard brings the character back to the last floor; V20I: Heart Demon loot = Halloween logic (Murim_Drops within 120 studs, shouldLootItem also for chests, chest retry timers, collected before fighting, teleport on top + touch + every prompt of the drop); V20H: Heart Demon loot uses the same item filter as the farm (Settings > Filtro de itens: chosen rarity and up + enchant/heaven grade/colored/currency/quest/keys; never another player personal loot), chests always, skipped items logged; V20G: Heart Demon boss door: stands in the circle in front of the doors, fires Enter the Heart Chamber from there and waits (no loot) until it opens; own HP in the fight log; player list/quest guide out of the HUD log; V20F: Heart Demon waits up to 30s standing in the circle after the difficulty (SpiritCircle checked against the spot that entered in the 11:48 TXT); game teleport right after our placement still counts; V20E: Heart Demon difficulty like Halloween (Normal/Hard/Hardcore in the tab, chosen in the MurimDialog), gate prompt not refired while the dialog is open, chat ignored; V20D: Heart Demon entrance = only the Heart-Demon prompt near the verified gate (16461,129,-491); wrong saved spot ignored; V20C: new Heart Demon tab (The Heart-Demon Abyss): Auto teleports to the entrance prompt, fires it and the dialog, inside fights/uses prompts and records the quest HUD; log field in the tab, Save TXT/Copy, auto TXT every 2 min; V20B: A03 sends the Paper Effigy seen also during HP pauses, A04 keeps 55 studs from the Watchman (facing or not) and leaves him before crossing the open exit, A05 jump off (server pulls back), A04 death shows the most dangerous Watchman reading of the last 3s, raid lost by leaving the arena shown as PERDIDA; V20A: full log at the top of the TXT (errors with traceback, one line per raid, deaths with the 8s before, boss fights with no-damage gaps, HP pauses, time stopped), raid loop survives errors, HP pause that does not heal is cancelled, A07 keeps fighting the same ghost, A05 lights the lamp first and jumps to A06 (Top76) with fallback, A09 does not walk while the Matriarch is alive, farm boss chest and loot filter from Top76; V19Z: A09 walks (no teleport) until the Matriarch appears, manual movement logged; V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -122,7 +122,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V20L | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V20M | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -11909,7 +11909,7 @@ function MURIM_HD.pickMob(root)
         local h=m.Parent and m:FindFirstChildOfClass("Humanoid")
         local part=m:FindFirstChild("HumanoidRootPart") or m.PrimaryPart
         if h and h.Health>0 and part and not m:FindFirstChildWhichIsA("ProximityPrompt",true) and not MURIM_HD.mobUnreachable(m,part,root) then
-            local d=(part.Position-root.Position).Magnitude
+            local d=(part.Position-root.Position).Magnitude-(MURIM_HD.isShadow(m) and 1000 or 0)
             if d<bd then best,bd=m,d end
         end
     end
@@ -12663,8 +12663,13 @@ function MURIM_HD.collect(root,drop,now,floor)
     end
     pcall(MURIM_LOOT.chestTried,drop,prompts>0)
     MURIM_HD.stats.loot=(MURIM_HD.stats.loot or 0)+1
-    MURIM_HD.log("ACAO",string.format("Loot %s (tentativa %d): %d prompt(s) %s, %d toque(s)",drop.Name,t.n,prompts,
-        table.concat(names,"/"),touched),0)
+    local info=""
+    if t.n==1 and MURIM_LOOT.describe then
+        local okD,desc=pcall(MURIM_LOOT.describe,drop)
+        if okD then info=" | "..tostring(desc) end
+    end
+    MURIM_HD.log("ACAO",string.format("Loot %s (tentativa %d): %d prompt(s) %s, %d toque(s)%s",drop.Name,t.n,prompts,
+        table.concat(names,"/"),touched,info),0)
     if t.n>=3 then
         t.skipUntil=now+20
         t.n=0
@@ -12782,6 +12787,9 @@ function MURIM_HD.retreatCheck(root,mob,now)
         end
         return true
     end
+    -- V20M: chefe abaixo de 12% e meu HP 30%+: termina a luta em vez de recuar.
+    local mh=mob:FindFirstChildOfClass("Humanoid")
+    if mh and mh.MaxHealth>=5000 and mh.Health<mh.MaxHealth*0.12 and pct>=0.3 then return false end
     if pct<0.6 and now>=(MURIM_HD.retreatBlockUntil or 0) then
         MURIM_HD.retreatSince=now
         MURIM_HD.log("DECISAO",string.format("Recuo: meu HP %.0f/%.0f (%.0f%%) lutando com %s",hum.Health,hum.MaxHealth,pct*100,mob.Name),0)
@@ -12794,13 +12802,97 @@ function MURIM_HD.hpWatch(hum,now)
     local last=MURIM_HD.lastMyHp
     MURIM_HD.lastMyHp=hp
     if last and hum.MaxHealth and hum.MaxHealth>0 and last-hp>=hum.MaxHealth*0.15 then
-        MURIM_HD.log("EVIDENCIA",string.format("Dano grande: meu HP %.0f -> %.0f (%.0f%%) | alvo %s | estado %s | espelho %s | texto do chefe: %s | ultimo HUD: %s",
+        MURIM_HD.log("EVIDENCIA",string.format("Dano grande: meu HP %.0f -> %.0f (%.0f%%) | alvo %s | estado %s | espelho %s | texto do chefe: %s | ultimo HUD: %s | %s",
             last,hp,(last-hp)/hum.MaxHealth*100,MURIM_HD.target and MURIM_HD.target.Name or "-",tostring(MURIM_HD.state),
-            tostring(MURIM_HD.mirrorUntil~=nil and now<=MURIM_HD.mirrorUntil),tostring(MURIM_HD.ultText()),tostring(MURIM_HD.lastHudText)),0)
+            tostring(MURIM_HD.mirrorUntil~=nil and now<=MURIM_HD.mirrorUntil),tostring(MURIM_HD.ultText()),tostring(MURIM_HD.lastHudText),
+            MURIM_HD.damageContext(hum)),0)
     end
+end
+-- V20M (TXT 13/11 13:33): 13:31:48 "suas proprias sombras se levantam"; 13:31:52 golpe de 46% com o Auto parado de
+-- costas no espelho; 13:31:53 o mob perto era "Your Heart Demon" (a sombra do jogador, em Murim_NPCs). Agora a sombra e
+-- o primeiro alvo sempre (tambem no espelho e no recuo); no espelho ataca a sombra ficando entre ela e o chefe, de costas
+-- para ele. A lista de NPCs (Murim_NPCs) e atualizada a cada 1s dentro (a varredura completa e de 8s e a sombra nasce
+-- no meio). Dano grande registra os mobs a 60 studs e as animacoes do chefe (para o proximo ajuste: esquiva/aparar).
+MURIM_HD.shadowSeen=setmetatable({},{__mode="k"})
+function MURIM_HD.isShadow(m)
+    local n=tostring(m and m.Name or "")
+    return n:sub(1,5)=="Your " or n:lower():find("sombra de voc",1,true)~=nil
+end
+function MURIM_HD.refreshMobs(root,now)
+    if now-(MURIM_HD.lastMobRefresh or -1e9)<1 then return end
+    MURIM_HD.lastMobRefresh=now
+    local folder=workspace:FindFirstChild("Murim_NPCs")
+    if not folder then return end
+    local mobs,seen={},{}
+    for _,m in ipairs(folder:GetChildren()) do
+        local h=m:IsA("Model") and m:FindFirstChildOfClass("Humanoid")
+        if h and h.Health>0 and not game:GetService("Players"):GetPlayerFromCharacter(m) then
+            local pos=MURIM_HD.posOf(m)
+            if pos and (pos-root.Position).Magnitude<=200 then
+                mobs[#mobs+1]=m
+                seen[m]=true
+                if MURIM_HD.isShadow(m) and not MURIM_HD.shadowSeen[m] then
+                    MURIM_HD.shadowSeen[m]=true
+                    MURIM_HD.log("EVIDENCIA",string.format("Sombra apareceu: %s HP %.0f/%.0f a %.0f studs",m.Name,h.Health,h.MaxHealth,(pos-root.Position).Magnitude),0)
+                end
+            end
+        end
+    end
+    for _,m in ipairs(MURIM_HD.mobs) do
+        if not seen[m] and m.Parent then mobs[#mobs+1]=m end
+    end
+    MURIM_HD.mobs=mobs
+end
+function MURIM_HD.attackShadow(root,mob,now)
+    local mirror=MURIM_HD.mirrorCheck(root,now)
+    MURIM_HD.attack(root,mob,now)
+    if not mirror then return end
+    local boss=MURIM_HD.bigMob(root)
+    local sp=mob:FindFirstChild("HumanoidRootPart") or mob.PrimaryPart
+    local bpart=boss and boss~=mob and (boss:FindFirstChild("HumanoidRootPart") or boss.PrimaryPart)
+    if not sp or not bpart then return end
+    local toBoss=Vector3.new(bpart.Position.X-sp.Position.X,0,bpart.Position.Z-sp.Position.Z)
+    if toBoss.Magnitude<1 then return end
+    local pos=sp.Position+toBoss.Unit*4
+    root.CFrame=CFrame.new(pos,Vector3.new(sp.Position.X,pos.Y,sp.Position.Z))
+    MURIM_HD.ownTeleportAt=now
+    MURIM_HD.ownTeleportTo=root.Position
+    MURIM_HD.state="dentro: espelho, atacando "..mob.Name.." de costas para o chefe"
+    MURIM_HD.log("ACAO","Sombra "..mob.Name.." no espelho: atacando entre ela e o chefe, de costas para ele",3,"sombra-espelho")
+end
+function MURIM_HD.damageContext(hum)
+    local root=hum.Parent and hum.Parent:FindFirstChild("HumanoidRootPart")
+    if not root then return "sem posicao" end
+    local near={}
+    for _,m in ipairs(MURIM_HD.mobs) do
+        local h=m.Parent and m:FindFirstChildOfClass("Humanoid")
+        local part=m:FindFirstChild("HumanoidRootPart") or m.PrimaryPart
+        if h and part and h.Health>0 then
+            local d=(part.Position-root.Position).Magnitude
+            if d<=60 and #near<6 then near[#near+1]=string.format("%s a %.0f HP %.0f/%.0f",m.Name,d,h.Health,h.MaxHealth) end
+        end
+    end
+    local boss=MURIM_HD.bigMob(root)
+    local anims="?"
+    local bh=boss and boss:FindFirstChildOfClass("Humanoid")
+    if bh then
+        local ok,tracks=pcall(function()
+            local an=bh:FindFirstChildOfClass("Animator")
+            return (an or bh):GetPlayingAnimationTracks()
+        end)
+        if ok and type(tracks)=="table" then
+            local out={}
+            for _,tr in ipairs(tracks) do
+                if #out<4 then out[#out+1]=tostring(tr.Name)..":"..tostring(tr.Animation and tr.Animation.AnimationId or "?") end
+            end
+            anims=#out>0 and table.concat(out,", ") or "nenhuma"
+        end
+    end
+    return "perto: "..(#near>0 and table.concat(near,"; ") or "nenhum").." | animacoes do chefe: "..anims
 end
 function MURIM_HD.insideTick(root,now)
     MURIM_HD.readHud(now)
+    MURIM_HD.refreshMobs(root,now)
     -- V20L: dialogo de dificuldade dentro (depois do Go again) e escolhido como na entrada.
     if MURIM_HD.choose(now) then return end
     -- V20I: como a Halloween, o loot (filtro de itens) vem antes da luta.
@@ -12812,6 +12904,8 @@ function MURIM_HD.insideTick(root,now)
             MURIM_HD.log("INFO","Inimigo perto ("..mob.Name.."): espera no circulo da porta interrompida",0)
             MURIM_HD.door=nil
         end
+        -- V20M: a sombra do jogador primeiro (no espelho: entre ela e o chefe, de costas para ele).
+        if MURIM_HD.isShadow(mob) then return MURIM_HD.attackShadow(root,mob,now) end
         -- V20K: espelho do chefe = de costas para ele, sem atacar; HP baixo = recua de costas.
         if MURIM_HD.mirrorCheck(root,now) then return MURIM_HD.backTo(root,MURIM_HD.bigMob(root) or mob,now,"espelho",14) end
         if MURIM_HD.retreatCheck(root,mob,now) then return MURIM_HD.backTo(root,MURIM_HD.bigMob(root) or mob,now,"HP baixo",30) end
@@ -12980,7 +13074,7 @@ function MURIM_HD.install(host)
         if class=="TextButton" then Instance.new("UICorner",o).CornerRadius=UDim.new(0,7) end
         return o
     end
-    local title=node("TextLabel",0,6,1,22,"😈 The Heart-Demon Abyss • Auto + Log (V20L)")
+    local title=node("TextLabel",0,6,1,22,"😈 The Heart-Demon Abyss • Auto + Log (V20M)")
     title.TextXAlignment=Enum.TextXAlignment.Left
     local toggle=node("TextButton",0,32,1,34,"",Color3.fromRGB(120,50,60))
     local function paint()
@@ -14098,7 +14192,7 @@ report("Menu principal aberto • carregando Alquimia / Forja / Avanço", false)
 task.spawn(function()
     local ok, reason = xpcall(function() mountWorkshop(hub) end, function(e) return tostring(e) end)
     if ok then
-        report("Pronto para usar • 11 abas (V20L: Heart Demon)", false)
+        report("Pronto para usar • 11 abas (V20M: Heart Demon)", false)
         task.delay(3, finishNotice)
     else
         report("Falha ao carregar o módulo de minijogos: " .. tostring(reason), true)
