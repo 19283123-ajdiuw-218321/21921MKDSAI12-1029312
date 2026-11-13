@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V20C: new Heart Demon tab (The Heart-Demon Abyss): Auto teleports to the entrance prompt, fires it and the dialog, inside fights/uses prompts and records the quest HUD; log field in the tab, Save TXT/Copy, auto TXT every 2 min; V20B: A03 sends the Paper Effigy seen also during HP pauses, A04 keeps 55 studs from the Watchman (facing or not) and leaves him before crossing the open exit, A05 jump off (server pulls back), A04 death shows the most dangerous Watchman reading of the last 3s, raid lost by leaving the arena shown as PERDIDA; V20A: full log at the top of the TXT (errors with traceback, one line per raid, deaths with the 8s before, boss fights with no-damage gaps, HP pauses, time stopped), raid loop survives errors, HP pause that does not heal is cancelled, A07 keeps fighting the same ghost, A05 lights the lamp first and jumps to A06 (Top76) with fallback, A09 does not walk while the Matriarch is alive, farm boss chest and loot filter from Top76; V19Z: A09 walks (no teleport) until the Matriarch appears, manual movement logged; V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
+print("[Boxer_fighter_Test V2] V20D: Heart Demon entrance = only the Heart-Demon prompt near the verified gate (16461,129,-491); wrong saved spot ignored; V20C: new Heart Demon tab (The Heart-Demon Abyss): Auto teleports to the entrance prompt, fires it and the dialog, inside fights/uses prompts and records the quest HUD; log field in the tab, Save TXT/Copy, auto TXT every 2 min; V20B: A03 sends the Paper Effigy seen also during HP pauses, A04 keeps 55 studs from the Watchman (facing or not) and leaves him before crossing the open exit, A05 jump off (server pulls back), A04 death shows the most dangerous Watchman reading of the last 3s, raid lost by leaving the arena shown as PERDIDA; V20A: full log at the top of the TXT (errors with traceback, one line per raid, deaths with the 8s before, boss fights with no-damage gaps, HP pauses, time stopped), raid loop survives errors, HP pause that does not heal is cancelled, A07 keeps fighting the same ghost, A05 lights the lamp first and jumps to A06 (Top76) with fallback, A09 does not walk while the Matriarch is alive, farm boss chest and loot filter from Top76; V19Z: A09 walks (no teleport) until the Matriarch appears, manual movement logged; V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -122,7 +122,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V20C | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V20D | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -11561,11 +11561,14 @@ end
 -- estiver perto e aciona prompts. Tudo vai para o log: campo na propria aba, secao [HEART DEMON] no topo do TXT e
 -- TXT automatico a cada 2 min com o Auto ligado. Print 13/11 11:12: entrada perto de (16449,129,-491), prompt
 -- "Sealed: someone is down there", debuff "Withered Qi IV: the dead qi is draining you, no healing".
-MURIM_HD={enabled=false,lines={},lastSeen={},state="desligado",known=Vector3.new(16449,129,-491),knownFrom="print 13/11",
+MURIM_HD={enabled=false,lines={},lastSeen={},state="desligado",known=Vector3.new(16461,129,-491),knownFrom="entrada verificada (TXT 13/11 11:34)",
     entrance=nil,prompts={},mobs={},promptSeen=setmetatable({},{__mode="k"}),promptTry=setmetatable({},{__mode="k"}),
     hudSeen={},lastScan=-1e9,lastHud=-1e9,lastAutoSave=0,lastPos=nil,lastPosAt=0,inside=false,dialogUntil=0,
     btnBefore=setmetatable({},{__mode="k"}),btnClicked=setmetatable({},{__mode="k"}),
     stats={prompts=0,dialogs=0,teleports=0,attacks=0,kills=0,entries=0,scans=0}}
+-- V20D: TXT 13/11 11:34: Workspace.Map_Region2.Lairs.HeartDemonAbyss.GatePlate.WestDungeonPrompt,
+-- "Descend into the Abyss" / "The Heart-Demon Abyss", Hold 1.2, MaxDist 14, em (16461,129,-491).
+MURIM_HD.verified=Vector3.new(16461,129,-491)
 MURIM_HD.words={"heart-demon","heart demon","heartdemon","abyss","sealed","someone is down","descend","demon","withered",
     "abismo","selado","demonio","murcho"}
 MURIM_HD.entryWords={"sealed","someone is down","abyss","heart","descend","enter","selado","abismo","descer","entrar"}
@@ -11642,7 +11645,7 @@ function MURIM_HD.scan(root,full)
     MURIM_HD.mobs=mobs
     MURIM_HD.lastScanMs=(os.clock()-t0)*1000
     for _,c in ipairs(prompts) do MURIM_HD.watchPrompt(c) end
-    MURIM_HD.pickEntrance(prompts)
+    if not MURIM_HD.inside then MURIM_HD.pickEntrance(prompts) end
     return prompts,mobs,models,labels,#all
 end
 -- Registra cada prompt na primeira vez e quando muda (texto ou Enabled).
@@ -11656,14 +11659,21 @@ function MURIM_HD.watchPrompt(c)
         first and "Novo" or "Mudou:",MURIM_HD.promptText(p),tostring(p.Enabled),p.HoldDuration or 0,p.MaxActivationDistance or 0,
         MURIM_HD.fmt(c.pos),c.dist or -1,p:GetFullName()),0)
 end
+-- V20D: TXT 13/11 11:36: com o Auto ligado no Last Lamp a entrada real estava fora do streaming e a "Stele of the
+-- Dragon Abyss" (palavra abyss) virou entrada: o Auto foi ate ela, meditou e gravou a posicao errada. Agora so vale o
+-- prompt com Heart-Demon/HeartDemon no texto ou no caminho, a ate 300 studs da entrada verificada.
+function MURIM_HD.isEntrance(c)
+    local p=c.prompt
+    local id=(tostring(p.ActionText).." "..tostring(p.ObjectText).." "..p:GetFullName()):lower()
+    if not (id:find("heart-demon",1,true) or id:find("heartdemon",1,true) or id:find("heart demon",1,true)) then return false end
+    if MURIM_HD.hasWord(tostring(p.ActionText).." "..tostring(p.ObjectText),MURIM_HD.exitWords) then return false end
+    return c.pos~=nil and (c.pos-MURIM_HD.verified).Magnitude<=300
+end
 function MURIM_HD.pickEntrance(prompts)
     local best,score=nil,-math.huge
     for _,c in ipairs(prompts) do
-        local text=tostring(c.prompt.ActionText).." "..tostring(c.prompt.ObjectText).." "..(c.owner and c.owner.Name or "")
-        local w=MURIM_HD.hasWord(text,MURIM_HD.entryWords)
-        -- So vale com texto da dungeon ou a ate 80 studs da posicao conhecida ("Enter" de loja perto nao conta).
-        if w and (c.hit or (c.known or math.huge)<=80) and not MURIM_HD.hasWord(text,MURIM_HD.exitWords) then
-            local s=(c.prompt.Enabled and 1000 or 0)-(c.known or 0)
+        if MURIM_HD.isEntrance(c) then
+            local s=(c.prompt.Enabled and 1000 or 0)-(c.pos-MURIM_HD.verified).Magnitude
             if s>score then best,score=c,s end
         end
     end
@@ -11688,8 +11698,16 @@ function MURIM_HD.loadEntrance()
         if not isfile("MurimHubLogs/heartdemon_entrada.txt") then return end
         local x,y,z=readfile("MurimHubLogs/heartdemon_entrada.txt"):match("([%-%d%.]+),([%-%d%.]+),([%-%d%.]+)")
         if x then
-            MURIM_HD.known=Vector3.new(tonumber(x),tonumber(y),tonumber(z))
-            MURIM_HD.knownFrom="arquivo heartdemon_entrada.txt"
+            local pos=Vector3.new(tonumber(x),tonumber(y),tonumber(z))
+            if (pos-MURIM_HD.verified).Magnitude<=300 then
+                MURIM_HD.known=pos
+                MURIM_HD.knownFrom="arquivo heartdemon_entrada.txt"
+            else
+                MURIM_HD.known=MURIM_HD.verified
+                MURIM_HD.knownFrom="entrada verificada (arquivo errado ignorado)"
+                MURIM_HD.log("AVISO","Arquivo heartdemon_entrada.txt com "..MURIM_HD.fmt(pos).." longe da entrada verificada "
+                    ..MURIM_HD.fmt(MURIM_HD.verified)..": ignorado (erro da V20C)",0)
+            end
         end
     end)
 end
@@ -11892,6 +11910,7 @@ function MURIM_HD.entryTick(root,now)
                 MURIM_HD.lastGo=now
                 MURIM_HD.state="indo para a posicao conhecida da entrada ("..MURIM_HD.knownFrom..")"
                 MURIM_HD.goTo(root,MURIM_HD.known,"posicao conhecida")
+                MURIM_HD.lastScan=now-7
             end
         else
             MURIM_HD.state="perto da entrada conhecida, procurando o prompt"
@@ -12086,7 +12105,7 @@ function MURIM_HD.install(host)
         if class=="TextButton" then Instance.new("UICorner",o).CornerRadius=UDim.new(0,7) end
         return o
     end
-    local title=node("TextLabel",0,6,1,22,"😈 The Heart-Demon Abyss • Auto + Log (V20C, primeira versao)")
+    local title=node("TextLabel",0,6,1,22,"😈 The Heart-Demon Abyss • Auto + Log (V20D)")
     title.TextXAlignment=Enum.TextXAlignment.Left
     local toggle=node("TextButton",0,32,1,34,"",Color3.fromRGB(120,50,60))
     local function paint()
@@ -13176,7 +13195,7 @@ report("Menu principal aberto • carregando Alquimia / Forja / Avanço", false)
 task.spawn(function()
     local ok, reason = xpcall(function() mountWorkshop(hub) end, function(e) return tostring(e) end)
     if ok then
-        report("Pronto para usar • 11 abas (V20C: Heart Demon)", false)
+        report("Pronto para usar • 11 abas (V20D: Heart Demon)", false)
         task.delay(3, finishNotice)
     else
         report("Falha ao carregar o módulo de minijogos: " .. tostring(reason), true)
