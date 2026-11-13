@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V20K: Heart Demon boss: Heart Mirror = back turned to the boss and no attacks; retreat at low HP; mobs in the void / without damage skipped; boss door fired 1.5s after reaching the circle and the circle kept after it opens; big damage logged; V20J: Heart Demon fall fix: loot only with floor under the drop and not 30+ studs below, upright teleport onto the floor (no item rotation), loot teleports logged, fall guard brings the character back to the last floor; V20I: Heart Demon loot = Halloween logic (Murim_Drops within 120 studs, shouldLootItem also for chests, chest retry timers, collected before fighting, teleport on top + touch + every prompt of the drop); V20H: Heart Demon loot uses the same item filter as the farm (Settings > Filtro de itens: chosen rarity and up + enchant/heaven grade/colored/currency/quest/keys; never another player personal loot), chests always, skipped items logged; V20G: Heart Demon boss door: stands in the circle in front of the doors, fires Enter the Heart Chamber from there and waits (no loot) until it opens; own HP in the fight log; player list/quest guide out of the HUD log; V20F: Heart Demon waits up to 30s standing in the circle after the difficulty (SpiritCircle checked against the spot that entered in the 11:48 TXT); game teleport right after our placement still counts; V20E: Heart Demon difficulty like Halloween (Normal/Hard/Hardcore in the tab, chosen in the MurimDialog), gate prompt not refired while the dialog is open, chat ignored; V20D: Heart Demon entrance = only the Heart-Demon prompt near the verified gate (16461,129,-491); wrong saved spot ignored; V20C: new Heart Demon tab (The Heart-Demon Abyss): Auto teleports to the entrance prompt, fires it and the dialog, inside fights/uses prompts and records the quest HUD; log field in the tab, Save TXT/Copy, auto TXT every 2 min; V20B: A03 sends the Paper Effigy seen also during HP pauses, A04 keeps 55 studs from the Watchman (facing or not) and leaves him before crossing the open exit, A05 jump off (server pulls back), A04 death shows the most dangerous Watchman reading of the last 3s, raid lost by leaving the arena shown as PERDIDA; V20A: full log at the top of the TXT (errors with traceback, one line per raid, deaths with the 8s before, boss fights with no-damage gaps, HP pauses, time stopped), raid loop survives errors, HP pause that does not heal is cancelled, A07 keeps fighting the same ghost, A05 lights the lamp first and jumps to A06 (Top76) with fallback, A09 does not walk while the Matriarch is alive, farm boss chest and loot filter from Top76; V19Z: A09 walks (no teleport) until the Matriarch appears, manual movement logged; V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
+print("[Boxer_fighter_Test V2] V20L: Heart Demon repeat (MurimRunEnd Go again / Sair, toggle like Halloween), never Climb out of the Abyss, retreat at 60% until 90% toward the arena middle (edge being eaten = 20 studs inside), artifact logged and paused in mirror/retreat, no player targets while Heart Demon is on; V20K: Heart Demon boss: Heart Mirror = back turned to the boss and no attacks; retreat at low HP; mobs in the void / without damage skipped; boss door fired 1.5s after reaching the circle and the circle kept after it opens; big damage logged; V20J: Heart Demon fall fix: loot only with floor under the drop and not 30+ studs below, upright teleport onto the floor (no item rotation), loot teleports logged, fall guard brings the character back to the last floor; V20I: Heart Demon loot = Halloween logic (Murim_Drops within 120 studs, shouldLootItem also for chests, chest retry timers, collected before fighting, teleport on top + touch + every prompt of the drop); V20H: Heart Demon loot uses the same item filter as the farm (Settings > Filtro de itens: chosen rarity and up + enchant/heaven grade/colored/currency/quest/keys; never another player personal loot), chests always, skipped items logged; V20G: Heart Demon boss door: stands in the circle in front of the doors, fires Enter the Heart Chamber from there and waits (no loot) until it opens; own HP in the fight log; player list/quest guide out of the HUD log; V20F: Heart Demon waits up to 30s standing in the circle after the difficulty (SpiritCircle checked against the spot that entered in the 11:48 TXT); game teleport right after our placement still counts; V20E: Heart Demon difficulty like Halloween (Normal/Hard/Hardcore in the tab, chosen in the MurimDialog), gate prompt not refired while the dialog is open, chat ignored; V20D: Heart Demon entrance = only the Heart-Demon prompt near the verified gate (16461,129,-491); wrong saved spot ignored; V20C: new Heart Demon tab (The Heart-Demon Abyss): Auto teleports to the entrance prompt, fires it and the dialog, inside fights/uses prompts and records the quest HUD; log field in the tab, Save TXT/Copy, auto TXT every 2 min; V20B: A03 sends the Paper Effigy seen also during HP pauses, A04 keeps 55 studs from the Watchman (facing or not) and leaves him before crossing the open exit, A05 jump off (server pulls back), A04 death shows the most dangerous Watchman reading of the last 3s, raid lost by leaving the arena shown as PERDIDA; V20A: full log at the top of the TXT (errors with traceback, one line per raid, deaths with the 8s before, boss fights with no-damage gaps, HP pauses, time stopped), raid loop survives errors, HP pause that does not heal is cancelled, A07 keeps fighting the same ghost, A05 lights the lamp first and jumps to A06 (Top76) with fallback, A09 does not walk while the Matriarch is alive, farm boss chest and loot filter from Top76; V19Z: A09 walks (no teleport) until the Matriarch appears, manual movement logged; V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -122,7 +122,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V20K | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V20L | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -10555,7 +10555,8 @@ end)
 --------------------------------------------------------------------------------
 artifactTask = task.spawn(function()
     while not destroyed do
-        if isAutoArtifact and not isFarming and not (hubUI.isBusy and hubUI.isBusy()) then
+        if isAutoArtifact and not isFarming and not (hubUI.isBusy and hubUI.isBusy())
+            and not (MURIM_HD and MURIM_HD.artifactBlocked and MURIM_HD.artifactBlocked()) then
             local char = player.Character
             local hrp = char and char:FindFirstChild("HumanoidRootPart")
             if hrp and os.clock() - lastArtifactUsed >= artifactCooldown then
@@ -10576,7 +10577,8 @@ artifactTask = task.spawn(function()
                         end
                     end
                 end
-                if not targetPos then
+                -- V20L: com o Auto Heart Demon ligado nao mira em jogador (o portao e zona PvP).
+                if not targetPos and not (MURIM_HD and MURIM_HD.enabled) then
                     for _, otherP in ipairs(Players:GetPlayers()) do
                         if otherP ~= player and otherP.Character then
                             local otherHrp = otherP.Character:FindFirstChild("HumanoidRootPart")
@@ -10594,6 +10596,7 @@ artifactTask = task.spawn(function()
                 if targetPos then
                     lastArtifactUsed = os.clock()
                     useArtifact(targetPos)
+                    if MURIM_HD and MURIM_HD.enabled and MURIM_HD.artifactUsed then MURIM_HD.artifactUsed(targetPos) end
                 end
             end
         end
@@ -11600,7 +11603,7 @@ MURIM_HD.verified=Vector3.new(16461,129,-491)
 MURIM_HD.words={"heart-demon","heart demon","heartdemon","abyss","sealed","someone is down","descend","demon","withered",
     "abismo","selado","demonio","murcho"}
 MURIM_HD.entryWords={"sealed","someone is down","abyss","heart","descend","enter","selado","abismo","descer","entrar"}
-MURIM_HD.exitWords={"leave","exit","return","home","hide","sair","voltar","lantern home"}
+MURIM_HD.exitWords={"leave","exit","return","home","hide","sair","voltar","lantern home","climb out","crystal barrens"}
 MURIM_HD.confirmWords={"enter","descend","begin","start","confirm","yes","accept","go down","entrar","descer","iniciar",
     "comecar","confirmar","sim","aceitar"}
 function MURIM_HD.log(level,msg,minInterval,key)
@@ -11831,10 +11834,15 @@ function MURIM_HD.track(root,now)
         MURIM_HD.log("EVIDENCIA",string.format("Pulo de posicao %s -> %s (%.0f studs) %s",MURIM_HD.fmt(last),MURIM_HD.fmt(p),
             (p-last).Magnitude,ours and "(teleporte do script)" or "(teleporte do jogo)"),0)
         if not ours then
-            if MURIM_HD.entryTryAt and now-MURIM_HD.entryTryAt<=20 then
+            if not MURIM_HD.inside and MURIM_HD.entryTryAt and now-MURIM_HD.entryTryAt<=20 then
                 MURIM_HD.setInside(true,"teleporte do jogo depois do prompt da entrada",p)
             elseif MURIM_HD.inside and (p-MURIM_HD.known).Magnitude<=60 then
                 MURIM_HD.setInside(false,"voltou para perto da entrada",p)
+            elseif MURIM_HD.inside and MURIM_HD.cleared and MURIM_HD.cleared.lastBtn=="again" and (p-last).Magnitude<3000 then
+                MURIM_HD.newRun("Go again: o jogo levou de volta ao comeco",p)
+            elseif MURIM_HD.inside and (MURIM_HD.cleared or (p-last).Magnitude>=3000) then
+                MURIM_HD.setInside(false,(MURIM_HD.cleared and "dungeon concluida e o jogo levou" or "teleporte do jogo para longe da dungeon")
+                    ..string.format(" (%.0f studs)",(p-last).Magnitude),p)
             end
         end
     end
@@ -11853,6 +11861,12 @@ function MURIM_HD.setInside(v,why,pos)
     MURIM_HD.door=nil
     if v then MURIM_HD.stats.entries+=1;MURIM_HD.choiceAttempts=0;MURIM_HD.awaitUntil=0;MURIM_HD.promptWaitUntil=0 end
     MURIM_HD.log("EVIDENCIA",(v and "DENTRO da dungeon: " or "FORA da dungeon: ")..tostring(why).." em "..MURIM_HD.fmt(pos),0)
+    local cleared=MURIM_HD.cleared
+    MURIM_HD.cleared=nil
+    if not v and cleared and not MURIM_HD.repeatOn then
+        MURIM_HD.log("ACAO","Repetir desligado: dungeon concluida, Auto Heart Demon desligado",0)
+        MURIM_HD.setEnabled(false)
+    end
 end
 -- Textos novos da HUD (missao, avisos, debuffs) a cada 2s.
 function MURIM_HD.readHud(now)
@@ -11871,6 +11885,11 @@ function MURIM_HD.readHud(now)
                         if not MURIM_HD.hudSeen[t] and logged<25 then
                             logged+=1
                             MURIM_HD.log("HUD",t.." ["..g.Name.."]",0)
+                            MURIM_HD.lastHudText=t
+                            if MURIM_HD.hasWord(t,MURIM_HD.edgeWords) then
+                                MURIM_HD.edgeUntil=now+15
+                                MURIM_HD.log("EVIDENCIA","Borda da arena sendo engolida: recuo e ataque ficam 20 studs para dentro por 15s",0)
+                            end
                         end
                     end
                 end
@@ -11925,6 +11944,10 @@ function MURIM_HD.attack(root,mob,now)
     end
     root.CFrame=part.CFrame*CFrame.new(0,0,4)
     root.AssemblyLinearVelocity=Vector3.zero
+    if MURIM_HD.edgeUntil and now<=MURIM_HD.edgeUntil then
+        local cp=MURIM_HD.clampArena(MURIM_HD.arenaOf(mob,root),root.Position,now)
+        if cp~=root.Position then root.CFrame=CFrame.new(cp,Vector3.new(part.Position.X,cp.Y,part.Position.Z)) end
+    end
     MURIM_HD.ownTeleportAt=now
     MURIM_HD.ownTeleportTo=root.Position
     local remote=MURIM_HD.combatRemote()
@@ -12141,6 +12164,152 @@ function MURIM_HD.holdCircle(root,now)
         MURIM_HD.log("ACAO",string.format("No circulo: %s (estava a %.1f studs do ponto)",MURIM_HD.fmt(spot),away),2,"circulo")
     end
     MURIM_HD.state="no circulo, aguardando o jogo levar (dificuldade "..MURIM_HD.difficulty..")"
+end
+-- V20L (TXT 13/11 13:20): repetir a dungeon como pede o usuario ("igual a Halloween"). O painel do fim e o ScreenGui
+-- MurimRunEnd ("Cleared", "You lead: go again with your party, or head home.", botoes 'Go again' e 'Sair', "The Alliance
+-- sends everyone back in 116s"). Repetir ligado (padrao, como a Halloween): depois do loot clica Go again (2 tentativas,
+-- depois Sair e reentra pelo portao). Desligado: clica Sair e desliga o Auto quando sair da dungeon.
+MURIM_HD.repeatOn=true
+MURIM_HD.edgeWords={"devorar a borda","devour the edge","abismo sobe","abyss rises"}
+function MURIM_HD.setRepeat(v)
+    MURIM_HD.repeatOn=v
+    MURIM_HD.log("ACAO","Repetir dungeon ao concluir: "..(v and "LIGADO" or "DESLIGADO"),0)
+    if type(writefile)~="function" then return end
+    pcall(function()
+        if type(makefolder)=="function" and (type(isfolder)~="function" or not isfolder("MurimHubLogs")) then makefolder("MurimHubLogs") end
+        writefile("MurimHubLogs/heartdemon_repetir.txt",v and "1" or "0")
+    end)
+end
+function MURIM_HD.loadRepeat()
+    if type(readfile)~="function" or type(isfile)~="function" then return end
+    pcall(function()
+        if not isfile("MurimHubLogs/heartdemon_repetir.txt") then return end
+        MURIM_HD.repeatOn=readfile("MurimHubLogs/heartdemon_repetir.txt"):find("0",1,true)==nil
+    end)
+end
+function MURIM_HD.endPanel()
+    local pg=player:FindFirstChild("PlayerGui")
+    local g=pg and pg:FindFirstChild("MurimRunEnd")
+    if not g or (g:IsA("ScreenGui") and not g.Enabled) then return nil end
+    local again,leave,texts=nil,nil,{}
+    for _,o in ipairs(g:GetDescendants()) do
+        if o:IsA("TextButton") and isHallowGuiVisible(o) then
+            local t=tostring(o.Text or ""):lower()
+            if t:find("again",1,true) or t:find("novamente",1,true) or t:find("de novo",1,true) then again=again or o
+            elseif t:find("sair",1,true) or t:find("leave",1,true) or t:find("home",1,true) then leave=leave or o end
+        elseif o:IsA("TextLabel") and isHallowGuiVisible(o) and #texts<6 then
+            local t=tostring(o.Text or "")
+            if #t>0 then texts[#texts+1]=t end
+        end
+    end
+    if not again and not leave then return nil end
+    return again,leave,g,table.concat(texts," | ")
+end
+function MURIM_HD.newRun(why,pos)
+    MURIM_HD.cleared=nil
+    MURIM_HD.door=nil
+    MURIM_HD.doorDone=setmetatable({},{__mode="k"})
+    MURIM_HD.mobSkip=setmetatable({},{__mode="k"})
+    MURIM_HD.arena=nil
+    MURIM_HD.stats.runs=(MURIM_HD.stats.runs or 0)+1
+    MURIM_HD.log("EVIDENCIA","Nova corrida: "..tostring(why).." em "..MURIM_HD.fmt(pos),0)
+end
+function MURIM_HD.endTick(root,now)
+    if now-(MURIM_HD.lastEndScan or -1e9)<1 then return MURIM_HD.cleared~=nil end
+    MURIM_HD.lastEndScan=now
+    local again,leave,g,texts=MURIM_HD.endPanel()
+    local c=MURIM_HD.cleared
+    if not again and not leave then
+        if c and c.lastBtn=="again" and now-c.lastClick>8 then MURIM_HD.newRun("Go again aceito (painel fechou)",root.Position) end
+        return false
+    end
+    if not c then
+        c={at=now,clicks=0,lastClick=-1e9}
+        MURIM_HD.cleared=c
+        MURIM_HD.stats.clears=(MURIM_HD.stats.clears or 0)+1
+        MURIM_HD.log("EVIDENCIA",string.format("Dungeon concluida (%s): Go again=%s, Sair=%s | %s",g.Name,again and "sim" or "nao",
+            leave and "sim" or "nao",tostring(texts)),0)
+    end
+    local btn,name=nil,nil
+    if MURIM_HD.repeatOn and again and c.clicks<2 then btn,name=again,"again"
+    elseif leave and c.clicks<4 then btn,name=leave,"leave" end
+    if btn and now-c.lastClick>=5 then
+        c.clicks+=1
+        c.lastClick=now
+        c.lastBtn=name
+        local ev=c.clicks%2==1 and "Activated" or "MouseButton1Click"
+        local ok=type(firesignal)=="function" and pcall(function() firesignal(btn[ev]) end)
+        MURIM_HD.log(ok and "ACAO" or "AVISO",string.format("Fim da dungeon: botao %s via firesignal(%s) tentativa %d pcall=%s (repetir %s)",
+            name=="again" and "Go again" or "Sair",ev,c.clicks,tostring(ok),MURIM_HD.repeatOn and "ON" or "OFF"),0)
+    end
+    MURIM_HD.state=MURIM_HD.repeatOn and "dungeon concluida: Go again" or "dungeon concluida: saindo (repetir desligado)"
+    return true
+end
+-- Artefato (Configuracoes > Uso automatico do artefato): o laco do hub usa o remote Artifact {op="Use"} a cada 2s no NPC
+-- mais perto (50 studs). Com a Heart Demon ligada: pausa no espelho e no recuo, nao mira em jogador, cada uso no log.
+function MURIM_HD.artifactBlocked()
+    if not MURIM_HD.enabled then return false end
+    local now=os.clock()
+    local why=(MURIM_HD.mirrorUntil~=nil and now<=MURIM_HD.mirrorUntil and "espelho") or (MURIM_HD.retreatSince~=nil and "recuo") or nil
+    if why then MURIM_HD.log("INFO","Artefato pausado ("..why..")",10,"artefato-pausa") end
+    return why~=nil
+end
+function MURIM_HD.artifactUsed(pos)
+    MURIM_HD.stats.artifact=(MURIM_HD.stats.artifact or 0)+1
+    MURIM_HD.log("INFO",string.format("Artefato: %d usos (ultimo em %s)",MURIM_HD.stats.artifact,MURIM_HD.fmt(pos)),15,"artefato")
+end
+-- Arena do chefe = peca do chao embaixo dele (40+ studs). TXT 13:19:51: o recuo foi para a borda da Camara
+-- (24007,6882) logo depois de "O abismo sobe para devorar a borda"; derrubado 5s depois. Recuo/costas ficam dentro
+-- (margem 12; 20 enquanto a borda e engolida) e escolhem, em volta do chefe, o ponto mais longe dele dentro da arena.
+function MURIM_HD.arenaOf(boss,root)
+    local a=MURIM_HD.arena
+    if a and a.boss==boss then return a end
+    local part=boss:FindFirstChild("HumanoidRootPart") or boss.PrimaryPart
+    a={boss=boss}
+    MURIM_HD.arena=a
+    if not part then return a end
+    local params=RaycastParams.new()
+    params.FilterType=Enum.RaycastFilterType.Exclude
+    params.FilterDescendantsInstances={root.Parent,boss}
+    local hit=workspace:Raycast(part.Position+Vector3.new(0,2,0),Vector3.new(0,-30,0),params)
+    local inst=hit and hit.Instance
+    local ok,x,y,z=pcall(function()
+        if not inst:IsA("BasePart") then error("nao e BasePart") end
+        return MURIM_HD.extent(inst)
+    end)
+    if ok and math.min(x,z)>=40 then
+        a.center=inst.Position
+        a.radius=math.min(x,z)/2
+        MURIM_HD.log("EVIDENCIA",string.format("Arena do chefe: chao %s %.0fx%.0f centro %s",inst:GetFullName(),x,z,MURIM_HD.fmt(inst.Position)),0)
+    else
+        MURIM_HD.log("AVISO","Arena do chefe: chao embaixo dele nao achado ou pequeno ("..tostring(inst and inst.Name)..")",30,"arena")
+    end
+    return a
+end
+function MURIM_HD.arenaLimit(a,now)
+    local margin=(MURIM_HD.edgeUntil and now<=MURIM_HD.edgeUntil) and 20 or 12
+    return math.max(4,a.radius-margin)
+end
+function MURIM_HD.inArena(a,pos,now)
+    if not a or not a.center then return true end
+    return Vector3.new(pos.X-a.center.X,0,pos.Z-a.center.Z).Magnitude<=MURIM_HD.arenaLimit(a,now)
+end
+function MURIM_HD.clampArena(a,pos,now)
+    if MURIM_HD.inArena(a,pos,now) then return pos end
+    local f=Vector3.new(pos.X-a.center.X,0,pos.Z-a.center.Z)
+    return Vector3.new(a.center.X,pos.Y,a.center.Z)+f.Unit*MURIM_HD.arenaLimit(a,now)
+end
+function MURIM_HD.safeAway(a,bp,dir,dist,now)
+    if not a or not a.center then return nil end
+    local best,bestScore=nil,-math.huge
+    for i=0,15 do
+        local ang=i*math.pi/8
+        local d=Vector3.new(dir.X*math.cos(ang)-dir.Z*math.sin(ang),0,dir.X*math.sin(ang)+dir.Z*math.cos(ang))
+        local p=MURIM_HD.clampArena(a,bp+d*dist,now)
+        local score=Vector3.new(p.X-bp.X,0,p.Z-bp.Z).Magnitude-0.01*math.min(i,16-i)
+        if score>bestScore then best,bestScore=p,score end
+    end
+    return best
 end
 function MURIM_HD.setDifficulty(name)
     MURIM_HD.difficulty=name
@@ -12581,13 +12750,16 @@ function MURIM_HD.backTo(root,mob,now,why,dist)
     local flat=Vector3.new(root.Position.X-bp.X,0,root.Position.Z-bp.Z)
     local dir=flat.Magnitude>0.5 and flat.Unit or Vector3.new(0,0,1)
     local pos=root.Position
-    if flat.Magnitude<dist-2 then
-        local foot=bp+dir*dist
+    local arena=MURIM_HD.arenaOf(mob,root)
+    if flat.Magnitude<dist-2 or not MURIM_HD.inArena(arena,pos,now) then
+        local foot=MURIM_HD.safeAway(arena,bp,dir,dist,now) or (bp+dir*dist)
         local params=RaycastParams.new()
         params.FilterType=Enum.RaycastFilterType.Exclude
         params.FilterDescendantsInstances={root.Parent,mob}
         local hit=workspace:Raycast(foot+Vector3.new(0,10,0),Vector3.new(0,-30,0),params)
         if hit then pos=hit.Position+Vector3.new(0,3.2,0) end
+        local away=Vector3.new(pos.X-bp.X,0,pos.Z-bp.Z)
+        if away.Magnitude>0.5 then dir=away.Unit end
     end
     root.AssemblyLinearVelocity=Vector3.zero
     root.CFrame=CFrame.new(pos,pos+dir)
@@ -12602,7 +12774,7 @@ function MURIM_HD.retreatCheck(root,mob,now)
     if not hum or not hum.MaxHealth or hum.MaxHealth<=0 then return false end
     local pct=hum.Health/hum.MaxHealth
     if MURIM_HD.retreatSince then
-        if pct>=0.75 or now-MURIM_HD.retreatSince>15 then
+        if pct>=0.9 or now-MURIM_HD.retreatSince>25 then
             MURIM_HD.log("INFO",string.format("Fim do recuo: meu HP %.0f/%.0f depois de %.0fs",hum.Health,hum.MaxHealth,now-MURIM_HD.retreatSince),0)
             MURIM_HD.retreatSince=nil
             MURIM_HD.retreatBlockUntil=now+10
@@ -12610,7 +12782,7 @@ function MURIM_HD.retreatCheck(root,mob,now)
         end
         return true
     end
-    if pct<0.45 and now>=(MURIM_HD.retreatBlockUntil or 0) then
+    if pct<0.6 and now>=(MURIM_HD.retreatBlockUntil or 0) then
         MURIM_HD.retreatSince=now
         MURIM_HD.log("DECISAO",string.format("Recuo: meu HP %.0f/%.0f (%.0f%%) lutando com %s",hum.Health,hum.MaxHealth,pct*100,mob.Name),0)
         return true
@@ -12622,13 +12794,15 @@ function MURIM_HD.hpWatch(hum,now)
     local last=MURIM_HD.lastMyHp
     MURIM_HD.lastMyHp=hp
     if last and hum.MaxHealth and hum.MaxHealth>0 and last-hp>=hum.MaxHealth*0.15 then
-        MURIM_HD.log("EVIDENCIA",string.format("Dano grande: meu HP %.0f -> %.0f (%.0f%%) | alvo %s | estado %s | espelho %s | texto do chefe: %s",
+        MURIM_HD.log("EVIDENCIA",string.format("Dano grande: meu HP %.0f -> %.0f (%.0f%%) | alvo %s | estado %s | espelho %s | texto do chefe: %s | ultimo HUD: %s",
             last,hp,(last-hp)/hum.MaxHealth*100,MURIM_HD.target and MURIM_HD.target.Name or "-",tostring(MURIM_HD.state),
-            tostring(MURIM_HD.mirrorUntil~=nil and now<=MURIM_HD.mirrorUntil),tostring(MURIM_HD.ultText())),0)
+            tostring(MURIM_HD.mirrorUntil~=nil and now<=MURIM_HD.mirrorUntil),tostring(MURIM_HD.ultText()),tostring(MURIM_HD.lastHudText)),0)
     end
 end
 function MURIM_HD.insideTick(root,now)
     MURIM_HD.readHud(now)
+    -- V20L: dialogo de dificuldade dentro (depois do Go again) e escolhido como na entrada.
+    if MURIM_HD.choose(now) then return end
     -- V20I: como a Halloween, o loot (filtro de itens) vem antes da luta.
     local drop,floor=MURIM_HD.pickDrop(root,now)
     if drop then return MURIM_HD.collect(root,drop,now,floor) end
@@ -12660,6 +12834,7 @@ function MURIM_HD.insideTick(root,now)
         end
         return
     end
+    if MURIM_HD.endTick(root,now) then return end
     MURIM_HD.state="dentro: sem inimigo e sem prompt a 150 studs (aguardando)"
     MURIM_HD.log("INFO",MURIM_HD.state.." em "..MURIM_HD.fmt(root.Position),15)
 end
@@ -12694,6 +12869,7 @@ function MURIM_HD.tick()
     MURIM_HD.hpWatch(hum,now)
     if MURIM_HD.fallGuard(root,hum,now) then return end
     MURIM_HD.track(root,now)
+    if not MURIM_HD.enabled then return end
     MURIM_HD.autoSave(now)
     if now-MURIM_HD.lastScan>=(MURIM_HD.inside and 8 or (MURIM_HD.entrance and 15 or 8)) then MURIM_HD.scan(root,false) end
     if now<MURIM_HD.dialogUntil and MURIM_HD.dialog(now) then return end
@@ -12737,12 +12913,13 @@ end
 function MURIM_HD.dump()
     local s=MURIM_HD.stats
     local e=MURIM_HD.entrance
-    return string.format("[HEART DEMON: Auto %s | dificuldade %s | estado: %s]\nentrada: %s | posicao conhecida %s (%s) | %s\nprompts acionados %d, dialogos %d, teleportes %d, entradas %d, ataques %d, derrotados %d, varreduras %d (ultima %.0f ms), loot coletado %d, itens ignorados pelo filtro (%s) %d, quedas evitadas %d\n\n",
+    return string.format("[HEART DEMON: Auto %s | dificuldade %s | estado: %s]\nentrada: %s | posicao conhecida %s (%s) | %s\nprompts acionados %d, dialogos %d, teleportes %d, entradas %d, ataques %d, derrotados %d, varreduras %d (ultima %.0f ms), loot coletado %d, itens ignorados pelo filtro (%s) %d, quedas evitadas %d, artefato %d, dungeons concluidas %d (repetir %s)\n\n",
         MURIM_HD.enabled and "LIGADO" or "desligado",MURIM_HD.difficulty,MURIM_HD.state,
         e and (MURIM_HD.promptText(e.prompt).." Enabled="..tostring(e.prompt.Enabled).." em "..MURIM_HD.fmt(e.pos)) or "nao identificada",
         MURIM_HD.fmt(MURIM_HD.known),MURIM_HD.knownFrom,MURIM_HD.inside and "DENTRO da dungeon" or "fora da dungeon",
         s.prompts,s.dialogs,s.teleports,s.entries,s.attacks,s.kills,s.scans,MURIM_HD.lastScanMs or 0,
-        s.loot or 0,MURIM_LOOT and (MURIM_LOOT.filter()) or "sem filtro",s.lootSkipped or 0,s.rescues or 0)
+        s.loot or 0,MURIM_LOOT and (MURIM_LOOT.filter()) or "sem filtro",s.lootSkipped or 0,s.rescues or 0,s.artifact or 0,
+        s.clears or 0,MURIM_HD.repeatOn and "ON" or "OFF")
 end
 function MURIM_HD.copyText()
     return MURIM_HD.dump().."[HEART DEMON: ultimas linhas]\n"..table.concat(MURIM_HD.lines,"\n")
@@ -12776,6 +12953,7 @@ function MURIM_HD.install(host)
     MURIM_HD.ownGui=host.gui
     MURIM_HD.loadEntrance()
     MURIM_HD.loadDifficulty()
+    MURIM_HD.loadRepeat()
     if host.gui then host.gui.Destroying:Connect(function() MURIM_HD.destroyed=true;MURIM_HD.enabled=false end) end
     -- A aba rola: em tela baixa (celular deitado) o campo de log fica com pelo menos 200 px.
     local body=Instance.new("ScrollingFrame")
@@ -12802,7 +12980,7 @@ function MURIM_HD.install(host)
         if class=="TextButton" then Instance.new("UICorner",o).CornerRadius=UDim.new(0,7) end
         return o
     end
-    local title=node("TextLabel",0,6,1,22,"😈 The Heart-Demon Abyss • Auto + Log (V20K)")
+    local title=node("TextLabel",0,6,1,22,"😈 The Heart-Demon Abyss • Auto + Log (V20L)")
     title.TextXAlignment=Enum.TextXAlignment.Left
     local toggle=node("TextButton",0,32,1,34,"",Color3.fromRGB(120,50,60))
     local function paint()
@@ -12826,18 +13004,28 @@ function MURIM_HD.install(host)
         end)
     end
     paintDiff()
-    local tp=node("TextButton",0,108,0.5,32,"⚡ Teleporte ate a entrada",Color3.fromRGB(105,60,150))
-    local map=node("TextButton",0.5,108,0.5,32,"🗺️ Mapear Heart Demon",Color3.fromRGB(55,85,140))
-    local save=node("TextButton",0,144,0.5,32,"💾 Salvar TXT",Color3.fromRGB(45,110,70))
-    local copy=node("TextButton",0.5,144,0.5,32,"📋 Copiar log",Color3.fromRGB(70,70,110))
-    local status=node("TextLabel",0,180,1,38,"",nil)
+    local rep=node("TextButton",0,108,1,30,"",Color3.fromRGB(45,110,70))
+    local function paintRep()
+        rep.Text=MURIM_HD.repeatOn and "🔄 Repetir dungeon ao concluir: Ligado (ON)" or "🔄 Repetir dungeon ao concluir: Desligado (OFF)"
+        rep.BackgroundColor3=MURIM_HD.repeatOn and Color3.fromRGB(45,110,70) or Color3.fromRGB(80,55,65)
+    end
+    paintRep()
+    rep.Activated:Connect(function()
+        MURIM_HD.setRepeat(not MURIM_HD.repeatOn)
+        paintRep()
+    end)
+    local tp=node("TextButton",0,144,0.5,32,"⚡ Teleporte ate a entrada",Color3.fromRGB(105,60,150))
+    local map=node("TextButton",0.5,144,0.5,32,"🗺️ Mapear Heart Demon",Color3.fromRGB(55,85,140))
+    local save=node("TextButton",0,180,0.5,32,"💾 Salvar TXT",Color3.fromRGB(45,110,70))
+    local copy=node("TextButton",0.5,180,0.5,32,"📋 Copiar log",Color3.fromRGB(70,70,110))
+    local status=node("TextLabel",0,216,1,38,"",nil)
     status.TextXAlignment=Enum.TextXAlignment.Left
     status.TextYAlignment=Enum.TextYAlignment.Top
     status.TextColor3=Color3.fromRGB(240,200,90)
     status.TextSize=11
     local field=Instance.new("ScrollingFrame")
     field.Name="HeartDemonLog"
-    field.Position=UDim2.new(0,10,0,222)
+    field.Position=UDim2.new(0,10,0,258)
     field.Size=UDim2.new(1,-20,0,200)
     field.BackgroundColor3=Color3.fromRGB(14,17,26)
     field.BorderSizePixel=0
@@ -12847,9 +13035,9 @@ function MURIM_HD.install(host)
     field.Parent=body
     Instance.new("UICorner",field).CornerRadius=UDim.new(0,6)
     local function fit()
-        local h=math.max(200,page.AbsoluteSize.Y-230)
+        local h=math.max(200,page.AbsoluteSize.Y-266)
         field.Size=UDim2.new(1,-20,0,h)
-        body.CanvasSize=UDim2.fromOffset(0,222+h+8)
+        body.CanvasSize=UDim2.fromOffset(0,258+h+8)
     end
     fit()
     page:GetPropertyChangedSignal("AbsoluteSize"):Connect(fit)
@@ -12897,6 +13085,8 @@ function MURIM_HD.install(host)
         local shown=-1
         while page.Parent and not MURIM_HD.destroyed do
             if page.Visible then
+                paint()
+                paintRep()
                 status.Text="Estado: "..tostring(MURIM_HD.state).." | Dificuldade: "..tostring(MURIM_HD.difficulty).."\nEntrada: "..(MURIM_HD.entrance and MURIM_HD.promptText(MURIM_HD.entrance.prompt) or ("nao achada; conhecida "..MURIM_HD.fmt(MURIM_HD.known)))
                     ..(MURIM_HD.inside and " | DENTRO" or "")
                 local list=MURIM_HD.lines
@@ -13908,7 +14098,7 @@ report("Menu principal aberto • carregando Alquimia / Forja / Avanço", false)
 task.spawn(function()
     local ok, reason = xpcall(function() mountWorkshop(hub) end, function(e) return tostring(e) end)
     if ok then
-        report("Pronto para usar • 11 abas (V20K: Heart Demon)", false)
+        report("Pronto para usar • 11 abas (V20L: Heart Demon)", false)
         task.delay(3, finishNotice)
     else
         report("Falha ao carregar o módulo de minijogos: " .. tostring(reason), true)
