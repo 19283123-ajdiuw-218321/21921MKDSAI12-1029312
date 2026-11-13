@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V20G: Heart Demon boss door: stands in the circle in front of the doors, fires Enter the Heart Chamber from there and waits (no loot) until it opens; own HP in the fight log; player list/quest guide out of the HUD log; V20F: Heart Demon waits up to 30s standing in the circle after the difficulty (SpiritCircle checked against the spot that entered in the 11:48 TXT); game teleport right after our placement still counts; V20E: Heart Demon difficulty like Halloween (Normal/Hard/Hardcore in the tab, chosen in the MurimDialog), gate prompt not refired while the dialog is open, chat ignored; V20D: Heart Demon entrance = only the Heart-Demon prompt near the verified gate (16461,129,-491); wrong saved spot ignored; V20C: new Heart Demon tab (The Heart-Demon Abyss): Auto teleports to the entrance prompt, fires it and the dialog, inside fights/uses prompts and records the quest HUD; log field in the tab, Save TXT/Copy, auto TXT every 2 min; V20B: A03 sends the Paper Effigy seen also during HP pauses, A04 keeps 55 studs from the Watchman (facing or not) and leaves him before crossing the open exit, A05 jump off (server pulls back), A04 death shows the most dangerous Watchman reading of the last 3s, raid lost by leaving the arena shown as PERDIDA; V20A: full log at the top of the TXT (errors with traceback, one line per raid, deaths with the 8s before, boss fights with no-damage gaps, HP pauses, time stopped), raid loop survives errors, HP pause that does not heal is cancelled, A07 keeps fighting the same ghost, A05 lights the lamp first and jumps to A06 (Top76) with fallback, A09 does not walk while the Matriarch is alive, farm boss chest and loot filter from Top76; V19Z: A09 walks (no teleport) until the Matriarch appears, manual movement logged; V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
+print("[Boxer_fighter_Test V2] V20H: Heart Demon loot uses the same item filter as the farm (Settings > Filtro de itens: chosen rarity and up + enchant/heaven grade/colored/currency/quest/keys; never another player personal loot), chests always, skipped items logged; V20G: Heart Demon boss door: stands in the circle in front of the doors, fires Enter the Heart Chamber from there and waits (no loot) until it opens; own HP in the fight log; player list/quest guide out of the HUD log; V20F: Heart Demon waits up to 30s standing in the circle after the difficulty (SpiritCircle checked against the spot that entered in the 11:48 TXT); game teleport right after our placement still counts; V20E: Heart Demon difficulty like Halloween (Normal/Hard/Hardcore in the tab, chosen in the MurimDialog), gate prompt not refired while the dialog is open, chat ignored; V20D: Heart Demon entrance = only the Heart-Demon prompt near the verified gate (16461,129,-491); wrong saved spot ignored; V20C: new Heart Demon tab (The Heart-Demon Abyss): Auto teleports to the entrance prompt, fires it and the dialog, inside fights/uses prompts and records the quest HUD; log field in the tab, Save TXT/Copy, auto TXT every 2 min; V20B: A03 sends the Paper Effigy seen also during HP pauses, A04 keeps 55 studs from the Watchman (facing or not) and leaves him before crossing the open exit, A05 jump off (server pulls back), A04 death shows the most dangerous Watchman reading of the last 3s, raid lost by leaving the arena shown as PERDIDA; V20A: full log at the top of the TXT (errors with traceback, one line per raid, deaths with the 8s before, boss fights with no-damage gaps, HP pauses, time stopped), raid loop survives errors, HP pause that does not heal is cancelled, A07 keeps fighting the same ghost, A05 lights the lamp first and jumps to A06 (Top76) with fallback, A09 does not walk while the Matriarch is alive, farm boss chest and loot filter from Top76; V19Z: A09 walks (no teleport) until the Matriarch appears, manual movement logged; V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -122,7 +122,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V20G | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V20H | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -7210,6 +7210,28 @@ local function shouldLootItem(drop)
 end
 
 
+-- V20H: a aba Heart Demon fica fora do buildMaster; expoe o MESMO filtro de itens (sem local novo aqui: limite 200).
+MURIM_LOOT={should=shouldLootItem,isChest=isChest,
+    filter=function()
+        local o=LOOT_FILTER_OPTIONS[currentLootFilterIdx]
+        return o and o.text or "?",currentLootFilterIdx
+    end,
+    describe=function(drop)
+        local attrPart=drop:IsA("BasePart") and drop or drop:FindFirstChildWhichIsA("BasePart",true)
+        local function attr(k)
+            local v=drop:GetAttribute(k)
+            if v==nil and attrPart and attrPart~=drop then v=attrPart:GetAttribute(k) end
+            return v
+        end
+        local id=attr("ItemId")
+        local info=nil
+        if type(id)=="string" and murimItems and murimItems.get then
+            local ok,r=pcall(murimItems.get,id)
+            if ok and type(r)=="table" then info=r end
+        end
+        return string.format("ItemId=%s raridade=%s cat=%s grau=%s encanto=%s pessoal=%s",tostring(id),tostring(info and info.rarity),
+            tostring(info and info.cat),tostring(attr("Grade")),tostring(attr("Enchant")~=nil),tostring(attr("Personal")))
+    end}
 local mainTask = nil
 local attackTask = nil
 local folderConnections = {}
@@ -11896,6 +11918,35 @@ function MURIM_HD.attack(root,mob,now)
         MURIM_HD.targetHp0 or -1,myHum and myHum.Health or -1,myHum and myHum.MaxHealth or -1),3,"luta")
     MURIM_HD.state="dentro: lutando com "..mob.Name
 end
+-- V20H: loot na Heart Demon com o mesmo filtro de itens das Configuracoes (shouldLootItem do farm: raridade escolhida
+-- para cima + encanto, grau celestial, colorido, moeda/quest/colecionavel/pet, chave de chefe, item sem ID; nunca loot
+-- pessoal de outro jogador). Bau sempre abre. Item pulado vai para o log uma vez por filtro (com o motivo).
+MURIM_HD.lootSkip=setmetatable({},{__mode="k"})
+function MURIM_HD.dropOf(prompt)
+    local node=prompt.Parent
+    while node and node.Parent and node.Parent.Name~="Murim_Drops" do node=node.Parent end
+    if node and node.Parent and node.Parent.Name=="Murim_Drops" then return node end
+    return nil
+end
+function MURIM_HD.lootAllowed(c)
+    local loot=MURIM_LOOT
+    if not loot then return true end
+    local drop=MURIM_HD.dropOf(c.prompt)
+    if not drop then return true end
+    local okChest,chest=pcall(loot.isChest,drop)
+    if okChest and chest then return true end
+    local ok,keep=pcall(loot.should,drop)
+    if not ok or keep then return true end
+    local name,idx=loot.filter()
+    if MURIM_HD.lootSkip[drop]~=idx then
+        MURIM_HD.lootSkip[drop]=idx
+        MURIM_HD.stats.lootSkipped=(MURIM_HD.stats.lootSkipped or 0)+1
+        local okD,desc=pcall(loot.describe,drop)
+        MURIM_HD.log("DECISAO",string.format("Loot ignorado pelo filtro %s: %s | %s",tostring(name),MURIM_HD.promptText(c.prompt),
+            okD and tostring(desc) or "?"),0)
+    end
+    return false
+end
 function MURIM_HD.pickPrompt(root,now)
     local best,bd=nil,120
     for _,c in ipairs(MURIM_HD.prompts) do
@@ -11903,7 +11954,7 @@ function MURIM_HD.pickPrompt(root,now)
         local t=MURIM_HD.promptTry[p]
         local text=tostring(p.ActionText).." "..tostring(p.ObjectText)
         if p.Parent and p.Enabled and c.pos and not MURIM_HD.hasWord(text,MURIM_HD.exitWords) and (not t or now-t.at>=8)
-            and not MURIM_HD.isDoor(c) then
+            and not MURIM_HD.isDoor(c) and MURIM_HD.lootAllowed(c) then
             local d=(c.pos-root.Position).Magnitude
             if d<bd then best,bd=c,d end
         end
@@ -12360,11 +12411,12 @@ end
 function MURIM_HD.dump()
     local s=MURIM_HD.stats
     local e=MURIM_HD.entrance
-    return string.format("[HEART DEMON: Auto %s | dificuldade %s | estado: %s]\nentrada: %s | posicao conhecida %s (%s) | %s\nprompts acionados %d, dialogos %d, teleportes %d, entradas %d, ataques %d, derrotados %d, varreduras %d (ultima %.0f ms)\n\n",
+    return string.format("[HEART DEMON: Auto %s | dificuldade %s | estado: %s]\nentrada: %s | posicao conhecida %s (%s) | %s\nprompts acionados %d, dialogos %d, teleportes %d, entradas %d, ataques %d, derrotados %d, varreduras %d (ultima %.0f ms), itens ignorados pelo filtro (%s) %d\n\n",
         MURIM_HD.enabled and "LIGADO" or "desligado",MURIM_HD.difficulty,MURIM_HD.state,
         e and (MURIM_HD.promptText(e.prompt).." Enabled="..tostring(e.prompt.Enabled).." em "..MURIM_HD.fmt(e.pos)) or "nao identificada",
         MURIM_HD.fmt(MURIM_HD.known),MURIM_HD.knownFrom,MURIM_HD.inside and "DENTRO da dungeon" or "fora da dungeon",
-        s.prompts,s.dialogs,s.teleports,s.entries,s.attacks,s.kills,s.scans,MURIM_HD.lastScanMs or 0)
+        s.prompts,s.dialogs,s.teleports,s.entries,s.attacks,s.kills,s.scans,MURIM_HD.lastScanMs or 0,
+        MURIM_LOOT and (MURIM_LOOT.filter()) or "sem filtro",s.lootSkipped or 0)
 end
 function MURIM_HD.copyText()
     return MURIM_HD.dump().."[HEART DEMON: ultimas linhas]\n"..table.concat(MURIM_HD.lines,"\n")
@@ -12424,7 +12476,7 @@ function MURIM_HD.install(host)
         if class=="TextButton" then Instance.new("UICorner",o).CornerRadius=UDim.new(0,7) end
         return o
     end
-    local title=node("TextLabel",0,6,1,22,"😈 The Heart-Demon Abyss • Auto + Log (V20G)")
+    local title=node("TextLabel",0,6,1,22,"😈 The Heart-Demon Abyss • Auto + Log (V20H)")
     title.TextXAlignment=Enum.TextXAlignment.Left
     local toggle=node("TextButton",0,32,1,34,"",Color3.fromRGB(120,50,60))
     local function paint()
@@ -13530,7 +13582,7 @@ report("Menu principal aberto • carregando Alquimia / Forja / Avanço", false)
 task.spawn(function()
     local ok, reason = xpcall(function() mountWorkshop(hub) end, function(e) return tostring(e) end)
     if ok then
-        report("Pronto para usar • 11 abas (V20G: Heart Demon)", false)
+        report("Pronto para usar • 11 abas (V20H: Heart Demon)", false)
         task.delay(3, finishNotice)
     else
         report("Falha ao carregar o módulo de minijogos: " .. tostring(reason), true)
