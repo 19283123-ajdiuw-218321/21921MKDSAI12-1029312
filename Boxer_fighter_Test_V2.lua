@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V20B: A03 sends the Paper Effigy seen also during HP pauses, A04 keeps 55 studs from the Watchman (facing or not) and leaves him before crossing the open exit, A05 jump off (server pulls back), A04 death shows the most dangerous Watchman reading of the last 3s, raid lost by leaving the arena shown as PERDIDA; V20A: full log at the top of the TXT (errors with traceback, one line per raid, deaths with the 8s before, boss fights with no-damage gaps, HP pauses, time stopped), raid loop survives errors, HP pause that does not heal is cancelled, A07 keeps fighting the same ghost, A05 lights the lamp first and jumps to A06 (Top76) with fallback, A09 does not walk while the Matriarch is alive, farm boss chest and loot filter from Top76; V19Z: A09 walks (no teleport) until the Matriarch appears, manual movement logged; V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
+print("[Boxer_fighter_Test V2] V20C: new Heart Demon tab (The Heart-Demon Abyss): Auto teleports to the entrance prompt, fires it and the dialog, inside fights/uses prompts and records the quest HUD; log field in the tab, Save TXT/Copy, auto TXT every 2 min; V20B: A03 sends the Paper Effigy seen also during HP pauses, A04 keeps 55 studs from the Watchman (facing or not) and leaves him before crossing the open exit, A05 jump off (server pulls back), A04 death shows the most dangerous Watchman reading of the last 3s, raid lost by leaving the arena shown as PERDIDA; V20A: full log at the top of the TXT (errors with traceback, one line per raid, deaths with the 8s before, boss fights with no-damage gaps, HP pauses, time stopped), raid loop survives errors, HP pause that does not heal is cancelled, A07 keeps fighting the same ghost, A05 lights the lamp first and jumps to A06 (Top76) with fallback, A09 does not walk while the Matriarch is alive, farm boss chest and loot filter from Top76; V19Z: A09 walks (no teleport) until the Matriarch appears, manual movement logged; V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -122,7 +122,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V20B | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V20C | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -1451,7 +1451,7 @@ function MURIM_LOG.pauseDump()
     return table.concat(out,"\n").."\n\n"
 end
 function MURIM_LOG.dump()
-    return MURIM_LOG.errorDump()..MURIM_LOG.raidDump()..MURIM_LOG.deathDump()..MURIM_LOG.fightDump()..MURIM_LOG.pauseDump()
+    return MURIM_LOG.errorDump()..(MURIM_HD and MURIM_HD.dump and MURIM_HD.dump() or "")..MURIM_LOG.raidDump()..MURIM_LOG.deathDump()..MURIM_LOG.fightDump()..MURIM_LOG.pauseDump()
 end
 function MURIM_LOG.safeDump()
     local ok,text=pcall(MURIM_LOG.dump)
@@ -11556,6 +11556,634 @@ local function installMurimDiagnostics(host)
 end
 
 -- Correção isolada da barra superior, sem aumentar os locais de buildMaster.
+-- V20C: aba Heart Demon (The Heart-Demon Abyss). Entrada igual ao Halloween com o Guest Ledger: acha o prompt da
+-- entrada no mapa, teleporta ate ele, aciona e clica no dialogo que abrir. Dentro: le a missao/HUD, luta com quem
+-- estiver perto e aciona prompts. Tudo vai para o log: campo na propria aba, secao [HEART DEMON] no topo do TXT e
+-- TXT automatico a cada 2 min com o Auto ligado. Print 13/11 11:12: entrada perto de (16449,129,-491), prompt
+-- "Sealed: someone is down there", debuff "Withered Qi IV: the dead qi is draining you, no healing".
+MURIM_HD={enabled=false,lines={},lastSeen={},state="desligado",known=Vector3.new(16449,129,-491),knownFrom="print 13/11",
+    entrance=nil,prompts={},mobs={},promptSeen=setmetatable({},{__mode="k"}),promptTry=setmetatable({},{__mode="k"}),
+    hudSeen={},lastScan=-1e9,lastHud=-1e9,lastAutoSave=0,lastPos=nil,lastPosAt=0,inside=false,dialogUntil=0,
+    btnBefore=setmetatable({},{__mode="k"}),btnClicked=setmetatable({},{__mode="k"}),
+    stats={prompts=0,dialogs=0,teleports=0,attacks=0,kills=0,entries=0,scans=0}}
+MURIM_HD.words={"heart-demon","heart demon","heartdemon","abyss","sealed","someone is down","descend","demon","withered",
+    "abismo","selado","demonio","murcho"}
+MURIM_HD.entryWords={"sealed","someone is down","abyss","heart","descend","enter","selado","abismo","descer","entrar"}
+MURIM_HD.exitWords={"leave","exit","return","home","hide","sair","voltar","lantern home"}
+MURIM_HD.confirmWords={"enter","descend","begin","start","confirm","yes","accept","go down","entrar","descer","iniciar",
+    "comecar","confirmar","sim","aceitar"}
+function MURIM_HD.log(level,msg,minInterval,key)
+    local text=tostring(msg):gsub("[\r\n]+"," "):sub(1,600)
+    local k=tostring(level).."|"..tostring(key or text)
+    local now=os.clock()
+    if now-(MURIM_HD.lastSeen[k] or -1e9)<(minInterval or 0) then return end
+    MURIM_HD.lastSeen[k]=now
+    local list=MURIM_HD.lines
+    list[#list+1]=string.format("[%s] [%s] %s",os.date("%H:%M:%S"),tostring(level),text)
+    if #list>400 then table.remove(list,1) end
+    MURIM_TRACE.add(level,"HeartDemon",text)
+end
+function MURIM_HD.hasWord(text,list)
+    local low=tostring(text or ""):lower()
+    if low=="" then return nil end
+    for _,w in ipairs(list or MURIM_HD.words) do
+        if low:find(w,1,true) then return w end
+    end
+    return nil
+end
+function MURIM_HD.posOf(obj)
+    if not obj then return nil end
+    if obj:IsA("Attachment") then return obj.WorldPosition end
+    if obj:IsA("BasePart") then return obj.Position end
+    if obj:IsA("Model") then
+        local p=obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart",true)
+        return p and p.Position
+    end
+    local p=obj:FindFirstAncestorWhichIsA("BasePart")
+    return p and p.Position
+end
+function MURIM_HD.fmt(v) return v and string.format("(%.0f,%.0f,%.0f)",v.X,v.Y,v.Z) or "(?)" end
+function MURIM_HD.promptText(p)
+    return string.format("'%s' / '%s'",tostring(p.ActionText),tostring(p.ObjectText))
+end
+-- Varre o Workspace: prompts com texto da dungeon ou a ate 80 studs da entrada/do personagem, e (full=true) modelos,
+-- placas e NPCs. Pesado: no Auto so a cada 8-15s; o botao Mapear faz a varredura completa.
+function MURIM_HD.scan(root,full)
+    local now=os.clock()
+    MURIM_HD.lastScan=now
+    MURIM_HD.stats.scans+=1
+    local here=root and root.Position or MURIM_HD.known
+    local prompts,mobs,models,labels={},{},{},{}
+    local t0=os.clock()
+    local all=workspace:GetDescendants()
+    for _,obj in ipairs(all) do
+        if obj:IsA("ProximityPrompt") then
+            local pos=MURIM_HD.posOf(obj.Parent)
+            local owner=obj:FindFirstAncestorWhichIsA("Model")
+            local hit=MURIM_HD.hasWord(obj.ActionText) or MURIM_HD.hasWord(obj.ObjectText) or (owner and MURIM_HD.hasWord(owner.Name))
+            local d=pos and (pos-here).Magnitude or math.huge
+            local dk=pos and (pos-MURIM_HD.known).Magnitude or math.huge
+            if hit or d<=(full and 300 or 150) or dk<=80 then
+                prompts[#prompts+1]={prompt=obj,pos=pos,dist=d,known=dk,hit=hit,owner=owner}
+            end
+        elseif obj:IsA("Humanoid") then
+            local m=obj.Parent
+            if m and m:IsA("Model") and obj.Health>0 and not game:GetService("Players"):GetPlayerFromCharacter(m) then
+                local pos=MURIM_HD.posOf(m)
+                if pos and (pos-here).Magnitude<=(full and 300 or 200) then mobs[#mobs+1]=m end
+            end
+        elseif full and (obj:IsA("Model") or obj:IsA("Folder")) and MURIM_HD.hasWord(obj.Name) then
+            models[#models+1]=obj
+        elseif full and (obj:IsA("TextLabel") or obj:IsA("TextButton")) and MURIM_HD.hasWord(obj.Text) then
+            labels[#labels+1]=obj
+        end
+    end
+    MURIM_HD.prompts=prompts
+    MURIM_HD.mobs=mobs
+    MURIM_HD.lastScanMs=(os.clock()-t0)*1000
+    for _,c in ipairs(prompts) do MURIM_HD.watchPrompt(c) end
+    MURIM_HD.pickEntrance(prompts)
+    return prompts,mobs,models,labels,#all
+end
+-- Registra cada prompt na primeira vez e quando muda (texto ou Enabled).
+function MURIM_HD.watchPrompt(c)
+    local p=c.prompt
+    local sig=tostring(p.Enabled).."|"..tostring(p.ActionText).."|"..tostring(p.ObjectText)
+    if MURIM_HD.promptSeen[p]==sig then return end
+    local first=MURIM_HD.promptSeen[p]==nil
+    MURIM_HD.promptSeen[p]=sig
+    MURIM_HD.log(first and "INFO" or "EVIDENCIA",string.format("%s prompt %s Enabled=%s Hold=%.1f MaxDist=%.0f em %s (%.0f studs) | %s",
+        first and "Novo" or "Mudou:",MURIM_HD.promptText(p),tostring(p.Enabled),p.HoldDuration or 0,p.MaxActivationDistance or 0,
+        MURIM_HD.fmt(c.pos),c.dist or -1,p:GetFullName()),0)
+end
+function MURIM_HD.pickEntrance(prompts)
+    local best,score=nil,-math.huge
+    for _,c in ipairs(prompts) do
+        local text=tostring(c.prompt.ActionText).." "..tostring(c.prompt.ObjectText).." "..(c.owner and c.owner.Name or "")
+        local w=MURIM_HD.hasWord(text,MURIM_HD.entryWords)
+        -- So vale com texto da dungeon ou a ate 80 studs da posicao conhecida ("Enter" de loja perto nao conta).
+        if w and (c.hit or (c.known or math.huge)<=80) and not MURIM_HD.hasWord(text,MURIM_HD.exitWords) then
+            local s=(c.prompt.Enabled and 1000 or 0)-(c.known or 0)
+            if s>score then best,score=c,s end
+        end
+    end
+    if best and (not MURIM_HD.entrance or MURIM_HD.entrance.prompt~=best.prompt) then
+        MURIM_HD.entrance=best
+        MURIM_HD.known=best.pos or MURIM_HD.known
+        MURIM_HD.knownFrom="prompt da entrada"
+        MURIM_HD.log("EVIDENCIA",string.format("Entrada: prompt %s em %s | %s",MURIM_HD.promptText(best.prompt),MURIM_HD.fmt(best.pos),best.prompt:GetFullName()),0)
+        MURIM_HD.saveEntrance(best.pos)
+    end
+end
+function MURIM_HD.saveEntrance(pos)
+    if not pos or type(writefile)~="function" then return end
+    pcall(function()
+        if type(makefolder)=="function" and (type(isfolder)~="function" or not isfolder("MurimHubLogs")) then makefolder("MurimHubLogs") end
+        writefile("MurimHubLogs/heartdemon_entrada.txt",string.format("%.2f,%.2f,%.2f",pos.X,pos.Y,pos.Z))
+    end)
+end
+function MURIM_HD.loadEntrance()
+    if type(readfile)~="function" or type(isfile)~="function" then return end
+    pcall(function()
+        if not isfile("MurimHubLogs/heartdemon_entrada.txt") then return end
+        local x,y,z=readfile("MurimHubLogs/heartdemon_entrada.txt"):match("([%-%d%.]+),([%-%d%.]+),([%-%d%.]+)")
+        if x then
+            MURIM_HD.known=Vector3.new(tonumber(x),tonumber(y),tonumber(z))
+            MURIM_HD.knownFrom="arquivo heartdemon_entrada.txt"
+        end
+    end)
+end
+-- Teleporte com chao conferido (raycast), 3 studs do alvo do lado em que o personagem esta.
+function MURIM_HD.goTo(root,pos,label)
+    if not root or not pos then return false end
+    local from=root.Position
+    pcall(function() player:RequestStreamAroundAsync(pos,2) end)
+    local flat=Vector3.new(from.X-pos.X,0,from.Z-pos.Z)
+    local side=flat.Magnitude>1 and flat.Unit or Vector3.new(0,0,1)
+    local spot=pos+side*3
+    local params=RaycastParams.new()
+    params.FilterType=Enum.RaycastFilterType.Exclude
+    params.FilterDescendantsInstances={root.Parent}
+    local hit=workspace:Raycast(spot+Vector3.new(0,12,0),Vector3.new(0,-60,0),params)
+    local dest=hit and (hit.Position+Vector3.new(0,3.2,0)) or (spot+Vector3.new(0,3,0))
+    root.AssemblyLinearVelocity=Vector3.zero
+    root.CFrame=CFrame.new(dest,Vector3.new(pos.X,dest.Y,pos.Z))
+    MURIM_HD.ownTeleportAt=os.clock()
+    MURIM_HD.stats.teleports+=1
+    MURIM_HD.log("ACAO",string.format("Teleporte (%s): %s -> %s; piso=%s",tostring(label),MURIM_HD.fmt(from),MURIM_HD.fmt(dest),
+        hit and hit.Instance and hit.Instance.Name or "nao achado"),2,"tp-"..tostring(label))
+    return true
+end
+function MURIM_HD.tryPrompt(prompt,why)
+    local now=os.clock()
+    local t=MURIM_HD.promptTry[prompt]
+    if t and now-t.at<3 then return false end
+    t={at=now,n=(t and t.n or 0)+1}
+    MURIM_HD.promptTry[prompt]=t
+    local ok,via=tryHallowGuestPrompt(prompt)
+    MURIM_HD.stats.prompts+=1
+    MURIM_HD.log(ok and "ACAO" or "AVISO",string.format("%s: prompt %s via %s (tentativa %d) Enabled=%s",tostring(why),
+        MURIM_HD.promptText(prompt),tostring(via),t.n,tostring(prompt.Enabled)),0)
+    return ok
+end
+-- Botoes de texto visiveis fora do nosso menu. Antes do prompt guarda quais existiam; depois so os NOVOS contam como
+-- dialogo aberto pela entrada (evita clicar em menu que ja estava na tela).
+function MURIM_HD.visibleButtons()
+    local out={}
+    local pg=player:FindFirstChild("PlayerGui")
+    for _,g in ipairs(pg and pg:GetChildren() or {}) do
+        if g:IsA("ScreenGui") and g.Enabled and g~=MURIM_HD.ownGui then
+            for _,b in ipairs(g:GetDescendants()) do
+                if b:IsA("TextButton") and isHallowGuiVisible(b) then
+                    local t=tostring(b.Text or ""):gsub("<[^>]+>",""):gsub("%s+"," ")
+                    if #t>=2 and #t<=48 then out[#out+1]={btn=b,text=t,gui=g.Name} end
+                end
+            end
+        end
+    end
+    return out
+end
+function MURIM_HD.snapButtons()
+    MURIM_HD.btnBefore=setmetatable({},{__mode="k"})
+    for _,b in ipairs(MURIM_HD.visibleButtons()) do MURIM_HD.btnBefore[b.btn]=true end
+end
+function MURIM_HD.dialog(now)
+    local fresh={}
+    for _,b in ipairs(MURIM_HD.visibleButtons()) do
+        if not MURIM_HD.btnBefore[b.btn] then fresh[#fresh+1]=b end
+    end
+    if #fresh==0 then return false end
+    local names={}
+    for _,b in ipairs(fresh) do names[#names+1]=b.gui..":'"..b.text.."'" end
+    local sig=table.concat(names,", ")
+    if sig~=MURIM_HD.lastDialog then
+        MURIM_HD.lastDialog=sig
+        MURIM_HD.stats.dialogs+=1
+        MURIM_HD.log("EVIDENCIA","Dialogo novo depois do prompt: "..sig,0)
+    end
+    for _,b in ipairs(fresh) do
+        local n=MURIM_HD.btnClicked[b.btn] or 0
+        if MURIM_HD.hasWord(b.text,MURIM_HD.confirmWords) and n<2 and now-(MURIM_HD.lastClickAt or 0)>=2.5 then
+            MURIM_HD.lastClickAt=now
+            MURIM_HD.btnClicked[b.btn]=n+1
+            local ev=n==0 and "Activated" or "MouseButton1Click"
+            local ok=pcall(function() firesignal(b.btn[ev]) end)
+            MURIM_HD.log(ok and "ACAO" or "AVISO",string.format("Botao '%s' (%s) via firesignal(%s) pcall=%s",b.text,b.gui,ev,tostring(ok)),0)
+            return true
+        end
+    end
+    return false
+end
+-- Teleporte do jogo (pulo de 100+ studs que nao foi nosso) logo depois do prompt da entrada = entrou.
+function MURIM_HD.track(root,now)
+    local p=root.Position
+    local last=MURIM_HD.lastPos
+    if last and (p-last).Magnitude>=100 and now-MURIM_HD.lastPosAt<=2.5 then
+        local ours=MURIM_HD.ownTeleportAt and now-MURIM_HD.ownTeleportAt<=1.5
+        MURIM_HD.log("EVIDENCIA",string.format("Pulo de posicao %s -> %s (%.0f studs) %s",MURIM_HD.fmt(last),MURIM_HD.fmt(p),
+            (p-last).Magnitude,ours and "(teleporte do script)" or "(teleporte do jogo)"),0)
+        if not ours then
+            if MURIM_HD.entryTryAt and now-MURIM_HD.entryTryAt<=20 then
+                MURIM_HD.setInside(true,"teleporte do jogo depois do prompt da entrada",p)
+            elseif MURIM_HD.inside and (p-MURIM_HD.known).Magnitude<=60 then
+                MURIM_HD.setInside(false,"voltou para perto da entrada",p)
+            end
+        end
+    end
+    -- "Someone is down there": entrar descendo, sem teleporte do jogo, tambem conta (60+ studs abaixo da entrada).
+    if not MURIM_HD.inside and MURIM_HD.entryTryAt and p.Y<MURIM_HD.known.Y-60
+        and Vector3.new(p.X-MURIM_HD.known.X,0,p.Z-MURIM_HD.known.Z).Magnitude<=400 then
+        MURIM_HD.setInside(true,string.format("%.0f studs abaixo da entrada",MURIM_HD.known.Y-p.Y),p)
+    end
+    MURIM_HD.lastPos=p
+    MURIM_HD.lastPosAt=now
+end
+function MURIM_HD.setInside(v,why,pos)
+    if MURIM_HD.inside==v then return end
+    MURIM_HD.inside=v
+    MURIM_HD.insideAt=v and os.clock() or nil
+    if v then MURIM_HD.stats.entries+=1 end
+    MURIM_HD.log("EVIDENCIA",(v and "DENTRO da dungeon: " or "FORA da dungeon: ")..tostring(why).." em "..MURIM_HD.fmt(pos),0)
+end
+-- Textos novos da HUD (missao, avisos, debuffs) a cada 2s.
+function MURIM_HD.readHud(now)
+    if now-MURIM_HD.lastHud<2 then return end
+    MURIM_HD.lastHud=now
+    local pg=player:FindFirstChild("PlayerGui")
+    local seen,logged={},0
+    for _,g in ipairs(pg and pg:GetChildren() or {}) do
+        if g:IsA("ScreenGui") and g.Enabled and g~=MURIM_HD.ownGui then
+            for _,obj in ipairs(g:GetDescendants()) do
+                if obj:IsA("TextLabel") and isHallowGuiVisible(obj) then
+                    local t=tostring(obj.Text or ""):gsub("<[^>]+>",""):gsub("%s+"," ")
+                    if #t>=4 and #t<=200 and t:find("%a%a") then
+                        seen[t]=true
+                        if not MURIM_HD.hudSeen[t] and logged<25 then
+                            logged+=1
+                            MURIM_HD.log("HUD",t.." ["..g.Name.."]",0)
+                        end
+                    end
+                end
+            end
+        end
+    end
+    MURIM_HD.hudSeen=seen
+end
+function MURIM_HD.combatRemote()
+    local murim=game:GetService("ReplicatedStorage"):FindFirstChild("Murim")
+    local remotes=murim and murim:FindFirstChild("Remotes")
+    return remotes and remotes:FindFirstChild("CombatInput")
+end
+function MURIM_HD.pickMob(root)
+    local best,bd=nil,150
+    for _,m in ipairs(MURIM_HD.mobs) do
+        local h=m.Parent and m:FindFirstChildOfClass("Humanoid")
+        local part=m:FindFirstChild("HumanoidRootPart") or m.PrimaryPart
+        if h and h.Health>0 and part and not m:FindFirstChildWhichIsA("ProximityPrompt",true) then
+            local d=(part.Position-root.Position).Magnitude
+            if d<bd then best,bd=m,d end
+        end
+    end
+    return best
+end
+function MURIM_HD.attack(root,mob,now)
+    local part=mob:FindFirstChild("HumanoidRootPart") or mob.PrimaryPart
+    local h=mob:FindFirstChildOfClass("Humanoid")
+    if MURIM_HD.target~=mob then
+        if MURIM_HD.target and MURIM_HD.targetHum and MURIM_HD.targetHum.Health<=0 then
+            MURIM_HD.stats.kills+=1
+            MURIM_HD.log("EVIDENCIA","Derrotado: "..tostring(MURIM_HD.target.Name),0)
+        end
+        MURIM_HD.target=mob
+        MURIM_HD.targetHum=h
+        MURIM_HD.targetHp0=h.Health
+        MURIM_HD.log("DECISAO",string.format("Alvo: %s HP=%.0f/%.0f a %.0f studs",mob.Name,h.Health,h.MaxHealth,(part.Position-root.Position).Magnitude),0)
+    end
+    root.CFrame=part.CFrame*CFrame.new(0,0,4)
+    root.AssemblyLinearVelocity=Vector3.zero
+    MURIM_HD.ownTeleportAt=now
+    local remote=MURIM_HD.combatRemote()
+    if remote and now-(MURIM_HD.lastAttack or 0)>=0.2 then
+        MURIM_HD.lastAttack=now
+        MURIM_HD.stats.attacks+=1
+        pcall(function() remote:FireServer("Attack") end)
+    end
+    MURIM_HD.log("INFO",string.format("Lutando com %s: HP %.0f (comecou com %.0f)",mob.Name,h.Health,MURIM_HD.targetHp0 or -1),3,"luta")
+    MURIM_HD.state="dentro: lutando com "..mob.Name
+end
+function MURIM_HD.pickPrompt(root,now)
+    local best,bd=nil,120
+    for _,c in ipairs(MURIM_HD.prompts) do
+        local p=c.prompt
+        local t=MURIM_HD.promptTry[p]
+        local text=tostring(p.ActionText).." "..tostring(p.ObjectText)
+        if p.Parent and p.Enabled and c.pos and not MURIM_HD.hasWord(text,MURIM_HD.exitWords) and (not t or now-t.at>=8) then
+            local d=(c.pos-root.Position).Magnitude
+            if d<bd then best,bd=c,d end
+        end
+    end
+    return best
+end
+function MURIM_HD.entryTick(root,now)
+    local e=MURIM_HD.entrance
+    if not e or not e.prompt.Parent then
+        if (root.Position-MURIM_HD.known).Magnitude>60 then
+            if now-(MURIM_HD.lastGo or -1e9)>=6 then
+                MURIM_HD.lastGo=now
+                MURIM_HD.state="indo para a posicao conhecida da entrada ("..MURIM_HD.knownFrom..")"
+                MURIM_HD.goTo(root,MURIM_HD.known,"posicao conhecida")
+            end
+        else
+            MURIM_HD.state="perto da entrada conhecida, procurando o prompt"
+            MURIM_HD.log("AVISO","Nenhum prompt com texto da entrada perto de "..MURIM_HD.fmt(MURIM_HD.known)..". Use Mapear Heart Demon e mande o TXT.",20)
+        end
+        return
+    end
+    local pos=MURIM_HD.posOf(e.prompt.Parent) or e.pos
+    local reach=math.max(3,(e.prompt.MaxActivationDistance or 8)-2)
+    if (root.Position-pos).Magnitude>reach then
+        if now-(MURIM_HD.lastGo or -1e9)>=2 then
+            MURIM_HD.lastGo=now
+            MURIM_HD.state="teleportando ate a entrada"
+            MURIM_HD.goTo(root,pos,"entrada")
+        end
+        return
+    end
+    MURIM_HD.watchPrompt(e)
+    if not e.prompt.Enabled then
+        MURIM_HD.state="na entrada; prompt desabilitado "..MURIM_HD.promptText(e.prompt)
+        MURIM_HD.log("INFO",MURIM_HD.state,15)
+        return
+    end
+    local sealed=MURIM_HD.hasWord(tostring(e.prompt.ActionText).." "..tostring(e.prompt.ObjectText),{"sealed","someone is down","selado"})
+    if sealed and now-(MURIM_HD.lastSealedTry or -1e9)<10 then
+        MURIM_HD.state="entrada selada (alguem la embaixo); tentando a cada 10s"
+        return
+    end
+    if sealed then MURIM_HD.lastSealedTry=now end
+    MURIM_HD.snapButtons()
+    MURIM_HD.state="acionando o prompt da entrada"
+    if MURIM_HD.tryPrompt(e.prompt,"Entrada") then
+        MURIM_HD.dialogUntil=now+8
+        MURIM_HD.entryTryAt=now
+    end
+end
+function MURIM_HD.insideTick(root,now)
+    MURIM_HD.readHud(now)
+    local mob=MURIM_HD.pickMob(root)
+    if mob then return MURIM_HD.attack(root,mob,now) end
+    local c=MURIM_HD.pickPrompt(root,now)
+    if c then
+        local reach=math.max(3,(c.prompt.MaxActivationDistance or 8)-2)
+        if (root.Position-c.pos).Magnitude>reach then
+            if now-(MURIM_HD.lastGo or -1e9)>=1.5 then
+                MURIM_HD.lastGo=now
+                MURIM_HD.state="dentro: indo ao prompt "..MURIM_HD.promptText(c.prompt)
+                MURIM_HD.goTo(root,c.pos,"prompt "..tostring(c.prompt.ActionText))
+            end
+        else
+            MURIM_HD.snapButtons()
+            if MURIM_HD.tryPrompt(c.prompt,"Dentro") then MURIM_HD.dialogUntil=now+6 end
+            MURIM_HD.state="dentro: acionou "..MURIM_HD.promptText(c.prompt)
+        end
+        return
+    end
+    MURIM_HD.state="dentro: sem inimigo e sem prompt a 150 studs (aguardando)"
+    MURIM_HD.log("INFO",MURIM_HD.state.." em "..MURIM_HD.fmt(root.Position),15)
+end
+function MURIM_HD.autoSave(now)
+    if type(writefile)~="function" or now-MURIM_HD.lastAutoSave<120 then return end
+    MURIM_HD.lastAutoSave=now
+    local ok,err=pcall(function()
+        if type(makefolder)=="function" and (type(isfolder)~="function" or not isfolder("MurimHubLogs")) then makefolder("MurimHubLogs") end
+        writefile("MurimHubLogs/murim_heartdemon_auto.txt",MURIM_TRACE.dump())
+    end)
+    MURIM_HD.log(ok and "INFO" or "AVISO",ok and "TXT automatico salvo: MurimHubLogs/murim_heartdemon_auto.txt" or ("TXT automatico falhou: "..tostring(err)),0)
+end
+function MURIM_HD.tick()
+    if not MURIM_HD.enabled then return end
+    local char=player.Character
+    local root=char and char:FindFirstChild("HumanoidRootPart")
+    local hum=char and char:FindFirstChildOfClass("Humanoid")
+    if not root or not hum or hum.Health<=0 then
+        MURIM_HD.state="sem personagem ou morto; aguardando"
+        MURIM_HD.log("AVISO","Personagem morto ou sem HumanoidRootPart",10)
+        -- Morreu dentro: renasce fora; nao pode sair atacando NPC do mundo aberto.
+        if MURIM_HD.inside then MURIM_HD.setInside(false,"personagem morreu",root and root.Position) end
+        MURIM_HD.lastPos=nil
+        return
+    end
+    if MURIM_TRACE.active then
+        MURIM_HD.state="Auto Halloween ligado: desligue para usar a Heart Demon"
+        MURIM_HD.log("AVISO",MURIM_HD.state,20)
+        return
+    end
+    local now=os.clock()
+    MURIM_HD.track(root,now)
+    MURIM_HD.autoSave(now)
+    if now-MURIM_HD.lastScan>=(MURIM_HD.inside and 8 or (MURIM_HD.entrance and 15 or 8)) then MURIM_HD.scan(root,false) end
+    if now<MURIM_HD.dialogUntil and MURIM_HD.dialog(now) then return end
+    if MURIM_HD.inside then return MURIM_HD.insideTick(root,now) end
+    return MURIM_HD.entryTick(root,now)
+end
+function MURIM_HD.map()
+    local char=player.Character
+    local root=char and char:FindFirstChild("HumanoidRootPart")
+    local prompts,mobs,models,labels,total=MURIM_HD.scan(root,true)
+    local here=root and root.Position
+    MURIM_HD.log("INFO",string.format("MAPA: personagem em %s; %d objetos no Workspace (%.0f ms); %d prompts, %d NPCs, %d modelos e %d textos com nome da dungeon",
+        MURIM_HD.fmt(here),total,MURIM_HD.lastScanMs or 0,#prompts,#mobs,#models,#labels),0)
+    local tops={}
+    for _,c in ipairs(workspace:GetChildren()) do tops[#tops+1]=c.Name end
+    MURIM_HD.log("INFO","MAPA Workspace: "..table.concat(tops,", "),0)
+    local raids=workspace:FindFirstChild("Raids")
+    if raids then
+        local r={}
+        for _,c in ipairs(raids:GetChildren()) do r[#r+1]=c.Name end
+        MURIM_HD.log("INFO","MAPA Workspace.Raids: "..table.concat(r,", "),0)
+    end
+    for i,m in ipairs(models) do
+        if i>25 then break end
+        MURIM_HD.log("INFO",string.format("MAPA modelo %s (%s) em %s, %d filhos",m:GetFullName(),m.ClassName,MURIM_HD.fmt(MURIM_HD.posOf(m)),#m:GetChildren()),0)
+    end
+    for i,l in ipairs(labels) do
+        if i>25 then break end
+        MURIM_HD.log("INFO",string.format("MAPA texto '%s' em %s",tostring(l.Text):sub(1,80),l:GetFullName()),0)
+    end
+    for i,m in ipairs(mobs) do
+        if i>30 then break end
+        local h=m:FindFirstChildOfClass("Humanoid")
+        local pos=MURIM_HD.posOf(m)
+        MURIM_HD.log("INFO",string.format("MAPA NPC %s HP=%.0f/%.0f em %s (%.0f studs) | %s",m.Name,h and h.Health or -1,h and h.MaxHealth or -1,
+            MURIM_HD.fmt(pos),here and pos and (pos-here).Magnitude or -1,m:GetFullName()),0)
+    end
+    MURIM_HD.log("INFO","MAPA fim. Entrada="..(MURIM_HD.entrance and MURIM_HD.promptText(MURIM_HD.entrance.prompt) or "nao identificada")
+        .." | posicao conhecida "..MURIM_HD.fmt(MURIM_HD.known).." ("..MURIM_HD.knownFrom..")",0)
+end
+function MURIM_HD.dump()
+    local s=MURIM_HD.stats
+    local e=MURIM_HD.entrance
+    return string.format("[HEART DEMON: Auto %s | estado: %s]\nentrada: %s | posicao conhecida %s (%s) | %s\nprompts acionados %d, dialogos %d, teleportes %d, entradas %d, ataques %d, derrotados %d, varreduras %d (ultima %.0f ms)\n\n",
+        MURIM_HD.enabled and "LIGADO" or "desligado",MURIM_HD.state,
+        e and (MURIM_HD.promptText(e.prompt).." Enabled="..tostring(e.prompt.Enabled).." em "..MURIM_HD.fmt(e.pos)) or "nao identificada",
+        MURIM_HD.fmt(MURIM_HD.known),MURIM_HD.knownFrom,MURIM_HD.inside and "DENTRO da dungeon" or "fora da dungeon",
+        s.prompts,s.dialogs,s.teleports,s.entries,s.attacks,s.kills,s.scans,MURIM_HD.lastScanMs or 0)
+end
+function MURIM_HD.copyText()
+    return MURIM_HD.dump().."[HEART DEMON: ultimas linhas]\n"..table.concat(MURIM_HD.lines,"\n")
+end
+function MURIM_HD.saveTxt()
+    if type(writefile)~="function" then return false,"executor sem writefile" end
+    local path="MurimHubLogs/murim_heartdemon_"..os.date("%Y%m%d_%H%M%S")..".txt"
+    local ok,err=pcall(function()
+        if type(makefolder)=="function" and (type(isfolder)~="function" or not isfolder("MurimHubLogs")) then makefolder("MurimHubLogs") end
+        writefile(path,MURIM_TRACE.dump())
+    end)
+    return ok,ok and path or tostring(err)
+end
+function MURIM_HD.setEnabled(v)
+    MURIM_HD.enabled=v
+    MURIM_HD.state=v and "ligado" or "desligado"
+    MURIM_HD.lastAutoSave=os.clock()
+    MURIM_HD.log("ACAO","Auto Heart Demon "..(v and "LIGADO" or "DESLIGADO"),0)
+    if v and not MURIM_HD.task then
+        MURIM_HD.task=task.spawn(function()
+            while not MURIM_HD.destroyed do
+                local ok=MURIM_LOG.try("HeartDemon",MURIM_HD.tick)
+                task.wait(ok and 0.25 or 1)
+            end
+        end)
+    end
+end
+-- Aba 11: botoes, status e campo de log que atualiza sozinho.
+function MURIM_HD.install(host)
+    local page=host.makePage("HeartDemon",11,"😈 Heart Demon")
+    MURIM_HD.ownGui=host.gui
+    MURIM_HD.loadEntrance()
+    if host.gui then host.gui.Destroying:Connect(function() MURIM_HD.destroyed=true;MURIM_HD.enabled=false end) end
+    -- A aba rola: em tela baixa (celular deitado) o campo de log fica com pelo menos 200 px.
+    local body=Instance.new("ScrollingFrame")
+    body.Name="Content"
+    body.Size=UDim2.fromScale(1,1)
+    body.BackgroundTransparency=1
+    body.BorderSizePixel=0
+    body.ScrollBarThickness=6
+    body.ScrollingDirection=Enum.ScrollingDirection.Y
+    body.CanvasSize=UDim2.fromOffset(0,400)
+    body.Parent=page
+    local function node(class,x,y,w,h,text,color)
+        local o=Instance.new(class)
+        o.Position=UDim2.new(x,x>0 and 4 or 10,0,y)
+        o.Size=UDim2.new(w,w<1 and -14 or -20,0,h)
+        o.Text=text
+        o.TextWrapped=true
+        o.TextSize=12
+        o.Font=Enum.Font.GothamBold
+        o.TextColor3=Color3.fromRGB(240,244,252)
+        o.BorderSizePixel=0
+        if color then o.BackgroundColor3=color else o.BackgroundTransparency=1 end
+        o.Parent=body
+        if class=="TextButton" then Instance.new("UICorner",o).CornerRadius=UDim.new(0,7) end
+        return o
+    end
+    local title=node("TextLabel",0,6,1,22,"😈 The Heart-Demon Abyss • Auto + Log (V20C, primeira versao)")
+    title.TextXAlignment=Enum.TextXAlignment.Left
+    local toggle=node("TextButton",0,32,1,34,"",Color3.fromRGB(120,50,60))
+    local function paint()
+        toggle.Text=MURIM_HD.enabled and "😈 Auto Heart Demon: LIGADO (ON)" or "😈 Auto Heart Demon: DESLIGADO (OFF)"
+        toggle.BackgroundColor3=MURIM_HD.enabled and Color3.fromRGB(40,120,75) or Color3.fromRGB(120,50,60)
+    end
+    paint()
+    local tp=node("TextButton",0,72,0.5,32,"⚡ Teleporte ate a entrada",Color3.fromRGB(105,60,150))
+    local map=node("TextButton",0.5,72,0.5,32,"🗺️ Mapear Heart Demon",Color3.fromRGB(55,85,140))
+    local save=node("TextButton",0,108,0.5,32,"💾 Salvar TXT",Color3.fromRGB(45,110,70))
+    local copy=node("TextButton",0.5,108,0.5,32,"📋 Copiar log",Color3.fromRGB(70,70,110))
+    local status=node("TextLabel",0,144,1,38,"",nil)
+    status.TextXAlignment=Enum.TextXAlignment.Left
+    status.TextYAlignment=Enum.TextYAlignment.Top
+    status.TextColor3=Color3.fromRGB(240,200,90)
+    status.TextSize=11
+    local field=Instance.new("ScrollingFrame")
+    field.Name="HeartDemonLog"
+    field.Position=UDim2.new(0,10,0,186)
+    field.Size=UDim2.new(1,-20,0,200)
+    field.BackgroundColor3=Color3.fromRGB(14,17,26)
+    field.BorderSizePixel=0
+    field.ScrollBarThickness=4
+    field.CanvasSize=UDim2.new(0,0,0,0)
+    field.AutomaticCanvasSize=Enum.AutomaticSize.Y
+    field.Parent=body
+    Instance.new("UICorner",field).CornerRadius=UDim.new(0,6)
+    local function fit()
+        local h=math.max(200,page.AbsoluteSize.Y-194)
+        field.Size=UDim2.new(1,-20,0,h)
+        body.CanvasSize=UDim2.fromOffset(0,186+h+8)
+    end
+    fit()
+    page:GetPropertyChangedSignal("AbsoluteSize"):Connect(fit)
+    local text=Instance.new("TextLabel")
+    text.Position=UDim2.new(0,6,0,4)
+    text.Size=UDim2.new(1,-12,0,0)
+    text.AutomaticSize=Enum.AutomaticSize.Y
+    text.BackgroundTransparency=1
+    text.TextWrapped=true
+    text.TextXAlignment=Enum.TextXAlignment.Left
+    text.TextYAlignment=Enum.TextYAlignment.Top
+    text.Font=Enum.Font.Code
+    text.TextSize=11
+    text.TextColor3=Color3.fromRGB(190,205,225)
+    text.Text="Log da Heart Demon aparece aqui."
+    text.Parent=field
+    toggle.Activated:Connect(function()
+        MURIM_HD.setEnabled(not MURIM_HD.enabled)
+        paint()
+    end)
+    tp.Activated:Connect(function()
+        MURIM_LOG.try("HeartDemon teleporte",function()
+            local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            if not root then return end
+            if not MURIM_HD.entrance then MURIM_HD.scan(root,false) end
+            local e=MURIM_HD.entrance
+            MURIM_HD.goTo(root,e and (MURIM_HD.posOf(e.prompt.Parent) or e.pos) or MURIM_HD.known,e and "entrada (botao)" or "posicao conhecida (botao)")
+        end)
+    end)
+    map.Activated:Connect(function()
+        map.Text="🗺️ Mapeando..."
+        MURIM_LOG.try("HeartDemon mapa",MURIM_HD.map)
+        map.Text="🗺️ Mapear Heart Demon"
+    end)
+    save.Activated:Connect(function()
+        local ok,info=MURIM_HD.saveTxt()
+        MURIM_HD.log(ok and "INFO" or "AVISO",ok and ("TXT salvo: "..info) or ("Nao salvou: "..info),0)
+    end)
+    copy.Activated:Connect(function()
+        local clip=setclipboard or toclipboard
+        local ok=clip and pcall(clip,MURIM_HD.copyText())
+        MURIM_HD.log(ok and "INFO" or "AVISO",ok and "Log da Heart Demon copiado" or "Executor sem setclipboard: use Salvar TXT",0)
+    end)
+    task.spawn(function()
+        local shown=-1
+        while page.Parent and not MURIM_HD.destroyed do
+            if page.Visible then
+                status.Text="Estado: "..tostring(MURIM_HD.state).."\nEntrada: "..(MURIM_HD.entrance and MURIM_HD.promptText(MURIM_HD.entrance.prompt) or ("nao achada; conhecida "..MURIM_HD.fmt(MURIM_HD.known)))
+                    ..(MURIM_HD.inside and " | DENTRO" or "")
+                local list=MURIM_HD.lines
+                if #list~=shown or list[#list]~=MURIM_HD.lastShown then
+                    shown=#list
+                    MURIM_HD.lastShown=list[#list]
+                    local first=math.max(1,#list-79)
+                    text.Text=#list>0 and table.concat(list,"\n",first,#list) or "Log da Heart Demon aparece aqui."
+                    task.defer(function()
+                        field.CanvasPosition=Vector2.new(0,math.max(0,field.AbsoluteCanvasSize.Y-field.AbsoluteSize.Y))
+                    end)
+                end
+            end
+            task.wait(1)
+        end
+    end)
+    MURIM_HD.log("INFO","Aba Heart Demon instalada (11 abas). Entrada conhecida "..MURIM_HD.fmt(MURIM_HD.known).." ("..MURIM_HD.knownFrom..")",0)
+end
+
 local function installMobileTabNavigation(host)
     local gui = host and host.gui
     local frame = gui and gui:FindFirstChild("MainFrame")
@@ -11570,7 +12198,7 @@ local function installMobileTabNavigation(host)
     bar.Active = true
     -- Desativa a rolagem elástica nativa, usando gesto manual que não retorna.
     bar.ScrollingEnabled = false
-    bar.CanvasSize = UDim2.fromOffset(math.max(10 * STEP + 8, bar.CanvasSize.X.Offset), 0)
+    bar.CanvasSize = UDim2.fromOffset(math.max(11 * STEP + 8, bar.CanvasSize.X.Offset), 0) -- V20C: aba 11 Heart Demon
 
     local function setOffset(value)
         local limit = math.max(0, bar.CanvasSize.X.Offset - bar.AbsoluteSize.X)
@@ -12541,13 +13169,14 @@ local hub = buildMaster()
 hub.frame.Visible = true
 local logsOK, logsError = pcall(installMurimDiagnostics, hub)
 if not logsOK then warn("[Murim V18R] Aba Logs: " .. tostring(logsError)) end
+MURIM_LOG.try("HeartDemon instalar", MURIM_HD.install, hub)
 local navOK, navError = pcall(installMobileTabNavigation, hub)
 if not navOK then warn("[Murim PTBR V4] Erro na navegacao mobile: " .. tostring(navError)) end
 report("Menu principal aberto • carregando Alquimia / Forja / Avanço", false)
 task.spawn(function()
     local ok, reason = xpcall(function() mountWorkshop(hub) end, function(e) return tostring(e) end)
     if ok then
-        report("Pronto para usar • 10 abas", false)
+        report("Pronto para usar • 11 abas (V20C: Heart Demon)", false)
         task.delay(3, finishNotice)
     else
         report("Falha ao carregar o módulo de minijogos: " .. tostring(reason), true)
