@@ -9,6 +9,13 @@ source=(root/'Boxer_fighter_Test_V2.lua').read_text(encoding='utf-8')
 start=source.index('-- V21D: each queued defense')
 end=source.index('function MURIM_GH.loadDanger()',start)
 cases=(root/'tests/grey_defense_cases.luau').read_text(encoding='utf-8')
+def extract(first,last):
+    a=source.index(first)
+    return source[a:source.index(last,a+len(first))]
+integration=extract('local function canParry()', '-- A06-only parry path.')
+integration+=extract('function MURIM_HD.attack(root,mob,now)', '-- V20H: loot na Heart Demon')
+integration+=extract('function MURIM_HD.artifactBlocked()', 'function MURIM_HD.artifactUsed(')
+cases=cases.replace('-- INTEGRATION_INSERT',integration)
 assert cases.count('-- MODULE_INSERT')==1
 with tempfile.TemporaryDirectory() as directory:
     path=Path(directory)

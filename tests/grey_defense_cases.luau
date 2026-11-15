@@ -3,7 +3,7 @@ local scheduled={}
 local sent={}
 local messages={}
 local hp={Health=1000,MaxHealth=1000}
-local attrs={}
+local attrs={Armed=true}
 local char={GetAttribute=function(_,key) return attrs[key] end,FindFirstChildOfClass=function() return hp end}
 local player={Character=char}
 local workspace={GetServerTimeNow=function() return t end}
@@ -15,6 +15,11 @@ local boss={Parent=true,Name="Wuyan",FindFirstChildOfClass=function() return bh 
 local MURIM_HD={enabled=true,inside=true,profile={actDodge=true},bossNow=boss,
     log=function(_,message) table.insert(messages,message) end,combatRemote=function() return remote end}
 local MURIM_GH={acts={},delay={},twice={},noFlee={FormationSeal=true}}
+local Workspace=workspace
+local isParrying=false
+local PARRY_WINDOW=0.22
+local combatRemote=remote
+local function findCombatRemote() return remote end
 local Vec={}
 local mt={__index=function(v,k) if k=="Magnitude" then return math.sqrt(v.X*v.X+v.Y*v.Y+v.Z*v.Z) end end,
     __sub=function(a,b) return Vec.new(a.X-b.X,a.Y-b.Y,a.Z-b.Z) end}
@@ -22,10 +27,12 @@ function Vec.new(x,y,z) return setmetatable({X=x,Y=y,Z=z},mt) end
 MURIM_HD.fmt=function(v) return v and string.format("(%.0f,%.0f,%.0f)",v.X,v.Y,v.Z) or "nil" end
 MURIM_HD.posOf=function() return Vec.new(0,0,0) end
 -- MODULE_INSERT
+-- INTEGRATION_INSERT
 local function check(value,message) assert(value,message) end
 local function reset()
     MURIM_GH.auditReset("test reset");sent={};scheduled={};messages={}
-    hp.Health=1000;attrs={};MURIM_HD.enabled=true;MURIM_HD.inside=true;MURIM_HD.bossNow=boss;t=0
+    hp.Health=1000;attrs={Armed=true};MURIM_HD.enabled=true;MURIM_HD.inside=true;MURIM_HD.bossNow=boss;t=0
+    MURIM_HD.genericParryUntil=nil;isParrying=false
 end
 local function plan(id,at,second)
     MURIM_GH.planParry("FormationSeal",at,{id=id,boss=boss},second)
@@ -79,3 +86,29 @@ check(found,"large hit includes audit evidence")
 hp.Health=0;t=10.4;MURIM_GH.auditTick(t,char,hp,root,boss)
 check(not MURIM_GH.auditFight and MURIM_GH.auditDump():find("morte do jogador",1,true),"death summary survives reset and appears in dump")
 print("PASS V21D: overlap, second hit, dedup, cooldown, expiration, HP minimum, death, stale callback, boss change, Auto off, far evidence, bounded audit, summary")
+reset();plan("reserved",1);t=0.7
+check(MURIM_GH.defenseWindow(t),"short pre-parry window reserved")
+executeParry()
+check(#sent==0,"generic parry cannot consume reserved window")
+MURIM_HD.attack(nil,nil,t)
+check(MURIM_HD.state:find("ataque suspenso",1,true),"actual attack returns before movement or Attack remote")
+check(MURIM_HD.artifactBlocked(),"artifact cannot consume defense window")
+t=0.1
+check(not MURIM_GH.defenseWindow(t),"no prolonged combat pause between impacts")
+reset();executeParry();check(#sent==1,"generic parry starts normally")
+plan("generic-active",0.2);t=0.1;MURIM_GH.parryStep(t,char,hp)
+check(#sent==1,"queued parry cannot overlap active generic hold")
+for _,callback in ipairs(scheduled) do callback() end
+t=0.23;MURIM_GH.parryStep(t,char,hp)
+check(sent[2]=="ParryUp" and sent[3]=="ParryDown","queued defense follows generic release")
+reset();plan("busy",1);attrs.Busy=true;t=0.9;MURIM_GH.parryStep(t,char,hp)
+check(#sent==0,"busy character cannot send queued parry")
+attrs.Busy=false;t=1;MURIM_GH.parryStep(t,char,hp)
+check(sent[1]=="ParryDown","recovery within window retries")
+reset();plan("knocked",1);attrs.Knocked=true;t=0.9;MURIM_GH.parryStep(t,char,hp)
+check(#sent==0,"knocked character cannot parry")
+t=1.3;MURIM_GH.parryStep(t,char,hp)
+check(MURIM_GH.parryQueue[1].status~=nil,"incapacitation cannot hold queue indefinitely")
+reset();MURIM_HD.profile.actDodge=false
+check(not MURIM_GH.defenseWindow(1),"other dungeon profiles unaffected")
+print("PASS V21E: real generic/queued parry coordination, Attack/artifact guards, short windows, busy retry, incapacitation, profile isolation")
