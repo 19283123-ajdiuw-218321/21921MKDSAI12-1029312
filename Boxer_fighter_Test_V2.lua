@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V21B: Grey Heartland: a dangerous boss attack that starts while the Auto is already far also keeps it far until it lands (SpearCrit started at 45 studs during the Spear2 dodge and hit 99% when the Auto came back); overlapping dodges keep the longest; V21A: Grey Heartland learns how late each boss attack lands and whether it hits twice (FormationSeal: ~1s late and again ~2s later) and stays 60 studs away for all of it; full-HP retreat 55+ studs from every enemy; distance to the boss logged at each big hit; V20Z: Grey Heartland: any boss Act with Crit in the name is dodged from the first time; the full-HP retreat goes to a ground plate 40+ studs from every living enemy (it stood still among 4 husks and died); Auto turned on inside the dungeon keeps going inside (it teleported to the door and lost the run); boss attributes logged in full and Posture in each attack line; V20Y: Grey Heartland boss attacks read from the NPC Act/ActT/ActW attributes (each attack logged with name, time to hit, distance, Parryable); a 30%+ hit learns its Act (saved to greyheartland_golpes.txt) and that Act starting within 40 studs makes the Auto step out to 45 studs until it lands; part log restarts for each big boss; boss heals and max HP growth logged; V20X: Grey Heartland retreat waits for full HP (98%+) before fighting again (Wuyan hit 85% and the V20W went back at 17%); it only gives up when HP does not rise at all for 20s; the wait is logged with the boss HP; V20W: tab 13 is GREY HEARTLAND (The Grey Heartland; replaces the V20V STORMCLIFF tab, wrong name): Auto on the Heart Demon engine with the story door known (GreyingHollow, Follow the screaming into the fog, difficulty in the dialog, no circle), inside it follows the grey road on the ground plates when nothing is near and waits at a standing barrier, plus the recorder; V20U: no retreat while the game says no healing (Withered Qi without ward) and no retreat in the Sunken Pagoda (boss reaches 30 studs); KeyTrial in touch mode (Tap the seal): a harmless key switches back to keyboard and the strike taps the Core; V20T: Sunken Pagoda KeyTrial: strike with Space when each Ring shrinks onto the Core (by name; the Core pulsing or the sheet animating no longer hides it), once per ring pass, score logged at each strike; cutscene skip looks at every MurimCutscene screen and the 3rd try holds Space; V20S: Sunken Pagoda fixes: KeyTrial open only when its TrialSheet panel is visible (a leftover Dim froze the Auto in front of the boss), standing still in a KeyTrial at most 15s and only with HP 40%+, cutscenes skipped (Toque/Segure para pular) and not counted as no-damage time, a mob set aside is attacked again when it is the only one, nothing within 150 studs = goes to the nearest mob within 320, idle rescans every 2s; KeyTrial strike aims at Core; V20R: BUDDHA tab = Auto Sunken Pagoda on the Heart Demon engine (profile: gate, circle right after the prompt, rooms, loot filter, boss door circle, Go again), boss bell prompt (Strike the bell), KeyTrial screen logged and tried (ring meets seal = strike), separate difficulty/repeat; recorder kept; V20Q: new BUDDHA tab = recorder + log (prompts you trigger, buttons you click, teleports and where you land, HUD, NPCs and kills, hits with who was near, drops, new screens, quick map after each teleport; Map here, Mark moment, Save TXT); nothing automatic yet; V20P: Heart Demon retreat ends when the boss is almost dead (under 15%, own HP 20%+) or when it does not heal (8s without +10% HP, then 15s without retreat); V20O: Heart Demon defense before loot; heal to 90% without timeout or low-boss-HP override; ignore artifact/weapon effects; preserve back-facing during dodges; V20N: Heart Demon boss line attack: new long thin parts from the boss through the player = instant sidestep (1.5s, no attack); retreat never stays in front of the boss (sideways when it faces me); every new part in the boss fight logged; V20M: Heart Demon shadow (Your Heart Demon) attacked first, back turned to the boss during the mirror; NPC list refreshed every 1s inside; no retreat when the boss is under 12% and HP 30%+; big damage logs nearby mobs and boss animations; picked loot logged with rarity/enchant; V20L: Heart Demon repeat (MurimRunEnd Go again / Sair, toggle like Halloween), never Climb out of the Abyss, retreat at 60% until 90% toward the arena middle (edge being eaten = 20 studs inside), artifact logged and paused in mirror/retreat, no player targets while Heart Demon is on; V20K: Heart Demon boss: Heart Mirror = back turned to the boss and no attacks; retreat at low HP; mobs in the void / without damage skipped; boss door fired 1.5s after reaching the circle and the circle kept after it opens; big damage logged; V20J: Heart Demon fall fix: loot only with floor under the drop and not 30+ studs below, upright teleport onto the floor (no item rotation), loot teleports logged, fall guard brings the character back to the last floor; V20I: Heart Demon loot = Halloween logic (Murim_Drops within 120 studs, shouldLootItem also for chests, chest retry timers, collected before fighting, teleport on top + touch + every prompt of the drop); V20H: Heart Demon loot uses the same item filter as the farm (Settings > Filtro de itens: chosen rarity and up + enchant/heaven grade/colored/currency/quest/keys; never another player personal loot), chests always, skipped items logged; V20G: Heart Demon boss door: stands in the circle in front of the doors, fires Enter the Heart Chamber from there and waits (no loot) until it opens; own HP in the fight log; player list/quest guide out of the HUD log; V20F: Heart Demon waits up to 30s standing in the circle after the difficulty (SpiritCircle checked against the spot that entered in the 11:48 TXT); game teleport right after our placement still counts; V20E: Heart Demon difficulty like Halloween (Normal/Hard/Hardcore in the tab, chosen in the MurimDialog), gate prompt not refired while the dialog is open, chat ignored; V20D: Heart Demon entrance = only the Heart-Demon prompt near the verified gate (16461,129,-491); wrong saved spot ignored; V20C: new Heart Demon tab (The Heart-Demon Abyss): Auto teleports to the entrance prompt, fires it and the dialog, inside fights/uses prompts and records the quest HUD; log field in the tab, Save TXT/Copy, auto TXT every 2 min; V20B: A03 sends the Paper Effigy seen also during HP pauses, A04 keeps 55 studs from the Watchman (facing or not) and leaves him before crossing the open exit, A05 jump off (server pulls back), A04 death shows the most dangerous Watchman reading of the last 3s, raid lost by leaving the arena shown as PERDIDA; V20A: full log at the top of the TXT (errors with traceback, one line per raid, deaths with the 8s before, boss fights with no-damage gaps, HP pauses, time stopped), raid loop survives errors, HP pause that does not heal is cancelled, A07 keeps fighting the same ghost, A05 lights the lamp first and jumps to A06 (Top76) with fallback, A09 does not walk while the Matriarch is alive, farm boss chest and loot filter from Top76; V19Z: A09 walks (no teleport) until the Matriarch appears, manual movement logged; V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
+print("[Boxer_fighter_Test V2] V21D: Grey Heartland attack IDs, bounded pre-hit snapshots and fight summaries; queued experimental parries including possible second hits, cooldown/window/lifecycle checks; distant hits do not automatically disable fleeing; V21C: Grey Heartland flees only from what fleeing solves (Crit attacks, and learned 65%+ ones like Cast/SpearDriveThrust); Spear2 stays with the hub Auto Parry; FormationSeal (hit at 60 studs after a 74-stud teleport) is parried at its real damage time and the hub Auto Parry no longer spends the parry early on it; an attack that hits the Auto 40+ studs away is marked no-flee; V21B: Grey Heartland: a dangerous boss attack that starts while the Auto is already far also keeps it far until it lands (SpearCrit started at 45 studs during the Spear2 dodge and hit 99% when the Auto came back); overlapping dodges keep the longest; V21A: Grey Heartland learns how late each boss attack lands and whether it hits twice (FormationSeal: ~1s late and again ~2s later) and stays 60 studs away for all of it; full-HP retreat 55+ studs from every enemy; distance to the boss logged at each big hit; V20Z: Grey Heartland: any boss Act with Crit in the name is dodged from the first time; the full-HP retreat goes to a ground plate 40+ studs from every living enemy (it stood still among 4 husks and died); Auto turned on inside the dungeon keeps going inside (it teleported to the door and lost the run); boss attributes logged in full and Posture in each attack line; V20Y: Grey Heartland boss attacks read from the NPC Act/ActT/ActW attributes (each attack logged with name, time to hit, distance, Parryable); a 30%+ hit learns its Act (saved to greyheartland_golpes.txt) and that Act starting within 40 studs makes the Auto step out to 45 studs until it lands; part log restarts for each big boss; boss heals and max HP growth logged; V20X: Grey Heartland retreat waits for full HP (98%+) before fighting again (Wuyan hit 85% and the V20W went back at 17%); it only gives up when HP does not rise at all for 20s; the wait is logged with the boss HP; V20W: tab 13 is GREY HEARTLAND (The Grey Heartland; replaces the V20V STORMCLIFF tab, wrong name): Auto on the Heart Demon engine with the story door known (GreyingHollow, Follow the screaming into the fog, difficulty in the dialog, no circle), inside it follows the grey road on the ground plates when nothing is near and waits at a standing barrier, plus the recorder; V20U: no retreat while the game says no healing (Withered Qi without ward) and no retreat in the Sunken Pagoda (boss reaches 30 studs); KeyTrial in touch mode (Tap the seal): a harmless key switches back to keyboard and the strike taps the Core; V20T: Sunken Pagoda KeyTrial: strike with Space when each Ring shrinks onto the Core (by name; the Core pulsing or the sheet animating no longer hides it), once per ring pass, score logged at each strike; cutscene skip looks at every MurimCutscene screen and the 3rd try holds Space; V20S: Sunken Pagoda fixes: KeyTrial open only when its TrialSheet panel is visible (a leftover Dim froze the Auto in front of the boss), standing still in a KeyTrial at most 15s and only with HP 40%+, cutscenes skipped (Toque/Segure para pular) and not counted as no-damage time, a mob set aside is attacked again when it is the only one, nothing within 150 studs = goes to the nearest mob within 320, idle rescans every 2s; KeyTrial strike aims at Core; V20R: BUDDHA tab = Auto Sunken Pagoda on the Heart Demon engine (profile: gate, circle right after the prompt, rooms, loot filter, boss door circle, Go again), boss bell prompt (Strike the bell), KeyTrial screen logged and tried (ring meets seal = strike), separate difficulty/repeat; recorder kept; V20Q: new BUDDHA tab = recorder + log (prompts you trigger, buttons you click, teleports and where you land, HUD, NPCs and kills, hits with who was near, drops, new screens, quick map after each teleport; Map here, Mark moment, Save TXT); nothing automatic yet; V20P: Heart Demon retreat ends when the boss is almost dead (under 15%, own HP 20%+) or when it does not heal (8s without +10% HP, then 15s without retreat); V20O: Heart Demon defense before loot; heal to 90% without timeout or low-boss-HP override; ignore artifact/weapon effects; preserve back-facing during dodges; V20N: Heart Demon boss line attack: new long thin parts from the boss through the player = instant sidestep (1.5s, no attack); retreat never stays in front of the boss (sideways when it faces me); every new part in the boss fight logged; V20M: Heart Demon shadow (Your Heart Demon) attacked first, back turned to the boss during the mirror; NPC list refreshed every 1s inside; no retreat when the boss is under 12% and HP 30%+; big damage logs nearby mobs and boss animations; picked loot logged with rarity/enchant; V20L: Heart Demon repeat (MurimRunEnd Go again / Sair, toggle like Halloween), never Climb out of the Abyss, retreat at 60% until 90% toward the arena middle (edge being eaten = 20 studs inside), artifact logged and paused in mirror/retreat, no player targets while Heart Demon is on; V20K: Heart Demon boss: Heart Mirror = back turned to the boss and no attacks; retreat at low HP; mobs in the void / without damage skipped; boss door fired 1.5s after reaching the circle and the circle kept after it opens; big damage logged; V20J: Heart Demon fall fix: loot only with floor under the drop and not 30+ studs below, upright teleport onto the floor (no item rotation), loot teleports logged, fall guard brings the character back to the last floor; V20I: Heart Demon loot = Halloween logic (Murim_Drops within 120 studs, shouldLootItem also for chests, chest retry timers, collected before fighting, teleport on top + touch + every prompt of the drop); V20H: Heart Demon loot uses the same item filter as the farm (Settings > Filtro de itens: chosen rarity and up + enchant/heaven grade/colored/currency/quest/keys; never another player personal loot), chests always, skipped items logged; V20G: Heart Demon boss door: stands in the circle in front of the doors, fires Enter the Heart Chamber from there and waits (no loot) until it opens; own HP in the fight log; player list/quest guide out of the HUD log; V20F: Heart Demon waits up to 30s standing in the circle after the difficulty (SpiritCircle checked against the spot that entered in the 11:48 TXT); game teleport right after our placement still counts; V20E: Heart Demon difficulty like Halloween (Normal/Hard/Hardcore in the tab, chosen in the MurimDialog), gate prompt not refired while the dialog is open, chat ignored; V20D: Heart Demon entrance = only the Heart-Demon prompt near the verified gate (16461,129,-491); wrong saved spot ignored; V20C: new Heart Demon tab (The Heart-Demon Abyss): Auto teleports to the entrance prompt, fires it and the dialog, inside fights/uses prompts and records the quest HUD; log field in the tab, Save TXT/Copy, auto TXT every 2 min; V20B: A03 sends the Paper Effigy seen also during HP pauses, A04 keeps 55 studs from the Watchman (facing or not) and leaves him before crossing the open exit, A05 jump off (server pulls back), A04 death shows the most dangerous Watchman reading of the last 3s, raid lost by leaving the arena shown as PERDIDA; V20A: full log at the top of the TXT (errors with traceback, one line per raid, deaths with the 8s before, boss fights with no-damage gaps, HP pauses, time stopped), raid loop survives errors, HP pause that does not heal is cancelled, A07 keeps fighting the same ghost, A05 lights the lamp first and jumps to A06 (Top76) with fallback, A09 does not walk while the Matriarch is alive, farm boss chest and loot filter from Top76; V19Z: A09 walks (no teleport) until the Matriarch appears, manual movement logged; V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -122,7 +122,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V21B | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V21D | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -1451,7 +1451,7 @@ function MURIM_LOG.pauseDump()
     return table.concat(out,"\n").."\n\n"
 end
 function MURIM_LOG.dump()
-    return MURIM_LOG.errorDump()..(MURIM_BD and MURIM_BD.dump and MURIM_BD.dump() or "")..(MURIM_HD and MURIM_HD.dump and MURIM_HD.dump() or "")..MURIM_LOG.raidDump()..MURIM_LOG.deathDump()..MURIM_LOG.fightDump()..MURIM_LOG.pauseDump()
+    return MURIM_LOG.errorDump()..(MURIM_GH and MURIM_GH.auditDump and MURIM_GH.auditDump() or "")..(MURIM_BD and MURIM_BD.dump and MURIM_BD.dump() or "")..(MURIM_HD and MURIM_HD.dump and MURIM_HD.dump() or "")..MURIM_LOG.raidDump()..MURIM_LOG.deathDump()..MURIM_LOG.fightDump()..MURIM_LOG.pauseDump()
 end
 function MURIM_LOG.safeDump()
     local ok,text=pcall(MURIM_LOG.dump)
@@ -4847,6 +4847,8 @@ function MURIM_LATE.isCerberus(npc)
 end
 function MURIM_LATE.parrySkip(npc,act)
     if act=="CJ_Ult" then MURIM_LATE.noteUlt(npc) end
+    -- V21C: Grey Heartland: golpe que o Auto apara no dano real (FormationSeal) nao gasta o aparar do hub antes da hora.
+    if MURIM_GH and MURIM_GH.ownParry and MURIM_GH.ownParry(act) then return true end
     return MURIM_LATE.isCerberus(npc) and MURIM_LATE.cerberusSkip[act]==true
 end
 function MURIM_LATE.parryAnyRange(npc,act)
@@ -11894,6 +11896,7 @@ function MURIM_HD.track(root,now)
     MURIM_HD.lastPosAt=now
 end
 function MURIM_HD.setInside(v,why,pos)
+    if not v and MURIM_GH and MURIM_GH.auditReset then MURIM_GH.auditReset("saida: "..tostring(why)) end
     if MURIM_HD.inside==v then return end
     MURIM_HD.inside=v
     MURIM_HD.insideAt=v and os.clock() or nil
@@ -12363,6 +12366,7 @@ function MURIM_HD.endPanel()
     return again,leave,g,table.concat(texts," | ")
 end
 function MURIM_HD.newRun(why,pos)
+    if MURIM_GH and MURIM_GH.auditReset then MURIM_GH.auditReset("nova corrida") end
     MURIM_HD.retreatSince=nil;MURIM_HD.mirrorUntil=nil;MURIM_HD.dodge=nil
     MURIM_HD.cleared=nil
     MURIM_HD.door=nil
@@ -13471,6 +13475,7 @@ function MURIM_HD.saveTxt()
     return ok,ok and path or tostring(err)
 end
 function MURIM_HD.setEnabled(v)
+    if not v and MURIM_GH and MURIM_GH.auditReset then MURIM_GH.auditReset("Auto desligado") end
     MURIM_HD.enabled=v
     MURIM_HD.state=v and "ligado" or "desligado"
     MURIM_HD.lastAutoSave=os.clock()
@@ -15035,6 +15040,201 @@ MURIM_GH.file="MurimHubLogs/greyheartland_golpes.txt"
 -- V21A: atraso do dano depois do acerto previsto e intervalo do segundo acerto, por Act (aprendidos no golpe).
 MURIM_GH.delay={}
 MURIM_GH.twice={}
+-- FormationSeal retains V21C's explicit experimental parry policy, NOT a proven mechanic.
+-- V21D: distant damage alone never adds attacks to this policy. Queued parry timing is an estimate.
+MURIM_GH.noFlee={FormationSeal=true}
+MURIM_GH.fleeMin=0.65
+-- V21D: each queued defense belongs to one observed attack and character.
+MURIM_GH.parryQueue={}
+MURIM_GH.farEvidence={}
+MURIM_GH.auditHistory={}
+function MURIM_GH.activeDefense()
+    local hd=MURIM_HD
+    return hd and hd.enabled and hd.inside and hd.profile and hd.profile.actDodge
+end
+function MURIM_GH.ownParry(act)
+    if not MURIM_GH.activeDefense() then return false end
+    local now=os.clock()
+    for _,p in ipairs(MURIM_GH.parryQueue) do
+        if p.name==tostring(act) and p.char==player.Character and p.boss==MURIM_HD.bossNow
+            and p.status==nil and now<=p.at+0.25 then return true end
+    end
+    return false
+end
+function MURIM_GH.planParry(name,at,attack,secondGap)
+    if not attack then return end
+    for index,offset in ipairs({0,secondGap or 0}) do
+        if index==1 or offset>0 then
+            local key=attack.id..":"..index
+            local exists=false
+            for _,p in ipairs(MURIM_GH.parryQueue) do if p.key==key then exists=true end end
+            if not exists and #MURIM_GH.parryQueue<32 then
+                table.insert(MURIM_GH.parryQueue,{key=key,name=name,at=at+offset-0.12,
+                    predicted=at+offset,char=player.Character,boss=attack.boss})
+                MURIM_HD.log("DECISAO",string.format("Parry experimental #%s: impacto estimado em %.2fs; nao comprova ataque aparavel",
+                    key,at+offset-os.clock()),0)
+            end
+        end
+    end
+    table.sort(MURIM_GH.parryQueue,function(a,b) return a.at<b.at end)
+end
+function MURIM_GH.cancelDefense(reason)
+    local hold=MURIM_GH.parryHold
+    if hold then
+        pcall(function() hold.remote:FireServer("ParryUp",nil) end)
+        MURIM_GH.parryHold=nil
+    end
+    if #MURIM_GH.parryQueue>0 then MURIM_HD.log("INFO","Fila de parry cancelada: "..tostring(reason),0) end
+    MURIM_GH.parryQueue={}
+end
+function MURIM_GH.parryStep(now,char,hum)
+    if not MURIM_GH.activeDefense() or hum.Health<=0 or char~=player.Character then
+        MURIM_GH.cancelDefense("Auto fora da luta/personagem morto ou trocado")
+        return
+    end
+    local hold=MURIM_GH.parryHold
+    if hold and now>=hold.untilT then
+        local ok=pcall(function() hold.remote:FireServer("ParryUp",nil) end)
+        MURIM_HD.log("ACAO","ParryUp #"..hold.key.." enviado="..tostring(ok),0)
+        MURIM_GH.parryHold=nil
+    end
+    for i=#MURIM_GH.parryQueue,1,-1 do
+        local p=MURIM_GH.parryQueue[i]
+        if p.char~=char or p.boss~=MURIM_HD.bossNow or not p.boss.Parent then
+            MURIM_HD.log("INFO","Parry #"..p.key.." cancelado: chefe/personagem mudou",0)
+            table.remove(MURIM_GH.parryQueue,i)
+        elseif p.status then
+            if p.hp then p.minHp=math.min(p.minHp,hum.Health) end
+            if now>=p.doneAt+1.2 then
+                MURIM_HD.log("EVIDENCIA",string.format("Parry #%s resultado=%s; HP inicial=%s minimo=%s atual=%.0f; Stance=%s; HP preservado NAO prova parry aceito",
+                    p.key,p.status,tostring(p.hp),tostring(p.minHp),hum.Health,tostring(char:GetAttribute("Stance"))),0)
+                table.remove(MURIM_GH.parryQueue,i)
+            end
+        end
+    end
+    for _,p in ipairs(MURIM_GH.parryQueue) do
+        if not p.status and now>=p.at then
+            local ready=tonumber(char:GetAttribute("ParryReadyAt"))
+            local cooldown=ready and math.max(0,ready-workspace:GetServerTimeNow()) or nil
+            local reason
+            if now-p.at>0.25 then reason="janela perdida (atraso/recarga/sobreposicao)"
+            elseif MURIM_GH.parryHold then break
+            elseif cooldown and cooldown>0 then
+                if not p.waitLogged then
+                    MURIM_HD.log("AVISO",string.format("Parry #%s aguardando recarga %.3fs",p.key,cooldown),0)
+                    p.waitLogged=true
+                end
+                break
+            end
+            if not reason then
+                local remote=MURIM_HD.combatRemote()
+                local ok=remote~=nil and pcall(function() remote:FireServer("ParryDown",nil) end)
+                reason=ok and "enviado; aceite nao confirmado" or "remoto ausente/erro de envio"
+                if ok then
+                    local h={remote=remote,key=p.key,untilT=now+0.22}
+                    MURIM_GH.parryHold=h
+                    task.delay(0.22,function()
+                        if MURIM_GH.parryHold==h then
+                            local up=pcall(function() remote:FireServer("ParryUp",nil) end)
+                            MURIM_GH.parryHold=nil
+                            MURIM_HD.log("ACAO","ParryUp #"..h.key.." enviado="..tostring(up),0)
+                        end
+                    end)
+                end
+            end
+            p.status=reason;p.doneAt=now;p.hp=hum.Health;p.minHp=hum.Health
+            MURIM_HD.log("ACAO",string.format("Parry #%s %s; atraso=%.3fs; recarga=%s; HP=%.0f; Stance=%s Busy=%s Stunned=%s",
+                p.key,reason,now-p.at,tostring(cooldown),hum.Health,tostring(char:GetAttribute("Stance")),
+                tostring(char:GetAttribute("Busy")),tostring(char:GetAttribute("Stunned"))),0)
+        end
+    end
+end
+function MURIM_GH.farLesson(name,bp,root)
+    if not bp then return end
+    local distance=(bp-root.Position).Magnitude
+    if distance<40 then return end
+    local n=(MURIM_GH.farEvidence[name] or 0)+1
+    MURIM_GH.farEvidence[name]=n
+    MURIM_HD.log("HIPOTESE",string.format("%s: dano associado a %.0f studs, observacao %d; distancia nao prova origem nem impossibilidade de fuga; politica preservada",name,distance,n),0)
+end
+function MURIM_GH.auditFinish(reason)
+    local f=MURIM_GH.auditFight
+    if not f then return end
+    local damages={}
+    for name,amount in pairs(f.byAct) do damages[#damages+1]=name.."="..math.floor(amount) end
+    table.sort(damages)
+    local line=string.format("%s | %s | duracao %.1fs; estados: combate %.1fs fuga %.1fs cura %.1fs; HP chefe %.0f -> %.0f; dano recebido %.0f; atribuicao parcial ESTIMADA (golpes 30%%+) [%s]",
+        f.name,reason,os.clock()-f.started,f.combat,f.flee,f.heal,f.firstHp,f.bossHp,f.damage,table.concat(damages,", "))
+    table.insert(MURIM_GH.auditHistory,line)
+    if #MURIM_GH.auditHistory>12 then table.remove(MURIM_GH.auditHistory,1) end
+    MURIM_HD.log("RESUMO",line,0)
+    if tostring(reason):lower():find("mor",1,true) then
+        local now=os.clock()
+        for _,sample in ipairs(f.samples) do
+            if now-sample.at<=6 then MURIM_HD.log("ANTES DA MORTE",string.format("-%.2fs %s",now-sample.at,sample.text),0) end
+        end
+    end
+    MURIM_GH.auditFight=nil
+end
+function MURIM_GH.auditReset(reason)
+    MURIM_GH.auditFinish(reason)
+    MURIM_GH.cancelDefense(reason)
+    MURIM_GH.lastHp=nil;MURIM_GH.lastActId=nil;MURIM_GH.acts={};MURIM_GH.flee=nil
+end
+function MURIM_GH.auditDump()
+    local out={"[GREY HEARTLAND: resumo de lutas; origem dos golpes estimada]"}
+    for _,line in ipairs(MURIM_GH.auditHistory) do out[#out+1]=line end
+    local f=MURIM_GH.auditFight
+    if f then out[#out+1]=string.format("EM ANDAMENTO %s; combate %.1fs fuga %.1fs cura %.1fs; dano recebido %.0f",f.name,f.combat,f.flee,f.heal,f.damage) end
+    out[#out+1]="FormationSeal: parry experimental; envio ou ausencia de dano nao confirmam defesa aceita."
+    return table.concat(out,"\n").."\n\n"
+end
+function MURIM_GH.auditTick(now,char,hum,root,boss)
+    local f=MURIM_GH.auditFight
+    if f and (f.boss~=boss or f.char~=char) then MURIM_GH.auditReset("chefe/personagem mudou");f=nil end
+    local bh=boss and boss:FindFirstChildOfClass("Humanoid")
+    if not f and boss and bh then
+        f={boss=boss,char=char,name=boss.Name,started=now,last=now,combat=0,flee=0,heal=0,damage=0,
+            hp=hum.Health,firstHp=bh.Health,bossHp=bh.Health,samples={},byAct={}}
+        MURIM_GH.auditFight=f
+    end
+    if not f then return end
+    local mode=MURIM_GH.flee and "flee" or (MURIM_HD.retreatSince and "heal" or "combat")
+    f[f.mode or mode]+=math.min(1,math.max(0,now-f.last));f.mode=mode;f.last=now
+    f.bossHp=bh and bh.Health or f.bossHp
+    local lost=math.max(0,f.hp-hum.Health)
+    f.damage+=lost
+    local bp=MURIM_HD.posOf(boss)
+    local distance=bp and (bp-root.Position).Magnitude or -1
+    if not f.sampleAt or now-f.sampleAt>=0.2 or lost>=hum.MaxHealth*0.1 then
+        local previous=f.samples[#f.samples]
+        local jump=previous and (root.Position-previous.pos).Magnitude or 0
+        table.insert(f.samples,{at=now,pos=root.Position,text=string.format("HP %.0f/%.0f pos=%s chefe=%s dist=%.1f estado=%s salto=%.1f TPauto=%s ha=%.2fs Stance=%s",
+            hum.Health,hum.MaxHealth,MURIM_HD.fmt(root.Position),MURIM_HD.fmt(bp),distance,mode,jump,
+            MURIM_HD.fmt(MURIM_HD.ownTeleportTo),now-(MURIM_HD.ownTeleportAt or now),tostring(char:GetAttribute("Stance")))})
+        while #f.samples>32 do table.remove(f.samples,1) end
+        f.sampleAt=now
+    end
+    if lost>=hum.MaxHealth*0.1 or (hum.Health<=0 and f.hp>0) then
+        MURIM_HD.log("EVIDENCIA",string.format("DANO AUDITADO %.0f -> %.0f (%.1f%%) em %s; distancia %.1f; atribuicao abaixo e hipotese",f.hp,hum.Health,lost/hum.MaxHealth*100,boss.Name,distance),0)
+        for _,a in ipairs(MURIM_GH.acts) do
+            if now-a.hitAt<6 and now-a.hitAt> -1 then
+                MURIM_HD.log("HIPOTESE",string.format("Candidato #%s %s: desde previsto %.3fs; atraso aprendido %.3fs; segundo %.3fs; Parryable=%s; distancia inicial %.1f",
+                    tostring(a.id),a.name,now-a.hitAt,MURIM_GH.delay[a.name] or 0,MURIM_GH.twice[a.name] or 0,tostring(a.parryable),a.d),0)
+            end
+        end
+        if not f.detailAt or now-f.detailAt>=1 or hum.Health<=0 then
+            for _,sample in ipairs(f.samples) do
+                if now-sample.at<=6 then MURIM_HD.log("ANTES DO DANO",string.format("-%.2fs %s",now-sample.at,sample.text),0) end
+            end
+            f.detailAt=now
+        end
+    end
+    f.hp=hum.Health
+    if hum.Health<=0 then MURIM_GH.auditReset("morte do jogador")
+    elseif bh and bh.Health<=0 then MURIM_GH.auditReset("HP do chefe <= 0") end
+end
+
 function MURIM_GH.loadDanger()
     if type(readfile)~="function" or type(isfile)~="function" or not isfile(MURIM_GH.file) then return end
     for name,v,dl,tw in tostring(readfile(MURIM_GH.file)):gmatch("([^\n=]+)=([%d%.]+),?([%d%.]*),?([%d%.]*)") do
@@ -15062,11 +15262,12 @@ function MURIM_GH.dangerText()
     for name,f in pairs(MURIM_GH.danger) do
         local dl,tw=MURIM_GH.delay[name],MURIM_GH.twice[name]
         out[#out+1]=string.format("%s %.0f%%",name,f*100)..(dl and string.format(" +%.1fs",dl) or "")..(tw and string.format(" 2x(%.1fs)",tw) or "")
+            ..(MURIM_GH.noFlee[name] and " sem fuga" or "")
     end
     table.sort(out)
     return #out>0 and table.concat(out,", ") or "nenhum ainda"
 end
--- Golpe grande: o Act com acerto mais perto de agora (ate 1,2s) e o culpado; sem Act perto = registra o que havia.
+-- Associacao temporal, nao prova da origem do dano. Ataques quase simultaneos nao ensinam automaticamente.
 function MURIM_GH.blame(frac,now,boss,root)
     local bp=boss and root and MURIM_HD.posOf(boss)
     local away=bp and string.format(", agora a %.0f studs do chefe",(bp-root.Position).Magnitude) or ""
@@ -15076,13 +15277,26 @@ function MURIM_GH.blame(frac,now,boss,root)
         if d<=bd then best,bd=a,d end
     end
     if best then
+        local ambiguous=false
+        for _,a in ipairs(MURIM_GH.acts) do
+            if a~=best and math.abs(now-a.hitAt)<=bd+0.25 then ambiguous=true end
+        end
+        if ambiguous then
+            MURIM_HD.log("HIPOTESE","Dano com ataques sobrepostos: nao alterar aprendizado; "..MURIM_GH.recentActs(now),0)
+            local f=MURIM_GH.auditFight
+            if f then f.byAct.ambiguo=(f.byAct.ambiguo or 0)+frac*(player.Character:FindFirstChildOfClass("Humanoid").MaxHealth) end
+            return
+        end
+        local f=MURIM_GH.auditFight
+        if f then f.byAct[best.name]=(f.byAct[best.name] or 0)+frac*(player.Character:FindFirstChildOfClass("Humanoid").MaxHealth) end
         local was=MURIM_GH.danger[best.name]
         MURIM_GH.danger[best.name]=math.max(was or 0,frac)
         local lag=now-best.hitAt
         if lag>=0.3 then MURIM_GH.delay[best.name]=math.max(MURIM_GH.delay[best.name] or 0,lag) end
         best.hitBy=now
+        MURIM_GH.farLesson(best.name,bp,root)
         MURIM_GH.saveDanger()
-        MURIM_HD.log("EVIDENCIA",string.format("Golpe de %.0f%% veio do ataque Act=%s (acerto previsto ha %.2fs, eu estava a %.0f studs quando comecou%s)%s",
+        MURIM_HD.log("EVIDENCIA",string.format("Golpe de %.0f%% associado por TEMPO ao Act=%s (origem nao confirmada) (acerto previsto ha %.2fs, eu estava a %.0f studs quando comecou%s)%s",
             frac*100,best.name,lag,best.d,away,was and "" or ": aprendido, fujo dele daqui em diante"),0)
         return
     end
@@ -15094,9 +15308,10 @@ function MURIM_GH.blame(frac,now,boss,root)
     if first then
         local gap=now-first.hitBy
         MURIM_GH.twice[first.name]=math.max(MURIM_GH.twice[first.name] or 0,gap)
+        MURIM_GH.farLesson(first.name,bp,root)
         MURIM_GH.danger[first.name]=math.max(MURIM_GH.danger[first.name] or 0,frac)
         MURIM_GH.saveDanger()
-        MURIM_HD.log("EVIDENCIA",string.format("Golpe de %.0f%% = segundo acerto do Act=%s, %.1fs depois do primeiro%s: aprendido, fico longe ate passar os dois",
+        MURIM_HD.log("EVIDENCIA",string.format("Golpe de %.0f%%: POSSIVEL segundo acerto do Act=%s, %.1fs depois do primeiro%s: aprendido, fico longe ate passar os dois",
             frac*100,first.name,gap,away),0)
         return
     end
@@ -15108,7 +15323,7 @@ function MURIM_GH.recentActs(now)
     local out={}
     for i=math.max(1,#MURIM_GH.acts-4),#MURIM_GH.acts do
         local a=MURIM_GH.acts[i]
-        out[#out+1]=string.format("%s (acerto %+.1fs)",a.name,a.hitAt-now)
+        out[#out+1]=string.format("#%s %s (acerto %+.1fs)",tostring(a.id),a.name,a.hitAt-now)
     end
     return #out>0 and table.concat(out,"; ") or "nenhum"
 end
@@ -15148,17 +15363,26 @@ function MURIM_GH.watchBoss(boss,now)
 end
 function MURIM_GH.actStep()
     local hd=MURIM_HD
-    if MURIM_GH.destroyed or not hd or not hd.enabled or not hd.inside or not hd.profile or not hd.profile.actDodge then return end
+    if MURIM_GH.destroyed or not hd or not hd.enabled or not hd.inside or not hd.profile or not hd.profile.actDodge then
+        if MURIM_GH.auditFight or #MURIM_GH.parryQueue>0 or MURIM_GH.parryHold then MURIM_GH.auditReset("Auto inativo/fora do perfil") end
+        return
+    end
     local char=player.Character
     local root=char and char:FindFirstChild("HumanoidRootPart")
     local hum=char and char:FindFirstChildOfClass("Humanoid")
-    if not root or not hum or not hum.MaxHealth or hum.MaxHealth<=0 then return end
+    if not root or not hum or not hum.MaxHealth or hum.MaxHealth<=0 then
+        MURIM_GH.auditReset("personagem indisponivel")
+        return
+    end
     local now=os.clock()
     local boss=hd.bossNow
     if boss and not boss.Parent then boss=nil end
+    MURIM_GH.auditTick(now,char,hum,root,boss)
+    if hum.Health<=0 then return end
     local last=MURIM_GH.lastHp
     MURIM_GH.lastHp=hum.Health
     if last and last-hum.Health>=hum.MaxHealth*0.3 then MURIM_GH.blame((last-hum.Health)/hum.MaxHealth,now,boss,root) end
+    MURIM_GH.parryStep(now,char,hum)
     if not boss then return end
     MURIM_GH.watchBoss(boss,now)
     local act=boss:GetAttribute("Act")
@@ -15172,11 +15396,17 @@ function MURIM_GH.actStep()
     local bp=hd.posOf(boss)
     local d=bp and (bp-root.Position).Magnitude or math.huge
     local name=tostring(act)
-    MURIM_GH.acts[#MURIM_GH.acts+1]={name=name,hitAt=now+eta,d=d}
+    MURIM_GH.attackSequence=(MURIM_GH.attackSequence or 0)+1
+    local attack={id=tostring(MURIM_GH.attackSequence),name=name,boss=boss,hitAt=now+eta,d=d,
+        observedAt=now,actT=actT,actW=actW,parryable=boss:GetAttribute("Parryable")}
+    MURIM_GH.acts[#MURIM_GH.acts+1]=attack
+    hd.log("EVIDENCIA",string.format("ATAQUE #%s chefe=%s Act=%s ActT=%.3f ActW=%.3f servidor=%.3f previstoEm=%.3f dist=%.1f Parryable=%s",
+        attack.id,boss.Name,name,actT,actW,workspace:GetServerTimeNow(),eta,d,tostring(attack.parryable)),0)
     if #MURIM_GH.acts>20 then table.remove(MURIM_GH.acts,1) end
     local learned=MURIM_GH.danger[name]
     -- V20Z: golpe com Crit no nome = forte desde a primeira vez (FistCrit1014 32%, SpearCrit 91% no TXT 12:27).
-    local crit=not learned and name:lower():find("crit",1,true)~=nil
+    local critName=name:lower():find("crit",1,true)~=nil
+    local crit=not learned and critName
     if crit then learned=0.5 end
     hd.log("EVIDENCIA",string.format("Ataque do chefe %s: Act=%s ActW=%.2f acerta em %.2fs | a %.0f studs | meu HP %.0f%% | Posture=%s/%s%s",
         boss.Name,name,actW,eta,d,hum.Health/hum.MaxHealth*100,tostring(boss:GetAttribute("Posture")),tostring(boss:GetAttribute("MaxPosture")),
@@ -15190,7 +15420,11 @@ function MURIM_GH.actStep()
     local dist=slow and 60 or MURIM_GH.safeDist
     -- V21B: comecou com o Auto ja longe = fica longe ate acertar (o motor nao volta para perto); fugas que se sobrepoem
     -- ficam com o fim mais tarde e a distancia maior.
-    if learned and eta>-0.2 and d<120 then
+    -- V21C: so foge do que fugir resolve (Crit no nome ou aprendido com 65%+, sem a marca "sem fuga"); "sem fuga" com
+    -- atraso aprendido = aparar no dano real; o resto (Spear2 61%) fica com o Auto Parry do hub.
+    local worth=learned and not MURIM_GH.noFlee[name] and (critName or learned>=MURIM_GH.fleeMin)
+    if learned and MURIM_GH.noFlee[name] and dl>=0.5 and eta>-0.2 then MURIM_GH.planParry(name,now+eta+dl,attack,tw) end
+    if worth and eta>-0.2 and d<120 then
         local hold=math.max(eta,0)+dl+tw+0.6
         local old=MURIM_GH.flee
         local keep=old and old.boss==boss and old.untilT>now
@@ -16511,7 +16745,7 @@ report("Menu principal aberto • carregando Alquimia / Forja / Avanço", false)
 task.spawn(function()
     local ok, reason = xpcall(function() mountWorkshop(hub) end, function(e) return tostring(e) end)
     if ok then
-        report("Pronto para usar • 13 abas (V21B: Grey Heartland nao volta para perto com golpe forte vindo)", false)
+        report("Pronto para usar • 13 abas (V21D: Grey Heartland diagnostico de dano e fila de parry experimental)", false)
         task.delay(3, finishNotice)
     else
         report("Falha ao carregar o módulo de minijogos: " .. tostring(reason), true)
