@@ -14,7 +14,7 @@ local bh={Health=5000,MaxHealth=5000}
 local boss={Parent=true,Name="Wuyan",FindFirstChildOfClass=function() return bh end}
 local MURIM_HD={enabled=true,inside=true,profile={actDodge=true},bossNow=boss,
     log=function(_,message) table.insert(messages,message) end,combatRemote=function() return remote end}
-local MURIM_GH={acts={},delay={},twice={},noFlee={FormationSeal=true},nearDist=40,safeDist=45}
+local MURIM_GH={acts={},delay={},twice={},danger={},noFlee={FormationSeal=true},nearDist=40,safeDist=45}
 local Workspace=workspace
 local isParrying=false
 local PARRY_WINDOW=0.22
@@ -33,6 +33,7 @@ local function reset()
     MURIM_GH.auditReset("test reset");sent={};scheduled={};messages={}
     hp.Health=1000;attrs={Armed=true};MURIM_HD.enabled=true;MURIM_HD.inside=true;MURIM_HD.bossNow=boss;t=0
     MURIM_HD.genericParryUntil=nil;isParrying=false
+    MURIM_GH.danger={};bh.Health=5000
 end
 local function plan(id,at,second)
     MURIM_GH.planParry("FormationSeal",at,{id=id,boss=boss},second)
@@ -119,15 +120,17 @@ local gained=0
 -- Windups recorded in the supplied TXT; damage values are from greyheartland_golpes.txt.
 for _,case in ipairs({{"FistCrit1014",0.92,0.32},{"Cast",0.94,0.68},{"SpearCrit",0.97,0.99},{"SpearDriveThrust",0.89,1.0}}) do
     reset();moves=0
+    MURIM_GH.danger[case[1]]=case[3]
     local f=MURIM_GH.planFlee(boss,case[1],10,case[2],0,0,45,4)
-    check(math.abs(f.startAt-(10+case[2]-0.45))<0.00001,"scheduled lead")
-    check(not MURIM_GH.fleeTick({},10) and moves==0,"early windup does not move or block combat")
+    local immediate=case[3]>=0.9
+    check(math.abs(f.startAt-(immediate and 10 or 10+case[2]-0.45))<0.00001,"scheduled lead or immediate lethal retreat")
+    if not immediate then check(not MURIM_GH.fleeTick({},10) and moves==0,"early windup does not move or block combat") end
     check(not MURIM_GH.fleeBlocks(f.startAt-0.01),"attack allowed before dodge lead")
     check(MURIM_GH.fleeTick({},f.startAt) and moves==1,"dodge begins at lead")
     check(MURIM_GH.fleeBlocks(10+case[2]),"impact remains defended even for lethal attacks")
     MURIM_HD.attack(nil,nil,10+case[2]) -- must return before dereferencing/moving/attacking
     check(not MURIM_GH.fleeTick({},f.untilT),"combat resumes after original safety tail")
-    gained+=case[2]-0.45
+    gained+=f.startAt-10
 end
 reset();local f=MURIM_GH.planFlee(boss,"late",10,0.1,0,0,45,4)
 check(f.startAt==10,"late alert flees immediately")
@@ -140,3 +143,29 @@ check(MURIM_GH.fleeBlocks(14),"delayed second hit remains protected")
 MURIM_HD.bossNow={Parent=true}
 check(not MURIM_GH.fleeTick({},11),"old boss cannot move character")
 print(string.format("PASS V21F: observed windups gain %.2fs attack opportunity across four attacks; lethal/overlapping/late/distant protections preserved",gained))
+reset();moves=0
+MURIM_GH.danger.SpearDriveThrust=1.0
+local f=MURIM_GH.planFlee(boss,"SpearDriveThrust",10,0.874,0,0,45,4)
+check(f.startAt==10,"143526 log: lethal thrust must not wait 0.424 seconds")
+root.Position=Vec.new(45,0,0)
+MURIM_GH.maintainFlee(root,10.2)
+root.Position=Vec.new(4,0,0)
+MURIM_GH.maintainFlee(root,10.41)
+check(moves==2,"143526 log: movement lost during active retreat must trigger another position check/move")
+local warned=false
+for _,line in ipairs(messages) do if line:find("perdeu distancia",1,true) then warned=true end end
+check(warned,"observed return from 45 to 4 must be explicit")
+MURIM_GH.maintainFlee(root,10.42)
+check(moves==2,"heartbeat corrections are throttled")
+MURIM_GH.maintainFlee(root,f.untilT+0.1)
+check(moves==2,"no retreat movement after attack window")
+reset();local summaries=#MURIM_GH.auditHistory
+MURIM_GH.auditTick(0,char,hp,root,boss)
+bh.Health=0
+MURIM_GH.auditTick(0.2,char,hp,root,boss)
+for i=1,5 do MURIM_GH.auditTick(0.2+i*0.02,char,hp,root,boss) end
+check(#MURIM_GH.auditHistory==summaries+1,"dead boss produces exactly one summary")
+reset();MURIM_GH.auditTick(0,char,hp,root,boss);hp.Health=0
+MURIM_GH.auditTick(0.2,char,hp,root,nil)
+check(MURIM_GH.auditHistory[#MURIM_GH.auditHistory]:find("morte do jogador",1,true),"death when boss disappears retains correct reason")
+print("PASS V21G: lethal immediate retreat, recorded 45-to-4 return, throttled correction, expired defense, single death summaries")
