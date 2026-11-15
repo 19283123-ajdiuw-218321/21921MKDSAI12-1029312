@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V20V: new STORMCLIFF tab (13th): Stormcliff Auto on the Heart Demon engine with the gate discovered in the map (name in Lairs, marker or the player near it) and saved, plus the recorder; V20U: no retreat while the game says no healing (Withered Qi without ward) and no retreat in the Sunken Pagoda (boss reaches 30 studs); KeyTrial in touch mode (Tap the seal): a harmless key switches back to keyboard and the strike taps the Core; V20T: Sunken Pagoda KeyTrial: strike with Space when each Ring shrinks onto the Core (by name; the Core pulsing or the sheet animating no longer hides it), once per ring pass, score logged at each strike; cutscene skip looks at every MurimCutscene screen and the 3rd try holds Space; V20S: Sunken Pagoda fixes: KeyTrial open only when its TrialSheet panel is visible (a leftover Dim froze the Auto in front of the boss), standing still in a KeyTrial at most 15s and only with HP 40%+, cutscenes skipped (Toque/Segure para pular) and not counted as no-damage time, a mob set aside is attacked again when it is the only one, nothing within 150 studs = goes to the nearest mob within 320, idle rescans every 2s; KeyTrial strike aims at Core; V20R: BUDDHA tab = Auto Sunken Pagoda on the Heart Demon engine (profile: gate, circle right after the prompt, rooms, loot filter, boss door circle, Go again), boss bell prompt (Strike the bell), KeyTrial screen logged and tried (ring meets seal = strike), separate difficulty/repeat; recorder kept; V20Q: new BUDDHA tab = recorder + log (prompts you trigger, buttons you click, teleports and where you land, HUD, NPCs and kills, hits with who was near, drops, new screens, quick map after each teleport; Map here, Mark moment, Save TXT); nothing automatic yet; V20P: Heart Demon retreat ends when the boss is almost dead (under 15%, own HP 20%+) or when it does not heal (8s without +10% HP, then 15s without retreat); V20O: Heart Demon defense before loot; heal to 90% without timeout or low-boss-HP override; ignore artifact/weapon effects; preserve back-facing during dodges; V20N: Heart Demon boss line attack: new long thin parts from the boss through the player = instant sidestep (1.5s, no attack); retreat never stays in front of the boss (sideways when it faces me); every new part in the boss fight logged; V20M: Heart Demon shadow (Your Heart Demon) attacked first, back turned to the boss during the mirror; NPC list refreshed every 1s inside; no retreat when the boss is under 12% and HP 30%+; big damage logs nearby mobs and boss animations; picked loot logged with rarity/enchant; V20L: Heart Demon repeat (MurimRunEnd Go again / Sair, toggle like Halloween), never Climb out of the Abyss, retreat at 60% until 90% toward the arena middle (edge being eaten = 20 studs inside), artifact logged and paused in mirror/retreat, no player targets while Heart Demon is on; V20K: Heart Demon boss: Heart Mirror = back turned to the boss and no attacks; retreat at low HP; mobs in the void / without damage skipped; boss door fired 1.5s after reaching the circle and the circle kept after it opens; big damage logged; V20J: Heart Demon fall fix: loot only with floor under the drop and not 30+ studs below, upright teleport onto the floor (no item rotation), loot teleports logged, fall guard brings the character back to the last floor; V20I: Heart Demon loot = Halloween logic (Murim_Drops within 120 studs, shouldLootItem also for chests, chest retry timers, collected before fighting, teleport on top + touch + every prompt of the drop); V20H: Heart Demon loot uses the same item filter as the farm (Settings > Filtro de itens: chosen rarity and up + enchant/heaven grade/colored/currency/quest/keys; never another player personal loot), chests always, skipped items logged; V20G: Heart Demon boss door: stands in the circle in front of the doors, fires Enter the Heart Chamber from there and waits (no loot) until it opens; own HP in the fight log; player list/quest guide out of the HUD log; V20F: Heart Demon waits up to 30s standing in the circle after the difficulty (SpiritCircle checked against the spot that entered in the 11:48 TXT); game teleport right after our placement still counts; V20E: Heart Demon difficulty like Halloween (Normal/Hard/Hardcore in the tab, chosen in the MurimDialog), gate prompt not refired while the dialog is open, chat ignored; V20D: Heart Demon entrance = only the Heart-Demon prompt near the verified gate (16461,129,-491); wrong saved spot ignored; V20C: new Heart Demon tab (The Heart-Demon Abyss): Auto teleports to the entrance prompt, fires it and the dialog, inside fights/uses prompts and records the quest HUD; log field in the tab, Save TXT/Copy, auto TXT every 2 min; V20B: A03 sends the Paper Effigy seen also during HP pauses, A04 keeps 55 studs from the Watchman (facing or not) and leaves him before crossing the open exit, A05 jump off (server pulls back), A04 death shows the most dangerous Watchman reading of the last 3s, raid lost by leaving the arena shown as PERDIDA; V20A: full log at the top of the TXT (errors with traceback, one line per raid, deaths with the 8s before, boss fights with no-damage gaps, HP pauses, time stopped), raid loop survives errors, HP pause that does not heal is cancelled, A07 keeps fighting the same ghost, A05 lights the lamp first and jumps to A06 (Top76) with fallback, A09 does not walk while the Matriarch is alive, farm boss chest and loot filter from Top76; V19Z: A09 walks (no teleport) until the Matriarch appears, manual movement logged; V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
+print("[Boxer_fighter_Test V2] V20W: tab 13 is GREY HEARTLAND (The Grey Heartland; replaces the V20V STORMCLIFF tab, wrong name): Auto on the Heart Demon engine with the story door known (GreyingHollow, Follow the screaming into the fog, difficulty in the dialog, no circle), inside it follows the grey road on the ground plates when nothing is near and waits at a standing barrier, plus the recorder; V20U: no retreat while the game says no healing (Withered Qi without ward) and no retreat in the Sunken Pagoda (boss reaches 30 studs); KeyTrial in touch mode (Tap the seal): a harmless key switches back to keyboard and the strike taps the Core; V20T: Sunken Pagoda KeyTrial: strike with Space when each Ring shrinks onto the Core (by name; the Core pulsing or the sheet animating no longer hides it), once per ring pass, score logged at each strike; cutscene skip looks at every MurimCutscene screen and the 3rd try holds Space; V20S: Sunken Pagoda fixes: KeyTrial open only when its TrialSheet panel is visible (a leftover Dim froze the Auto in front of the boss), standing still in a KeyTrial at most 15s and only with HP 40%+, cutscenes skipped (Toque/Segure para pular) and not counted as no-damage time, a mob set aside is attacked again when it is the only one, nothing within 150 studs = goes to the nearest mob within 320, idle rescans every 2s; KeyTrial strike aims at Core; V20R: BUDDHA tab = Auto Sunken Pagoda on the Heart Demon engine (profile: gate, circle right after the prompt, rooms, loot filter, boss door circle, Go again), boss bell prompt (Strike the bell), KeyTrial screen logged and tried (ring meets seal = strike), separate difficulty/repeat; recorder kept; V20Q: new BUDDHA tab = recorder + log (prompts you trigger, buttons you click, teleports and where you land, HUD, NPCs and kills, hits with who was near, drops, new screens, quick map after each teleport; Map here, Mark moment, Save TXT); nothing automatic yet; V20P: Heart Demon retreat ends when the boss is almost dead (under 15%, own HP 20%+) or when it does not heal (8s without +10% HP, then 15s without retreat); V20O: Heart Demon defense before loot; heal to 90% without timeout or low-boss-HP override; ignore artifact/weapon effects; preserve back-facing during dodges; V20N: Heart Demon boss line attack: new long thin parts from the boss through the player = instant sidestep (1.5s, no attack); retreat never stays in front of the boss (sideways when it faces me); every new part in the boss fight logged; V20M: Heart Demon shadow (Your Heart Demon) attacked first, back turned to the boss during the mirror; NPC list refreshed every 1s inside; no retreat when the boss is under 12% and HP 30%+; big damage logs nearby mobs and boss animations; picked loot logged with rarity/enchant; V20L: Heart Demon repeat (MurimRunEnd Go again / Sair, toggle like Halloween), never Climb out of the Abyss, retreat at 60% until 90% toward the arena middle (edge being eaten = 20 studs inside), artifact logged and paused in mirror/retreat, no player targets while Heart Demon is on; V20K: Heart Demon boss: Heart Mirror = back turned to the boss and no attacks; retreat at low HP; mobs in the void / without damage skipped; boss door fired 1.5s after reaching the circle and the circle kept after it opens; big damage logged; V20J: Heart Demon fall fix: loot only with floor under the drop and not 30+ studs below, upright teleport onto the floor (no item rotation), loot teleports logged, fall guard brings the character back to the last floor; V20I: Heart Demon loot = Halloween logic (Murim_Drops within 120 studs, shouldLootItem also for chests, chest retry timers, collected before fighting, teleport on top + touch + every prompt of the drop); V20H: Heart Demon loot uses the same item filter as the farm (Settings > Filtro de itens: chosen rarity and up + enchant/heaven grade/colored/currency/quest/keys; never another player personal loot), chests always, skipped items logged; V20G: Heart Demon boss door: stands in the circle in front of the doors, fires Enter the Heart Chamber from there and waits (no loot) until it opens; own HP in the fight log; player list/quest guide out of the HUD log; V20F: Heart Demon waits up to 30s standing in the circle after the difficulty (SpiritCircle checked against the spot that entered in the 11:48 TXT); game teleport right after our placement still counts; V20E: Heart Demon difficulty like Halloween (Normal/Hard/Hardcore in the tab, chosen in the MurimDialog), gate prompt not refired while the dialog is open, chat ignored; V20D: Heart Demon entrance = only the Heart-Demon prompt near the verified gate (16461,129,-491); wrong saved spot ignored; V20C: new Heart Demon tab (The Heart-Demon Abyss): Auto teleports to the entrance prompt, fires it and the dialog, inside fights/uses prompts and records the quest HUD; log field in the tab, Save TXT/Copy, auto TXT every 2 min; V20B: A03 sends the Paper Effigy seen also during HP pauses, A04 keeps 55 studs from the Watchman (facing or not) and leaves him before crossing the open exit, A05 jump off (server pulls back), A04 death shows the most dangerous Watchman reading of the last 3s, raid lost by leaving the arena shown as PERDIDA; V20A: full log at the top of the TXT (errors with traceback, one line per raid, deaths with the 8s before, boss fights with no-damage gaps, HP pauses, time stopped), raid loop survives errors, HP pause that does not heal is cancelled, A07 keeps fighting the same ghost, A05 lights the lamp first and jumps to A06 (Top76) with fallback, A09 does not walk while the Matriarch is alive, farm boss chest and loot filter from Top76; V19Z: A09 walks (no teleport) until the Matriarch appears, manual movement logged; V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -122,7 +122,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V20V | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V20W | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -11623,10 +11623,20 @@ MURIM_HD.profiles={
         words={"sunken pagoda","sunkenpagoda","pagoda","pagode","sealed","someone is down","descend","bell","sino"},
         stats={prompts=0,dialogs=0,teleports=0,attacks=0,kills=0,entries=0,scans=0},difficulty="Normal",repeatOn=true,
         circleRightAway=true,bossPrompts={"strike the bell"},noRetreat=true},
+    -- V20W: The Grey Heartland (aba GREY HEARTLAND; TXT 15/11 11:19, entrada feita a mao). Porta de historia
+    -- Workspace.Map_Region3.StoryBosses.GreyingHollow.StoryDoor.StoryPrompt 'Follow the screaming into the fog' / 'The Grey
+    -- Heartland' (Hold 1.2, MaxDist 16) em (-2700,128,-2100); dialogo MurimDialog com Normal/Hard/Hardcore (Duro,
+    -- Incondicional; 'Procuro grupo' e 'Ainda nao' nunca); 0,9s depois de Normal o jogo levou de (-2698,125,-2094) para
+    -- Workspace.Raids.Story_R3_GreyHeartland (31000,2006,8). Sem circulo: espera no ponto que funcionou. road = segue a
+    -- estrada pelo chao quando nao ha nada perto (MURIM_GH.roadTick). region = so no servidor da Regiao 3.
+    grey={key="grey",name="Grey Heartland",title="GREY HEARTLAND",tab="GREY HEARTLAND",area="GreyHeartland",
+        raid="Story_R3_GreyHeartland",ids={"grey heartland","greyheartland","greyinghollow","greying hollow"},
+        gate=Vector3.new(-2700,128,-2100),circle=Vector3.new(-2698,125,-2094),noCircle=true,
+        circleFrom="ponto onde a entrada funcionou (TXT 15/11 11:19)",file="greyheartland",txt="greyheartland",
+        words={"grey heartland","greyheartland","greying hollow","greyinghollow","heartland","grey road","madman","screaming"},
+        lines={},stats={prompts=0,dialogs=0,teleports=0,attacks=0,kills=0,entries=0,scans=0},difficulty="Normal",repeatOn=true,
+        bossPrompts={},road=true,region="Map_Region3"},
 }
--- V20V: perfil sem portao conhecido (Stormcliff, aba STORMCLIFF): a posicao "conhecida" fica longe de tudo ate o motor
--- descobrir o portao; nada teleporta para ela (entryTick e o botao procuram antes).
-MURIM_HD.nowhere=Vector3.new(0,-100000,0)
 MURIM_HD.profile=MURIM_HD.profiles.heart
 function MURIM_HD.prof(key) return key and MURIM_HD.profiles[key] or MURIM_HD.profile end
 function MURIM_HD.log(level,msg,minInterval,key,prof)
@@ -11726,21 +11736,18 @@ function MURIM_HD.isEntrance(c)
     end
     if not named then return false end
     if MURIM_HD.hasWord(tostring(p.ActionText).." "..tostring(p.ObjectText),MURIM_HD.exitWords) then return false end
-    -- V20V: dungeon descoberta (Stormcliff) sem portao verificado: vale o prompt com o nome dela dentro de Map_Region*.Lairs.*.
-    if not MURIM_HD.verified then return c.pos~=nil and MURIM_HD.profile.discover==true and MURIM_ST~=nil and MURIM_ST.lairOf(p)~=nil end
     return c.pos~=nil and (c.pos-MURIM_HD.verified).Magnitude<=300
 end
 function MURIM_HD.pickEntrance(prompts)
     local best,score=nil,-math.huge
     for _,c in ipairs(prompts) do
         if MURIM_HD.isEntrance(c) then
-            local s=(c.prompt.Enabled and 1000 or 0)-(c.pos-(MURIM_HD.verified or c.pos)).Magnitude
+            local s=(c.prompt.Enabled and 1000 or 0)-(c.pos-MURIM_HD.verified).Magnitude
             if s>score then best,score=c,s end
         end
     end
     if best and (not MURIM_HD.entrance or MURIM_HD.entrance.prompt~=best.prompt) then
         MURIM_HD.entrance=best
-        if MURIM_HD.profile.discover and MURIM_ST then MURIM_ST.learnGate(best) end
         MURIM_HD.known=best.pos or MURIM_HD.known
         MURIM_HD.knownFrom="prompt da entrada"
         MURIM_HD.log("EVIDENCIA",string.format("Entrada: prompt %s em %s | %s",MURIM_HD.promptText(best.prompt),MURIM_HD.fmt(best.pos),best.prompt:GetFullName()),0)
@@ -11751,8 +11758,7 @@ function MURIM_HD.saveEntrance(pos)
     if not pos or type(writefile)~="function" then return end
     pcall(function()
         if type(makefolder)=="function" and (type(isfolder)~="function" or not isfolder("MurimHubLogs")) then makefolder("MurimHubLogs") end
-        writefile("MurimHubLogs/"..MURIM_HD.profile.file.."_entrada.txt",string.format("%.2f,%.2f,%.2f",pos.X,pos.Y,pos.Z)
-            ..(MURIM_HD.profile.discover and (","..tostring(MURIM_HD.profile.raid)) or ""))
+        writefile("MurimHubLogs/"..MURIM_HD.profile.file.."_entrada.txt",string.format("%.2f,%.2f,%.2f",pos.X,pos.Y,pos.Z))
     end)
 end
 function MURIM_HD.loadEntrance()
@@ -11763,15 +11769,7 @@ function MURIM_HD.loadEntrance()
         local x,y,z=readfile("MurimHubLogs/"..name):match("([%-%d%.]+),([%-%d%.]+),([%-%d%.]+)")
         if x then
             local pos=Vector3.new(tonumber(x),tonumber(y),tonumber(z))
-            if not MURIM_HD.verified and MURIM_HD.profile.discover then
-                -- V20V: o arquivo so e gravado depois de achar o portao com o nome da dungeon: vira o portao verificado.
-                local raidName=readfile("MurimHubLogs/"..name):match(",([%w_]+)%s*$")
-                MURIM_HD.verified=pos
-                MURIM_HD.profile.gate=pos
-                if raidName then MURIM_HD.profile.raid=raidName end
-                MURIM_HD.known=pos
-                MURIM_HD.knownFrom="arquivo "..name.." (portao achado antes)"
-            elseif (pos-MURIM_HD.verified).Magnitude<=300 then
+            if (pos-MURIM_HD.verified).Magnitude<=300 then
                 MURIM_HD.known=pos
                 MURIM_HD.knownFrom="arquivo "..name
             else
@@ -11904,7 +11902,7 @@ function MURIM_HD.setInside(v,why,pos)
         MURIM_HD.watchParts(false)
         MURIM_HD.retreatSince=nil;MURIM_HD.mirrorUntil=nil;MURIM_HD.dodge=nil
     end
-    if v then MURIM_HD.stats.entries+=1;MURIM_HD.choiceAttempts=0;MURIM_HD.awaitUntil=0;MURIM_HD.promptWaitUntil=0 end
+    if v then MURIM_HD.stats.entries+=1;MURIM_HD.choiceAttempts=0;MURIM_HD.awaitUntil=0;MURIM_HD.promptWaitUntil=0;MURIM_HD.insidePos=pos end
     MURIM_HD.log("EVIDENCIA",(v and "DENTRO da dungeon: " or "FORA da dungeon: ")..tostring(why).." em "..MURIM_HD.fmt(pos),0)
     local cleared=MURIM_HD.cleared
     MURIM_HD.cleared=nil
@@ -12236,7 +12234,6 @@ function MURIM_HD.findCircle()
     local e=MURIM_HD.entrance
     local lair=e and e.prompt.Parent
     while lair and lair.Name~=MURIM_HD.profile.raid do lair=lair.Parent end
-    if not lair and e and MURIM_HD.profile.discover and MURIM_ST then lair=MURIM_ST.lairOf(e.prompt) end
     if not lair then
         MURIM_HD.log("AVISO","Circulo: modelo "..MURIM_HD.profile.raid.." acima do prompt da entrada nao achado",20)
         return nil
@@ -12279,7 +12276,8 @@ function MURIM_HD.holdCircle(root,now)
     MURIM_HD.entryTryAt=now
     MURIM_HD.readHud(now)
     local c=MURIM_HD.circle
-    if not (c and c.Parent) and now-(MURIM_HD.circleTriedAt or -1e9)>=5 then
+    -- V20W: porta de historia sem circulo (Grey Heartland): fica no ponto que funcionou, sem procurar circulo.
+    if not MURIM_HD.profile.noCircle and not (c and c.Parent) and now-(MURIM_HD.circleTriedAt or -1e9)>=5 then
         MURIM_HD.circleTriedAt=now
         c=MURIM_HD.findCircle()
         MURIM_HD.circle=c
@@ -12289,13 +12287,6 @@ function MURIM_HD.holdCircle(root,now)
     if not spot then
         local ok=MURIM_HD.circleVerified
         local foot,why=ok,MURIM_HD.profile.circleFrom
-        if not ok then
-            -- V20V: dungeon descoberta: sem ponto verificado, usa o centro do circulo achado (Heart Demon e Pagoda entraram a
-            -- 1-1,5 stud do centro); sem circulo, o proprio portao (o aviso do circulo nao achado vai para o log).
-            ok=(c and c.Parent) and c.Position or MURIM_HD.known
-            foot=ok
-            why=(c and c.Parent) and ("centro de "..c.Name.." (dungeon descoberta)") or "circulo nao achado: no portao"
-        end
         if c and c.Parent then
             local center=c.Position
             local flat=Vector3.new(ok.X-center.X,0,ok.Z-center.Z)
@@ -12510,6 +12501,8 @@ function MURIM_HD.loadDifficulty(key)
     end)
 end
 function MURIM_HD.entryTick(root,now)
+    -- V20W: dungeon de outra regiao (Grey Heartland = Regiao 3): fora dela so avisa, nao teleporta.
+    if MURIM_HD.profile.region and MURIM_GH and not MURIM_GH.regionOk() then return end
     -- V20E: dialogo de dificuldade aberto = escolhe e nao reaciona o portao; depois da escolha espera o jogo 8s.
     if MURIM_HD.choose(now) then return end
     if now<MURIM_HD.awaitUntil then
@@ -12519,8 +12512,6 @@ function MURIM_HD.entryTick(root,now)
     end
     local e=MURIM_HD.entrance
     if not e or not e.prompt.Parent then
-        -- V20V: portao da Stormcliff ainda nao achado: procura (modelo/marcador com o nome) em vez de ir a uma posicao.
-        if not MURIM_HD.verified and MURIM_ST then return MURIM_ST.discoverTick(root,now) end
         if (root.Position-MURIM_HD.known).Magnitude>60 then
             if now-(MURIM_HD.lastGo or -1e9)>=6 then
                 MURIM_HD.lastGo=now
@@ -12587,7 +12578,6 @@ end
 function MURIM_HD.circleNear(prompt,pos,maxDist)
     local model=prompt.Parent
     while model and model.Name~=MURIM_HD.profile.raid do model=model.Parent end
-    if not model and MURIM_HD.profile.discover and MURIM_ST then model=MURIM_ST.raidOf(prompt) end
     if not model then return nil,"modelo "..MURIM_HD.profile.raid.." nao achado",{} end
     local named,shaped,seen=nil,nil,{}
     local nd,sd=math.huge,math.huge
@@ -13230,7 +13220,6 @@ function MURIM_HD.watchParts(on)
     end
 end
 function MURIM_HD.insideTick(root,now)
-    if MURIM_HD.profile.discover and MURIM_ST then MURIM_ST.checkRaid(now) end
     MURIM_HD.readHud(now)
     MURIM_HD.skipCutscene(now)
     MURIM_HD.refreshMobs(root,now)
@@ -13318,6 +13307,8 @@ function MURIM_HD.insideTick(root,now)
     end
     -- V20S: parado sem nada = procura de novo a cada 2s (a porta/os prompts da sala seguinte aparecem quando ela abre).
     if now-MURIM_HD.lastScan>=2 then MURIM_HD.scan(root,false) end
+    -- V20W: Grey Heartland: sem nada perto, segue a estrada pelo chao (para na barreira de pe).
+    if MURIM_HD.profile.road and MURIM_GH and MURIM_GH.roadTick(root,now) then return end
     MURIM_HD.state="dentro: sem inimigo e sem prompt a 150 studs (aguardando)"
     MURIM_HD.log("INFO",MURIM_HD.state.." em "..MURIM_HD.fmt(root.Position),15)
 end
@@ -13402,7 +13393,7 @@ function MURIM_HD.dump()
         MURIM_HD.fmt(MURIM_HD.known),MURIM_HD.knownFrom,MURIM_HD.inside and "DENTRO da dungeon" or "fora da dungeon",
         s.prompts,s.dialogs,s.teleports,s.entries,s.attacks,s.kills,s.scans,MURIM_HD.lastScanMs or 0,
         s.loot or 0,MURIM_LOOT and (MURIM_LOOT.filter()) or "sem filtro",s.lootSkipped or 0,s.rescues or 0,s.artifact or 0,
-        s.clears or 0,MURIM_HD.repeatOn and "ON" or "OFF",s.dodges or 0)..(MURIM_HD.profile.discover and MURIM_ST and MURIM_ST.note() or "")
+        s.clears or 0,MURIM_HD.repeatOn and "ON" or "OFF",s.dodges or 0)
 end
 function MURIM_HD.copyText()
     return MURIM_HD.dump().."[HEART DEMON: ultimas linhas]\n"..table.concat(MURIM_HD.lines,"\n")
@@ -13484,8 +13475,8 @@ function MURIM_HD.useProfile(key)
     MURIM_HD.words=p.words
     MURIM_HD.stats=p.stats
     MURIM_HD.verified=p.gate
-    MURIM_HD.known=p.gate or MURIM_HD.nowhere
-    MURIM_HD.knownFrom=p.gate and "entrada verificada" or "portao ainda nao achado"
+    MURIM_HD.known=p.gate
+    MURIM_HD.knownFrom="entrada verificada"
     MURIM_HD.circleVerified=p.circle
     MURIM_HD.difficulty=p.difficulty
     MURIM_HD.repeatOn=p.repeatOn
@@ -13651,7 +13642,7 @@ function MURIM_HD.install(host)
                 paintRep()
                 status.Text="Estado: "..tostring(MURIM_HD.state).." | Dificuldade: "..tostring(MURIM_HD.difficulty).."\nEntrada: "..(MURIM_HD.entrance and MURIM_HD.promptText(MURIM_HD.entrance.prompt) or ("nao achada; conhecida "..MURIM_HD.fmt(MURIM_HD.known)))
                     ..(MURIM_HD.inside and " | DENTRO" or "")
-                if MURIM_HD.profile.key~="heart" then status.Text="Motor em uso pela aba "..(MURIM_HD.profile.key=="storm" and "STORMCLIFF" or "BUDDHA").." ("..MURIM_HD.profile.name.."): "..tostring(MURIM_HD.state) end
+                if MURIM_HD.profile.key~="heart" then status.Text="Motor em uso pela aba "..(MURIM_HD.profile.tab or "BUDDHA").." ("..MURIM_HD.profile.name.."): "..tostring(MURIM_HD.state) end
                 local list=MURIM_HD.lines
                 if #list~=shown or list[#list]~=MURIM_HD.lastShown then
                     shown=#list
@@ -13687,25 +13678,24 @@ MURIM_BD={rec=false,lines={},lastSeen={},state="gravacao desligada",marks=0,
 MURIM_BD.words={"buddha","buda","budda","temple","templo","pagoda","pagode","monk","monge","lotus","sutra","bodhi","arhat",
     "luohan","vajra","dharma","shaolin","abbot","abade","nirvana","mantra","stone palm","stonepalm","佛","寺","塔"}
 MURIM_BD.spotWords={"circle","circulo","plate","gate","door","seal","altar","portal","stele","entrance","entry","statue","bell"}
-MURIM_BD.stormWords={"stormcliff","storm cliff","storm-cliff","storm","cliff","thunder","tempest","lightning","typhoon","gale",
-    "tempestade","trovao","penhasco","雷","风","風"}
+MURIM_BD.greyWords={"grey heartland","greyheartland","heartland","greying","grey road","greyroad","madman","screaming"}
 -- V20R: o log do Auto da Pagoda (motor MURIM_HD com o perfil "pagoda") cai neste mesmo campo.
 if MURIM_HD and MURIM_HD.profiles and MURIM_HD.profiles.pagoda then MURIM_HD.profiles.pagoda.lines=MURIM_BD.lines end
 function MURIM_BD.autoOn()
-    return MURIM_HD~=nil and MURIM_HD.enabled==true and MURIM_HD.profile~=nil and (MURIM_HD.profile.key=="pagoda" or MURIM_HD.profile.key=="storm")
+    return MURIM_HD~=nil and MURIM_HD.enabled==true and MURIM_HD.profile~=nil and (MURIM_HD.profile.key=="pagoda" or MURIM_HD.profile.key=="grey")
 end
--- V20V: o gravador e um so. Escreve para a aba do Auto ligado (Pagoda = BUDDHA, Stormcliff = STORMCLIFF); sem Auto,
--- para a ultima aba que foi aberta ou que ligou a gravacao.
+-- V20W: o gravador e um so. Escreve para a aba do Auto ligado (Pagoda = BUDDHA, Grey Heartland = GREY HEARTLAND); sem
+-- Auto, para a ultima aba que foi aberta ou que ligou a gravacao.
 MURIM_BD.sink="buddha"
 function MURIM_BD.sinkKey()
     local hd=MURIM_HD
     if hd and hd.enabled and hd.profile then
-        if hd.profile.key=="storm" then return "storm" end
+        if hd.profile.key=="grey" then return "grey" end
         if hd.profile.key=="pagoda" then return "buddha" end
     end
     return MURIM_BD.sink or "buddha"
 end
-function MURIM_BD.sinkName() return MURIM_BD.sinkKey()=="storm" and "Stormcliff" or "Buddha" end
+function MURIM_BD.sinkName() return MURIM_BD.sinkKey()=="grey" and "Grey Heartland" or "Buddha" end
 function MURIM_BD.log(level,msg,minInterval,key)
     local text=tostring(msg):gsub("[\r\n]+"," "):sub(1,700)
     if (minInterval or 0)>0 then
@@ -13714,11 +13704,11 @@ function MURIM_BD.log(level,msg,minInterval,key)
         if now-(MURIM_BD.lastSeen[k] or -1e9)<minInterval then return end
         MURIM_BD.lastSeen[k]=now
     end
-    local storm=MURIM_BD.sinkKey()=="storm" and MURIM_HD and MURIM_HD.profiles and MURIM_HD.profiles.storm
-    local list=storm and storm.lines or MURIM_BD.lines
+    local grey=MURIM_BD.sinkKey()=="grey" and MURIM_HD and MURIM_HD.profiles and MURIM_HD.profiles.grey
+    local list=grey and grey.lines or MURIM_BD.lines
     list[#list+1]=string.format("[%s] [%s] %s",os.date("%H:%M:%S"),tostring(level),text)
     if #list>500 then table.remove(list,1) end
-    MURIM_TRACE.add(level,storm and "Stormcliff" or "Buddha",text)
+    MURIM_TRACE.add(level,grey and "GreyHeartland" or "Buddha",text)
 end
 function MURIM_BD.push(list,item,max)
     list[#list+1]=item
@@ -13744,7 +13734,7 @@ end
 function MURIM_BD.hasWord(text,list)
     local low=tostring(text or ""):lower()
     if low=="" then return nil end
-    for _,w in ipairs(list or (MURIM_BD.sinkKey()=="storm" and MURIM_BD.stormWords or MURIM_BD.words)) do
+    for _,w in ipairs(list or (MURIM_BD.sinkKey()=="grey" and MURIM_BD.greyWords or MURIM_BD.words)) do
         if low:find(w,1,true) then return w end
     end
     return nil
@@ -14445,7 +14435,7 @@ end
 function MURIM_BD.autoSave(now)
     if type(writefile)~="function" or now-MURIM_BD.lastAutoSave<120 then return end
     MURIM_BD.lastAutoSave=now
-    local file="MurimHubLogs/murim_"..(MURIM_BD.sinkKey()=="storm" and "stormcliff" or "buddha").."_auto.txt"
+    local file="MurimHubLogs/murim_"..(MURIM_BD.sinkKey()=="grey" and "greyheartland" or "buddha").."_auto.txt"
     local ok,err=pcall(function()
         if type(makefolder)=="function" and (type(isfolder)~="function" or not isfolder("MurimHubLogs")) then makefolder("MurimHubLogs") end
         writefile(file,MURIM_TRACE.dump())
@@ -14539,7 +14529,7 @@ end
 function MURIM_BD.dump()
     if not MURIM_BD.startedAt then return "" end
     local s=MURIM_BD.stats
-    local out={string.format("[%s: gravacao %s (desde %s) | %s | marcas %d]",MURIM_BD.sinkKey()=="storm" and "STORMCLIFF (gravador)" or "BUDDHA",MURIM_BD.rec and "LIGADA" or "desligada",MURIM_BD.startedAt,
+    local out={string.format("[%s: gravacao %s (desde %s) | %s | marcas %d]",MURIM_BD.sinkKey()=="grey" and "GREY HEARTLAND (gravador)" or "BUDDHA",MURIM_BD.rec and "LIGADA" or "desligada",MURIM_BD.startedAt,
             tostring(MURIM_BD.state),MURIM_BD.marks),
         string.format("prompts acionados %d, prompts na tela %d, cliques %d, teleportes %d, NPCs vistos %d, derrotados %d, golpes de 10%%+ %d, mortes %d, drops %d, telas novas %d, mapas %d",
             s.prompts,s.shown,s.clicks,s.jumps,s.npcs,s.kills,s.hits,s.deaths,s.drops,s.guis,s.maps)}
@@ -14783,246 +14773,218 @@ function MURIM_BD.install(host)
     MURIM_BD.log("INFO","Aba BUDDHA instalada (12 abas): Auto Sunken Pagoda + gravador. A gravacao liga ao abrir a aba.",0)
 end
 
--- V20V: aba STORMCLIFF (dungeon nova; pedida em 15/11). Ainda sem TXT dela: a lista Workspace.Raids de 13/11 (TianheCave,
--- Mission_*, TigerVault, CoffinCrypt, NinefoldArchive, HeartDemonAbyss, FallenSpiritValley, SkyPalace, SwordTomb,
--- StonePalmTemple, SunkenPagoda, FurnacePagoda, HallowGate_1, WeepingForest) nao tinha nada com Stormcliff: e conteudo novo.
--- As dungeons do Map_Region2 sao todas montadas igual (Lairs.<Nome>.GatePlate.WestDungeonPrompt 'Descend into ...',
--- SpiritCircle 11 studs ao lado, Workspace.Raids.<Nome>, BossDoor com DoorCircle, MurimRunEnd), entao o Auto e o motor da
--- Heart Demon com o perfil "storm", so que sem posicao verificada: o portao e DESCOBERTO (prompt com Stormcliff no texto ou
--- no caminho dentro de Map_Region*.Lairs.*; o jogador perto dele ou acionando; ou o arquivo stormcliff_entrada.txt de uma
--- vez anterior) e gravado. Sem portao carregado, procura modelo/marcador com o nome (Lairs, Map_Markers, Map_Wayshrines) e
--- vai ate la para o jogo carregar; sem nada, pede no campo para ir ate a entrada uma vez. O gravador (o mesmo da BUDDHA)
--- escreve neste campo quando esta aba e a ultima aberta ou com o Auto Stormcliff ligado.
-MURIM_ST={lines={},autoStarted=false,conns={},tries={}}
-if MURIM_HD and MURIM_HD.profiles then
-    MURIM_HD.profiles.storm={key="storm",name="Stormcliff",title="STORMCLIFF",area="Stormcliff",raid="Stormcliff",
-        ids={"stormcliff","storm cliff","storm-cliff","storm_cliff"},gate=nil,circle=nil,discover=true,
-        circleFrom="circulo achado ao lado do portao (dungeon descoberta)",file="stormcliff",txt="stormcliff",
-        words={"stormcliff","storm cliff","storm-cliff","storm_cliff","storm","cliff","thunder","tempest","lightning",
-            "sealed","someone is down","descend","tempestade","trovao","penhasco"},
-        lines=MURIM_ST.lines,stats={prompts=0,dialogs=0,teleports=0,attacks=0,kills=0,entries=0,scans=0},
-        difficulty="Normal",repeatOn=true,circleRightAway=true,bossPrompts={}}
-end
-function MURIM_ST.prof() return MURIM_HD and MURIM_HD.profiles and MURIM_HD.profiles.storm end
-function MURIM_ST.log(level,msg)
+-- V20W: aba GREY HEARTLAND (The Grey Heartland). O usuario pediu "Stormcliff dungeon" em 15/11 e corrigiu: era "Grey
+-- algo". TXT 15/11 11:19 (entrada feita a mao): porta de historia em Map_Region3.StoryBosses.GreyingHollow, dialogo de
+-- dificuldade, teleporte direto para Workspace.Raids.Story_R3_GreyHeartland (31000,2006,8), missao "Follow the screaming
+-- down the grey road" / "bring the madman down"; no comeco Hollowed Wanderer, Husk of the Heartland, 5 Grey-Road Husk
+-- (11-12 mil HP) e Husk-Elder of the Grey Road (31968 HP) ate z=150, e Barrier1 (Slab) em (31000,2014,172). O Auto e o
+-- motor da Heart Demon no perfil "grey" (entrada conhecida, sem circulo) mais a estrada abaixo; o gravador (o mesmo da
+-- BUDDHA) escreve neste campo quando esta aba e a ultima aberta ou com o Auto Grey Heartland ligado.
+MURIM_GH={lines={},autoStarted=false,step=48,link=26,barrierSeen={}}
+if MURIM_HD and MURIM_HD.profiles and MURIM_HD.profiles.grey then MURIM_HD.profiles.grey.lines=MURIM_GH.lines end
+function MURIM_GH.prof() return MURIM_HD and MURIM_HD.profiles and MURIM_HD.profiles.grey end
+function MURIM_GH.log(level,msg)
     local text=tostring(msg):gsub("[\r\n]+"," "):sub(1,600)
-    local list=MURIM_ST.lines
+    local list=MURIM_GH.lines
     list[#list+1]=string.format("[%s] [%s] %s",os.date("%H:%M:%S"),tostring(level),text)
     if #list>400 then table.remove(list,1) end
-    MURIM_TRACE.add(level,"Stormcliff",text)
+    MURIM_TRACE.add(level,"GreyHeartland",text)
 end
--- Nome da Stormcliff em qualquer grafia (Stormcliff, StormCliff, Storm Cliff, Storm-Cliff, Stormcliff_Keep...).
-function MURIM_ST.idHit(text)
-    local s=tostring(text or ""):lower():gsub("[%s%-_']","")
-    return s:find("stormcliff",1,true)~=nil
-end
--- Ancestral logo abaixo de uma pasta (Lairs.<Nome> do portao, Raids.<Nome> de dentro).
-function MURIM_ST.under(obj,folder)
-    local node=obj and obj.Parent
-    while node and node.Parent do
-        if node.Parent.Name==folder then return node end
-        node=node.Parent
-    end
-    return nil
-end
-function MURIM_ST.lairOf(obj) return MURIM_ST.under(obj,"Lairs") end
-function MURIM_ST.raidOf(obj) return MURIM_ST.under(obj,"Raids") end
-function MURIM_ST.attrPos(o)
-    for _,v in pairs(o:GetAttributes()) do
-        local t=typeof(v)
-        if t=="Vector3" then return v end
-        if t=="CFrame" then return v.Position end
-    end
-    return nil
-end
--- Posicao de um modelo mesmo sem partes carregadas (GetPivot), de uma peca, ou de um atributo Vector3/CFrame.
-function MURIM_ST.pivotOf(o)
-    if not o then return nil end
-    if o:IsA("BasePart") then return o.Position end
-    if o:IsA("Model") then return o:GetPivot().Position end
-    return MURIM_HD.posOf(o) or MURIM_ST.attrPos(o)
-end
--- Portao achado pelo motor (pickEntrance): grava portao e modelo (Lairs.<Nome> = Raids.<Nome> nas outras dungeons).
-function MURIM_ST.learnGate(c)
-    local p=MURIM_HD.profile
-    local lair=MURIM_ST.lairOf(c.prompt)
-    if lair and p.raid~=lair.Name then
-        MURIM_HD.log("EVIDENCIA","Modelo da dungeon pelo portao: "..lair:GetFullName().." (antes "..tostring(p.raid)..")",0)
-        p.raid=lair.Name
-    end
-    if not MURIM_HD.verified then
-        MURIM_HD.verified=c.pos
-        p.gate=c.pos
-        MURIM_HD.log("EVIDENCIA",string.format("%s DESCOBERTA: portao %s em %s | %s",p.name,MURIM_HD.promptText(c.prompt),
-            MURIM_HD.fmt(c.pos),c.prompt:GetFullName()),0)
-    end
-    MURIM_ST.found=string.format("portao %s em %s (%s)",MURIM_HD.promptText(c.prompt),MURIM_HD.fmt(c.pos),
-        lair and lair:GetFullName() or c.prompt:GetFullName())
-end
--- Jogador perto do portao (prompt na tela) ou acionando: grava mesmo com outra aba/Auto em uso.
-function MURIM_ST.learnFromPlayer(prompt,how)
-    local p=MURIM_ST.prof()
-    if not p or p.gate or not prompt or not prompt.Parent then return end
-    local text=tostring(prompt.ActionText).." "..tostring(prompt.ObjectText).." "..prompt:GetFullName()
-    if not MURIM_ST.idHit(text) or MURIM_HD.hasWord(tostring(prompt.ActionText).." "..tostring(prompt.ObjectText),MURIM_HD.exitWords) then return end
-    local lair=MURIM_ST.lairOf(prompt)
-    local pos=MURIM_HD.posOf(prompt.Parent)
-    if not lair or not pos then return end
-    p.gate=pos
-    p.raid=lair.Name
-    if MURIM_HD.profile==p then
-        MURIM_HD.verified=pos
-        MURIM_HD.known=pos
-        MURIM_HD.knownFrom="portao "..how.." pelo jogador"
-    end
-    MURIM_ST.found=string.format("portao %s em %s (%s, %s pelo jogador)",MURIM_HD.promptText(prompt),MURIM_HD.fmt(pos),lair:GetFullName(),how)
-    MURIM_ST.log("EVIDENCIA",string.format("Stormcliff DESCOBERTA (%s): portao %s em %s | %s",how,MURIM_HD.promptText(prompt),
-        MURIM_HD.fmt(pos),prompt:GetFullName()))
-    if type(writefile)=="function" then
-        local ok,err=pcall(function()
-            if type(makefolder)=="function" and (type(isfolder)~="function" or not isfolder("MurimHubLogs")) then makefolder("MurimHubLogs") end
-            writefile("MurimHubLogs/stormcliff_entrada.txt",string.format("%.2f,%.2f,%.2f,%s",pos.X,pos.Y,pos.Z,lair.Name))
-        end)
-        MURIM_ST.log(ok and "INFO" or "AVISO",ok and "Portao gravado em MurimHubLogs/stormcliff_entrada.txt" or ("Nao gravou o portao: "..tostring(err)))
-    end
-end
-function MURIM_ST.loadGate()
-    local p=MURIM_ST.prof()
-    if not p or p.gate or type(readfile)~="function" or type(isfile)~="function" then return end
-    if not isfile("MurimHubLogs/stormcliff_entrada.txt") then return end
-    local text=readfile("MurimHubLogs/stormcliff_entrada.txt")
-    local x,y,z=text:match("([%-%d%.]+),([%-%d%.]+),([%-%d%.]+)")
-    if not x then return end
-    p.gate=Vector3.new(tonumber(x),tonumber(y),tonumber(z))
-    p.raid=text:match(",([%w_]+)%s*$") or p.raid
-    MURIM_ST.found="arquivo stormcliff_entrada.txt: portao "..MURIM_HD.fmt(p.gate).." (modelo "..tostring(p.raid)..")"
-end
--- Dentro: o modelo em Workspace.Raids pode ter outro nome; acha pelo nome Stormcliff.
-function MURIM_ST.checkRaid(now)
-    if now-(MURIM_ST.raidCheckAt or -1e9)<5 then return end
-    MURIM_ST.raidCheckAt=now
-    local p=MURIM_HD.profile
+function MURIM_GH.flat(a,b) return Vector3.new(a.X-b.X,0,a.Z-b.Z).Magnitude end
+-- A Grey Heartland fica no servidor da Regiao 3: o Workspace la tem Map_Region3 e Raids.*_R3_* (TXT 15/11); os servidores
+-- da Heart Demon e da Pagoda tem Map_Region1/Map_Region2 (TXTs de 13/11). Em outro servidor a posicao da porta nao leva a
+-- nada: avisa no campo (a cada 30s) e nao teleporta.
+function MURIM_GH.regionOk(force)
+    local p=MURIM_GH.prof()
+    if not p then return false end
     local raids=workspace:FindFirstChild("Raids")
-    if not raids or raids:FindFirstChild(p.raid) then return end
-    local names={}
-    for _,r in ipairs(raids:GetChildren()) do
-        names[#names+1]=r.Name
-        if MURIM_ST.idHit(r.Name) then
-            MURIM_HD.log("EVIDENCIA","Modelo da dungeon dentro: Workspace.Raids."..r.Name.." (antes "..tostring(p.raid)..")",0)
-            p.raid=r.Name
-            return
+    if workspace:FindFirstChild(p.region) or (raids and raids:FindFirstChild(p.raid)) then return true end
+    if MURIM_HD and MURIM_HD.profile==p then MURIM_HD.state="fora da Regiao 3: este servidor nao tem "..p.region end
+    local now=os.clock()
+    if force or now-(MURIM_GH.regionWarnAt or -1e9)>=30 then
+        MURIM_GH.regionWarnAt=now
+        MURIM_GH.log("AVISO","A Grey Heartland fica na Regiao 3 ("..p.region..", Raids."..p.raid.."), que nao existe neste servidor. Va para a Regiao 3 (The Withered Marches) e ligue o Auto la; aqui nada e teleportado.")
+    end
+    return false
+end
+-- Placas do chao da dungeon (Workspace.Raids.<raid>.Ground: 273 Plate 12x6x12 em grade no TXT 11:19).
+function MURIM_GH.plates(raid)
+    local g=raid:FindFirstChild("Ground")
+    local out={}
+    for _,d in ipairs(g and g:GetDescendants() or {}) do
+        if d:IsA("BasePart") then out[#out+1]=d end
+    end
+    return out
+end
+-- Distancia pelo chao a partir da placa mais perto de 'from' (Dijkstra simples; placas vizinhas ate 26 studs, ou seja,
+-- pula buraco de uma placa; ate 10 studs de degrau). Placa sem caminho fica sem distancia.
+function MURIM_GH.roadMap(plates,from)
+    local n=#plates
+    local pos,dist,done={}, {}, {}
+    local s,sd=nil,math.huge
+    for i,p in ipairs(plates) do
+        pos[i]=p.Position
+        local d=MURIM_GH.flat(pos[i],from)+math.abs(pos[i].Y-from.Y)
+        if d<sd then s,sd=i,d end
+    end
+    if not s then return nil end
+    dist[s]=0
+    for _=1,n do
+        local u,ud=nil,math.huge
+        for i=1,n do
+            if not done[i] and dist[i] and dist[i]<ud then u,ud=i,dist[i] end
+        end
+        if not u then break end
+        done[u]=true
+        for i=1,n do
+            if not done[i] then
+                local f=MURIM_GH.flat(pos[u],pos[i])
+                if f<=MURIM_GH.link and math.abs(pos[u].Y-pos[i].Y)<=10 and (not dist[i] or ud+f<dist[i]) then dist[i]=ud+f end
+            end
         end
     end
-    MURIM_HD.log("AVISO","Workspace.Raids sem "..tostring(p.raid).." e sem nome com Stormcliff: "..table.concat(names,", "),60,"st-raid")
+    return dist
 end
--- Candidatos para carregar o portao: Lairs.<nome Stormcliff>, marcadores e santuarios com o nome.
-function MURIM_ST.discoverSpots()
-    local p=MURIM_HD.profile
-    local out,lairs,markers,raidNames={},{},{},{}
-    local raids=workspace:FindFirstChild("Raids")
-    for _,r in ipairs(raids and raids:GetChildren() or {}) do
-        if MURIM_ST.idHit(r.Name) then raidNames[#raidNames+1]=r.Name end
-    end
-    if raidNames[1] and p.raid~=raidNames[1] then
-        MURIM_HD.log("EVIDENCIA","Workspace.Raids."..raidNames[1].." existe: modelo da dungeon = "..raidNames[1],0)
-        p.raid=raidNames[1]
-    end
-    for _,top in ipairs(workspace:GetChildren()) do
-        local tn=tostring(top.Name)
-        local lf=tn:find("^Map_Region") and top:FindFirstChild("Lairs")
-        if lf then
-            for _,l in ipairs(lf:GetChildren()) do
-                local pos=MURIM_ST.pivotOf(l)
-                lairs[#lairs+1]=tn.."."..l.Name..MURIM_HD.fmt(pos)
-                if MURIM_ST.idHit(l.Name) or l.Name==p.raid then out[#out+1]={key=l:GetFullName(),what="modelo "..l:GetFullName(),pos=pos} end
-            end
-        elseif tn=="Map_Markers" or tn=="Map_Wayshrines" then
-            for _,d in ipairs(top:GetDescendants()) do
-                if MURIM_ST.idHit(d.Name) then
-                    local pos=MURIM_ST.pivotOf(d)
-                    markers[#markers+1]=d:GetFullName()..MURIM_HD.fmt(pos)
-                    out[#out+1]={key=d:GetFullName(),what="marcador "..d:GetFullName(),pos=pos}
+-- Barreiras de pe: filho do modelo da dungeon com "barrier" no nome que ainda tem peca solida (CanCollide e visivel).
+function MURIM_GH.barriers(raid)
+    local out={}
+    for _,b in ipairs(raid:GetChildren()) do
+        if tostring(b.Name):lower():find("barrier",1,true) then
+            local list=b:IsA("BasePart") and {b} or b:GetDescendants()
+            for _,d in ipairs(list) do
+                if d:IsA("BasePart") and d.CanCollide and (d.Transparency or 0)<0.9 then
+                    out[#out+1]={model=b,part=d,pos=d.Position}
+                    break
                 end
             end
         end
     end
-    MURIM_ST.seen={lairs=lairs,markers=markers,raids=raidNames}
     return out
 end
-function MURIM_ST.report(force)
-    local seen=MURIM_ST.seen or {}
-    MURIM_HD.log("AVISO","Stormcliff: portao nao achado no mapa carregado. Va ate a entrada da Stormcliff uma vez (andando ou pelo teleporte do jogo) com o script aberto: quando o prompt dela aparecer, a posicao fica gravada (MurimHubLogs/stormcliff_entrada.txt) e o Auto vai sozinho dali em diante.",force and 0 or 30,"st-procura")
-    local gates={}
-    for _,c in ipairs(MURIM_HD.prompts or {}) do
-        local a=tostring(c.prompt.ActionText)
-        if a:lower():find("descend",1,true) and #gates<12 then gates[#gates+1]="'"..a.."'"..MURIM_HD.fmt(c.pos) end
-    end
-    local function list(t) return (t and #t>0) and table.concat(t,", ") or "nenhum" end
-    MURIM_HD.log("INFO","Procura Stormcliff: Raids com o nome: "..list(seen.raids).." | Lairs carregados: "..list(seen.lairs)
-        .." | marcadores: "..list(seen.markers).." | portoes de dungeon vistos: "..list(gates),force and 0 or 60,"st-visto")
-end
-function MURIM_ST.discoverTick(root,now,force)
-    local p=MURIM_HD.profile
-    MURIM_HD.state=p.name..": procurando o portao (ainda nao achado)"
-    if not force and now-(MURIM_ST.discoverAt or -1e9)<10 then return false end
-    MURIM_ST.discoverAt=now
-    for _,f in ipairs(MURIM_ST.discoverSpots()) do
-        local n=MURIM_ST.tries[f.key] or 0
-        if f.pos and n<3 then
-            MURIM_ST.tries[f.key]=n+1
-            MURIM_HD.state=p.name..": indo ao "..f.what.." para o jogo carregar o portao"
-            MURIM_HD.log("DECISAO",string.format("%s: portao ainda nao carregado; indo ao %s em %s (tentativa %d de 3)",p.name,f.what,
-                MURIM_HD.fmt(f.pos),n+1),0)
-            MURIM_HD.goTo(root,f.pos,p.name.." ("..f.what..")")
-            MURIM_HD.lastScan=now-7
-            return true
+-- Barreira nova = descreve (para o proximo TXT dizer o que abre); barreira que sumiu ou ficou vazada = abriu.
+function MURIM_GH.noteBarriers(list)
+    local now={}
+    for _,b in ipairs(list) do
+        now[b.model]=true
+        if not MURIM_GH.barrierSeen[b.model] then
+            MURIM_GH.barrierSeen[b.model]=true
+            local attrs={}
+            for k,v in pairs(b.model:GetAttributes()) do attrs[#attrs+1]=tostring(k).."="..tostring(v) end
+            MURIM_HD.log("EVIDENCIA",string.format("Barreira de pe: %s em %s (%s CanCollide=%s Transparency=%.2f)%s",b.model:GetFullName(),
+                MURIM_HD.fmt(b.pos),b.part.Name,tostring(b.part.CanCollide),b.part.Transparency or 0,
+                #attrs>0 and (" | atributos: "..table.concat(attrs,", ")) or ""),0)
         end
     end
-    MURIM_ST.report(force)
+    for m in pairs(MURIM_GH.barrierSeen) do
+        if not now[m] then
+            MURIM_GH.barrierSeen[m]=nil
+            MURIM_HD.log("EVIDENCIA","Barreira "..tostring(m.Name).." abriu (sumiu ou deixou de ser solida)",0)
+        end
+    end
+end
+-- Estrada ("Follow the screaming down the grey road"): chamado pelo motor quando nao ha inimigo a 320 studs, prompt, porta
+-- nem loot. Cada passo (a cada 2,5s) vai a placa mais adiante ate 48 studs pelo chao, nunca alem de uma barreira de pe
+-- (para 8 studs antes e espera abrir). Fim da estrada = devolve false (o motor fica aguardando e registra).
+function MURIM_GH.roadTick(root,now)
+    if now-(MURIM_GH.roadAt or -1e9)<2.5 then return MURIM_GH.roadBusy==true end
+    MURIM_GH.roadAt=now
+    MURIM_GH.roadBusy=false
+    local hd=MURIM_HD
+    local raids=workspace:FindFirstChild("Raids")
+    local raid=raids and raids:FindFirstChild(hd.profile.raid)
+    if not raid then return false end
+    local plates=MURIM_GH.plates(raid)
+    if #plates==0 then return false end
+    if not hd.insidePos then hd.insidePos=root.Position end
+    local from=hd.insidePos
+    local r=MURIM_GH.road
+    if not r or r.raid~=raid or r.count~=#plates or r.from~=from then
+        r={raid=raid,count=#plates,from=from,plates=plates,dist=MURIM_GH.roadMap(plates,from) or {}}
+        MURIM_GH.road=r
+        local far,linked=0,0
+        for _,d in pairs(r.dist) do
+            linked+=1
+            if d>far then far=d end
+        end
+        hd.log("INFO",string.format("Estrada: %d placas no chao de %s, %d ligadas, a mais longe a %.0f studs pelo chao da chegada %s",
+            #plates,raid.Name,linked,far,hd.fmt(from)),10,"estrada-mapa")
+    end
+    local dist=r.dist
+    local me,md=nil,math.huge
+    for i,p in ipairs(r.plates) do
+        if dist[i] and p.Parent then
+            local d=MURIM_GH.flat(p.Position,root.Position)+math.abs(p.Position.Y-root.Position.Y)
+            if d<md then me,md=i,d end
+        end
+    end
+    if not me then return false end
+    local myD=dist[me]
+    local bars=MURIM_GH.barriers(raid)
+    MURIM_GH.noteBarriers(bars)
+    local stop,stopB=math.huge,nil
+    for _,b in ipairs(bars) do
+        local bi,bd=nil,math.huge
+        for i,p in ipairs(r.plates) do
+            if dist[i] then
+                local d=MURIM_GH.flat(p.Position,b.pos)
+                if d<bd then bi,bd=i,d end
+            end
+        end
+        if bi and dist[bi]>myD-6 and dist[bi]<stop then stop,stopB=dist[bi],b end
+    end
+    local best,bestD=nil,-1
+    for i,p in ipairs(r.plates) do
+        local d=dist[i]
+        if d and p.Parent and d>myD+6 and d<=myD+MURIM_GH.step and d<stop-8 and d>bestD then best,bestD=i,d end
+    end
+    if best then
+        local p=r.plates[best].Position
+        hd.state=string.format("dentro: seguindo a estrada (%.0f -> %.0f studs pelo chao)",myD,bestD)
+        hd.log("DECISAO",string.format("Estrada: nada perto; passo de %s para %s (%.0f -> %.0f studs pelo chao da chegada)",
+            hd.fmt(root.Position),hd.fmt(p),myD,bestD),0)
+        hd.goTo(root,p+Vector3.new(0,3,0),"estrada")
+        hd.lastScan=now-6
+        MURIM_GH.roadBusy=true
+        return true
+    end
+    if stopB then
+        hd.state=string.format("dentro: esperando a barreira %s abrir (%.0f studs adiante pelo chao)",stopB.model.Name,stop-myD)
+        hd.log("INFO",hd.state.." em "..hd.fmt(root.Position),15,"estrada-barreira")
+        MURIM_GH.roadBusy=true
+        return true
+    end
+    local far=0
+    for _,d in pairs(dist) do if d>far then far=d end end
+    hd.log("INFO",string.format("Estrada: fim (%.0f studs pelo chao; a placa mais longe esta a %.0f) em %s",myD,far,hd.fmt(root.Position)),30,"estrada-fim")
     return false
 end
-function MURIM_ST.note(prof)
-    local p=prof or MURIM_HD.profile
-    return string.format("descoberta Stormcliff: portao %s | modelo da dungeon %s | %s\n\n",p.gate and MURIM_HD.fmt(p.gate) or "NAO ACHADO",
-        tostring(p.raid),MURIM_ST.found or "nada achado nesta sessao")
+function MURIM_GH.copyText()
+    local p=MURIM_GH.prof()
+    local head=(MURIM_HD and MURIM_HD.profile==p and MURIM_HD.dump) and MURIM_HD.dump() or ""
+    return head.."[GREY HEARTLAND: ultimas linhas]\n"..table.concat(MURIM_GH.lines,"\n")
 end
-function MURIM_ST.copyText()
-    local p=MURIM_ST.prof()
-    local head=(MURIM_HD and MURIM_HD.profile==p and MURIM_HD.dump) and MURIM_HD.dump() or (p and MURIM_ST.note(p) or "")
-    return head.."[STORMCLIFF: ultimas linhas]\n"..table.concat(MURIM_ST.lines,"\n")
-end
-function MURIM_ST.saveTxt()
+function MURIM_GH.saveTxt()
     if type(writefile)~="function" then return false,"executor sem writefile" end
-    local path="MurimHubLogs/murim_stormcliff_"..os.date("%Y%m%d_%H%M%S")..".txt"
+    local path="MurimHubLogs/murim_greyheartland_"..os.date("%Y%m%d_%H%M%S")..".txt"
     local ok,err=pcall(function()
         if type(makefolder)=="function" and (type(isfolder)~="function" or not isfolder("MurimHubLogs")) then makefolder("MurimHubLogs") end
         writefile(path,MURIM_TRACE.dump())
     end)
     return ok,ok and path or tostring(err)
 end
--- Aba 13: Auto Stormcliff (motor da Heart Demon, perfil "storm"), dificuldade, repetir, teleporte/procura do portao,
+-- Aba 13: Auto Grey Heartland (motor da Heart Demon, perfil "grey"), dificuldade, repetir, teleporte ate a porta,
 -- gravador (liga sozinho na primeira vez que a aba abre), mapa, marca, TXT e campo de log.
-function MURIM_ST.install(host)
-    local page=host.makePage("Stormcliff",13,"⛈️ STORMCLIFF")
+function MURIM_GH.install(host)
+    local page=host.makePage("GreyHeartland",13,"🌫️ GREY HEARTLAND")
     local hd=MURIM_HD
-    local sp=MURIM_ST.prof()
-    if sp then
-        sp.lines=MURIM_ST.lines
-        hd.loadDifficulty("storm")
-        hd.loadRepeat("storm")
-    end
-    MURIM_LOG.try("Stormcliff arquivo do portao",MURIM_ST.loadGate)
-    local pps=game:GetService("ProximityPromptService")
-    if pps and pps.PromptTriggered then
-        MURIM_ST.conns[#MURIM_ST.conns+1]=pps.PromptTriggered:Connect(function(pr) MURIM_LOG.try("Stormcliff portao",MURIM_ST.learnFromPlayer,pr,"acionado") end)
-        MURIM_ST.conns[#MURIM_ST.conns+1]=pps.PromptShown:Connect(function(pr) MURIM_LOG.try("Stormcliff portao",MURIM_ST.learnFromPlayer,pr,"visto de perto") end)
+    local gp=MURIM_GH.prof()
+    if gp then
+        gp.lines=MURIM_GH.lines
+        hd.loadDifficulty("grey")
+        hd.loadRepeat("grey")
     end
     if host.gui then
-        host.gui.Destroying:Connect(function()
-            MURIM_ST.destroyed=true
-            for _,c in ipairs(MURIM_ST.conns) do c:Disconnect() end
-            MURIM_ST.conns={}
-        end)
+        host.gui.Destroying:Connect(function() MURIM_GH.destroyed=true end)
     end
     local body=Instance.new("ScrollingFrame")
     body.Name="Content"
@@ -15048,20 +15010,20 @@ function MURIM_ST.install(host)
         if class=="TextButton" then Instance.new("UICorner",o).CornerRadius=UDim.new(0,7) end
         return o
     end
-    local title=node("TextLabel",0,6,1,22,"⛈️ STORMCLIFF • dungeon nova • Auto + Gravador (V20V)")
+    local title=node("TextLabel",0,6,1,22,"🌫️ GREY HEARTLAND • The Grey Heartland • Auto + Gravador (V20W)")
     title.TextXAlignment=Enum.TextXAlignment.Left
-    local function autoOn() return hd~=nil and hd.enabled==true and hd.profile~=nil and hd.profile.key=="storm" end
+    local function autoOn() return hd~=nil and hd.enabled==true and hd.profile~=nil and hd.profile.key=="grey" end
     local auto=node("TextButton",0,30,1,34,"",Color3.fromRGB(120,50,60))
     local function paintAuto()
         local on=autoOn()
-        auto.Text=on and "⛈️ Auto Stormcliff: LIGADO (ON)" or "⛈️ Auto Stormcliff: DESLIGADO (OFF)"
+        auto.Text=on and "🌫️ Auto Grey Heartland: LIGADO (ON)" or "🌫️ Auto Grey Heartland: DESLIGADO (OFF)"
         auto.BackgroundColor3=on and Color3.fromRGB(40,120,75) or Color3.fromRGB(120,50,60)
     end
     paintAuto()
     local diffBtns={}
     local function paintDiff()
         for name,b in pairs(diffBtns) do
-            b.BackgroundColor3=(sp and sp.difficulty==name) and Color3.fromRGB(75,95,180) or Color3.fromRGB(40,45,60)
+            b.BackgroundColor3=(gp and gp.difficulty==name) and Color3.fromRGB(75,95,180) or Color3.fromRGB(40,45,60)
         end
     end
     local diffText={Normal="Normal",Hard="Hard (Duro)",Hardcore="Hardcore (Incondicional)"}
@@ -15069,14 +15031,14 @@ function MURIM_ST.install(host)
         local b=node("TextButton",(i-1)/3,70,1/3,30,diffText[name] or name,Color3.fromRGB(40,45,60))
         diffBtns[name]=b
         b.Activated:Connect(function()
-            if hd then hd.setDifficulty(name,"storm") end
+            if hd then hd.setDifficulty(name,"grey") end
             paintDiff()
         end)
     end
     paintDiff()
     local rep=node("TextButton",0,106,1,30,"",Color3.fromRGB(45,110,70))
     local function paintRep()
-        local on=sp==nil or sp.repeatOn
+        local on=gp==nil or gp.repeatOn
         rep.Text=on and "🔄 Repetir dungeon ao concluir: Ligado (ON)" or "🔄 Repetir dungeon ao concluir: Desligado (OFF)"
         rep.BackgroundColor3=on and Color3.fromRGB(45,110,70) or Color3.fromRGB(80,55,65)
     end
@@ -15099,7 +15061,7 @@ function MURIM_ST.install(host)
     status.TextColor3=Color3.fromRGB(240,200,90)
     status.TextSize=11
     local field=Instance.new("ScrollingFrame")
-    field.Name="StormcliffLog"
+    field.Name="GreyHeartlandLog"
     field.Position=UDim2.new(0,10,0,292)
     field.Size=UDim2.new(1,-20,0,200)
     field.BackgroundColor3=Color3.fromRGB(14,17,26)
@@ -15127,106 +15089,96 @@ function MURIM_ST.install(host)
     text.Font=Enum.Font.Code
     text.TextSize=11
     text.TextColor3=Color3.fromRGB(190,205,225)
-    text.Text="Log da Stormcliff aparece aqui."
+    text.Text="Log da Grey Heartland aparece aqui."
     text.Parent=field
-    -- Auto: liga o motor no perfil da Stormcliff (outro Auto de dungeon desliga); desliga so o motor.
+    -- Auto: liga o motor no perfil da Grey Heartland (outro Auto de dungeon desliga); desliga so o motor.
     auto.Activated:Connect(function()
         if not hd then return end
         if autoOn() then
             hd.setEnabled(false)
         else
-            hd.useProfile("storm")
+            hd.useProfile("grey")
             hd.setEnabled(true)
         end
         paintAuto()
     end)
     rep.Activated:Connect(function()
-        if hd and sp then hd.setRepeat(not sp.repeatOn,"storm") end
+        if hd and gp then hd.setRepeat(not gp.repeatOn,"grey") end
         paintRep()
     end)
-    -- Teleporte: portao achado ou gravado = vai; senao procura (modelo/marcador com o nome) e explica no campo.
     tp.Activated:Connect(function()
-        MURIM_LOG.try("Stormcliff teleporte",function()
-            if not hd or not hd.claim("storm") then return end
+        MURIM_LOG.try("GreyHeartland teleporte",function()
+            if not hd or not hd.claim("grey") then return end
+            if not MURIM_GH.regionOk(true) then return end
             local root=MURIM_BD.root()
             if not root then return end
             if not hd.entrance then hd.scan(root,false) end
             local e=hd.entrance
             if e then
                 hd.goTo(root,hd.posOf(e.prompt.Parent) or e.pos,"entrada (botao)")
-            elseif hd.verified then
-                hd.goTo(root,hd.known,"posicao conhecida (botao)")
             else
-                MURIM_ST.discoverTick(root,os.clock(),true)
+                hd.goTo(root,hd.known,"posicao conhecida (botao)")
             end
         end)
     end)
     toggle.Activated:Connect(function()
-        MURIM_BD.sink="storm"
+        MURIM_BD.sink="grey"
         MURIM_BD.setRec(not MURIM_BD.rec)
         paint()
     end)
     -- Aberta = o gravador escreve aqui; a gravacao liga sozinha na primeira vez.
     page:GetPropertyChangedSignal("Visible"):Connect(function()
         if not page.Visible then return end
-        MURIM_BD.sink="storm"
-        if not MURIM_ST.autoStarted then
-            MURIM_ST.autoStarted=true
+        MURIM_BD.sink="grey"
+        if not MURIM_GH.autoStarted then
+            MURIM_GH.autoStarted=true
             MURIM_BD.setRec(true)
             paint()
         end
     end)
     map.Activated:Connect(function()
         map.Text="🗺️ Mapeando..."
-        MURIM_BD.sink="storm"
-        MURIM_LOG.try("Stormcliff mapa",MURIM_BD.map,true)
-        if hd and hd.claim("storm") then
-            MURIM_LOG.try("Stormcliff mapa do motor",hd.map)
-            if not hd.verified then
-                MURIM_LOG.try("Stormcliff procura",function()
-                    MURIM_ST.discoverSpots()
-                    MURIM_ST.report(true)
-                end)
-            end
-        end
+        MURIM_BD.sink="grey"
+        MURIM_LOG.try("GreyHeartland mapa",MURIM_BD.map,true)
+        if hd and hd.claim("grey") then MURIM_LOG.try("GreyHeartland mapa do motor",hd.map) end
         map.Text="🗺️ Mapear aqui"
     end)
     mark.Activated:Connect(function()
-        MURIM_BD.sink="storm"
+        MURIM_BD.sink="grey"
         local n=MURIM_BD.mark()
         mark.Text="📍 Marcar momento ("..n..")"
     end)
     save.Activated:Connect(function()
-        local ok,info=MURIM_ST.saveTxt()
-        MURIM_ST.log(ok and "INFO" or "AVISO",ok and ("TXT salvo: "..info) or ("Nao salvou: "..info))
+        local ok,info=MURIM_GH.saveTxt()
+        MURIM_GH.log(ok and "INFO" or "AVISO",ok and ("TXT salvo: "..info) or ("Nao salvou: "..info))
     end)
     copy.Activated:Connect(function()
         local clip=setclipboard or toclipboard
-        local ok=clip and pcall(clip,MURIM_ST.copyText())
-        MURIM_ST.log(ok and "INFO" or "AVISO",ok and "Log da Stormcliff copiado" or "Executor sem setclipboard: use Salvar TXT")
+        local ok=clip and pcall(clip,MURIM_GH.copyText())
+        MURIM_GH.log(ok and "INFO" or "AVISO",ok and "Log da Grey Heartland copiado" or "Executor sem setclipboard: use Salvar TXT")
     end)
     task.spawn(function()
         local shown=-1
-        while page.Parent and not MURIM_ST.destroyed do
+        while page.Parent and not MURIM_GH.destroyed do
             if page.Visible then
                 paint()
                 paintAuto()
                 paintRep()
                 paintDiff()
                 local engine="Auto desligado"
-                if hd and hd.profile and hd.profile.key=="storm" then
+                if hd and hd.profile and hd.profile.key=="grey" then
                     engine="Auto: "..tostring(hd.state)..(hd.inside and " | DENTRO" or "")
                 elseif hd and hd.enabled then
                     engine="Auto "..tostring(hd.profile and hd.profile.name or "?").." ligado na outra aba"
                 end
-                local gate=(sp and sp.gate) and (hd.fmt(sp.gate).." • modelo "..tostring(sp.raid)) or "ainda nao achado (va ate a entrada uma vez)"
-                status.Text=engine.."\nPortao: "..gate.." • Gravacao "..((MURIM_BD and MURIM_BD.rec) and "ON" or "OFF")
-                local list=MURIM_ST.lines
-                if #list~=shown or list[#list]~=MURIM_ST.lastShown then
+                status.Text=engine.."\nEntrada: "..((gp and gp.gate) and hd.fmt(gp.gate) or "?").." (porta GreyingHollow) • Gravacao "
+                    ..((MURIM_BD and MURIM_BD.rec) and "ON" or "OFF")
+                local list=MURIM_GH.lines
+                if #list~=shown or list[#list]~=MURIM_GH.lastShown then
                     shown=#list
-                    MURIM_ST.lastShown=list[#list]
+                    MURIM_GH.lastShown=list[#list]
                     local first=math.max(1,#list-79)
-                    text.Text=#list>0 and table.concat(list,"\n",first,#list) or "Log da Stormcliff aparece aqui."
+                    text.Text=#list>0 and table.concat(list,"\n",first,#list) or "Log da Grey Heartland aparece aqui."
                     task.defer(function()
                         field.CanvasPosition=Vector2.new(0,math.max(0,field.AbsoluteCanvasSize.Y-field.AbsoluteSize.Y))
                     end)
@@ -15235,8 +15187,8 @@ function MURIM_ST.install(host)
             task.wait(1)
         end
     end)
-    MURIM_ST.log("INFO","Aba STORMCLIFF instalada (13 abas): Auto Stormcliff (motor da Heart Demon, portao descoberto no mapa) + gravador. Portao: "
-        ..((sp and sp.gate) and (hd.fmt(sp.gate).." ("..tostring(MURIM_ST.found)..")") or "ainda nao achado"))
+    MURIM_GH.log("INFO","Aba GREY HEARTLAND instalada (13 abas): Auto Grey Heartland (motor da Heart Demon, porta de historia em "
+        ..((gp and gp.gate) and hd.fmt(gp.gate) or "?")..") + gravador")
 end
 
 local function installMobileTabNavigation(host)
@@ -15253,7 +15205,7 @@ local function installMobileTabNavigation(host)
     bar.Active = true
     -- Desativa a rolagem elástica nativa, usando gesto manual que não retorna.
     bar.ScrollingEnabled = false
-    bar.CanvasSize = UDim2.fromOffset(math.max(13 * STEP + 8, bar.CanvasSize.X.Offset), 0) -- V20C: aba 11 Heart Demon; V20Q: aba 12 BUDDHA; V20V: aba 13 STORMCLIFF
+    bar.CanvasSize = UDim2.fromOffset(math.max(13 * STEP + 8, bar.CanvasSize.X.Offset), 0) -- V20C: aba 11 Heart Demon; V20Q: aba 12 BUDDHA; V20W: aba 13 GREY HEARTLAND
 
     local function setOffset(value)
         local limit = math.max(0, bar.CanvasSize.X.Offset - bar.AbsoluteSize.X)
@@ -16226,14 +16178,14 @@ local logsOK, logsError = pcall(installMurimDiagnostics, hub)
 if not logsOK then warn("[Murim V18R] Aba Logs: " .. tostring(logsError)) end
 MURIM_LOG.try("HeartDemon instalar", MURIM_HD.install, hub)
 MURIM_LOG.try("Buddha instalar", MURIM_BD.install, hub)
-MURIM_LOG.try("Stormcliff instalar", MURIM_ST.install, hub)
+MURIM_LOG.try("GreyHeartland instalar", MURIM_GH.install, hub)
 local navOK, navError = pcall(installMobileTabNavigation, hub)
 if not navOK then warn("[Murim PTBR V4] Erro na navegacao mobile: " .. tostring(navError)) end
 report("Menu principal aberto • carregando Alquimia / Forja / Avanço", false)
 task.spawn(function()
     local ok, reason = xpcall(function() mountWorkshop(hub) end, function(e) return tostring(e) end)
     if ok then
-        report("Pronto para usar • 13 abas (V20V: STORMCLIFF = dungeon nova)", false)
+        report("Pronto para usar • 13 abas (V20W: GREY HEARTLAND = The Grey Heartland)", false)
         task.delay(3, finishNotice)
     else
         report("Falha ao carregar o módulo de minijogos: " .. tostring(reason), true)
