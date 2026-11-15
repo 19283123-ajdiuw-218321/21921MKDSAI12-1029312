@@ -15,6 +15,7 @@ def extract(first,last):
 integration=extract('local function canParry()', '-- A06-only parry path.')
 integration+=extract('function MURIM_HD.attack(root,mob,now)', '-- V20H: loot na Heart Demon')
 integration+=extract('function MURIM_HD.artifactBlocked()', 'function MURIM_HD.artifactUsed(')
+integration+=extract('function MURIM_GH.fleeTick(', 'function MURIM_GH.copyText(')
 cases=cases.replace('-- INTEGRATION_INSERT',integration)
 assert cases.count('-- MODULE_INSERT')==1
 with tempfile.TemporaryDirectory() as directory:

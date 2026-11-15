@@ -14,7 +14,7 @@ local bh={Health=5000,MaxHealth=5000}
 local boss={Parent=true,Name="Wuyan",FindFirstChildOfClass=function() return bh end}
 local MURIM_HD={enabled=true,inside=true,profile={actDodge=true},bossNow=boss,
     log=function(_,message) table.insert(messages,message) end,combatRemote=function() return remote end}
-local MURIM_GH={acts={},delay={},twice={},noFlee={FormationSeal=true}}
+local MURIM_GH={acts={},delay={},twice={},noFlee={FormationSeal=true},nearDist=40,safeDist=45}
 local Workspace=workspace
 local isParrying=false
 local PARRY_WINDOW=0.22
@@ -112,3 +112,31 @@ check(MURIM_GH.parryQueue[1].status~=nil,"incapacitation cannot hold queue indef
 reset();MURIM_HD.profile.actDodge=false
 check(not MURIM_GH.defenseWindow(1),"other dungeon profiles unaffected")
 print("PASS V21E: real generic/queued parry coordination, Attack/artifact guards, short windows, busy retry, incapacitation, profile isolation")
+MURIM_HD.profile.actDodge=true
+local moves=0
+MURIM_HD.backTo=function() moves+=1 end
+local gained=0
+-- Windups recorded in the supplied TXT; damage values are from greyheartland_golpes.txt.
+for _,case in ipairs({{"FistCrit1014",0.92,0.32},{"Cast",0.94,0.68},{"SpearCrit",0.97,0.99},{"SpearDriveThrust",0.89,1.0}}) do
+    reset();moves=0
+    local f=MURIM_GH.planFlee(boss,case[1],10,case[2],0,0,45,4)
+    check(math.abs(f.startAt-(10+case[2]-0.45))<0.00001,"scheduled lead")
+    check(not MURIM_GH.fleeTick({},10) and moves==0,"early windup does not move or block combat")
+    check(not MURIM_GH.fleeBlocks(f.startAt-0.01),"attack allowed before dodge lead")
+    check(MURIM_GH.fleeTick({},f.startAt) and moves==1,"dodge begins at lead")
+    check(MURIM_GH.fleeBlocks(10+case[2]),"impact remains defended even for lethal attacks")
+    MURIM_HD.attack(nil,nil,10+case[2]) -- must return before dereferencing/moving/attacking
+    check(not MURIM_GH.fleeTick({},f.untilT),"combat resumes after original safety tail")
+    gained+=case[2]-0.45
+end
+reset();local f=MURIM_GH.planFlee(boss,"late",10,0.1,0,0,45,4)
+check(f.startAt==10,"late alert flees immediately")
+reset();f=MURIM_GH.planFlee(boss,"already-away",10,1,0,0,45,48)
+check(f.startAt==10,"already far never reenters pending danger")
+reset();MURIM_GH.planFlee(boss,"first",10,1,0,0,45,4)
+f=MURIM_GH.planFlee(boss,"second",10.6,1,0.9,2,60,4)
+check(f.startAt<=10.6 and math.abs(f.untilT-15.1)<0.001 and f.dist==60,"active overlapping/second hit protection retained")
+check(MURIM_GH.fleeBlocks(14),"delayed second hit remains protected")
+MURIM_HD.bossNow={Parent=true}
+check(not MURIM_GH.fleeTick({},11),"old boss cannot move character")
+print(string.format("PASS V21F: observed windups gain %.2fs attack opportunity across four attacks; lethal/overlapping/late/distant protections preserved",gained))
