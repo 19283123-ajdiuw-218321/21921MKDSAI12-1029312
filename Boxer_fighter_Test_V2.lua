@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V21Q: A05 no longer stops in front of the Proprietress (route point on a stool: skip at 2.8 studs like the step) and A09 steps go by verified teleport when MoveTo does not move; V21P: A04 shrine lit at once with fireproximityprompt and a quick strike when the shrine is behind the Watchman (the last shrine sat inside his patrol for 80s and he killed); V21O: Halloween A08 exit seen open once counts as open (it went back to Open=false 1s later and the Auto waited 60s at a door the player walked through); V21N: boss farm has no low-HP retreat (it fights until it falls); knocked down = no teleport until it dies or gets up; while waiting for a boss it stays in place instead of sinking through the floor; V21M: boss farm never gives up on a boss (open world bosses do not reset); when I fall at 0 HP it waits for the death without teleporting, then 2s after the respawn it waits 3s 150 studs from the boss so the map loads, then attacks again; V21L: boss farm skips a boss for 10 min after 3 deaths against it (turning Auto Boss on again retries it), waits for the new body after a death before going back, and logs when the character has no body (last position, last farm action, void height); V21K: Boss tab works alone (Auto Boss starts the farm loop and Parar turns it off), a selected boss counts as up unless its timer shows a countdown, retreats to heal below 45% HP in boss fights, and the boss farm writes its own log lines (FarmChefe); V21J: the Auto answers the arrow KeyTrial of the Grey Heartland boss ult (presses the highlighted arrow in order: arrow keys, or the touch pad buttons in touch mode, switching if a press does not advance); V21I: Grey Heartland flees 45 studs from a FormationSeal that draws no red circle (all 8 big hits of the first clear came from those, some twice ~2s apart) until the double burst passes, and logs every new part of that cast; V21H: Grey Heartland steps out of the red ground circle (FormationSeal hits whoever stays inside it, at any distance from the boss) and waits outside until it bursts; V21G: immediate retreat for learned 90%+ hits, monitor retreat position throughout the defense window, avoid duplicate dead-boss summaries; V21F: attack through early windup; flee 0.45s before predicted impact, preserving distant/overlapping danger and late alerts; V21E: coordinate queued and generic parry, pause attacks/artifacts during defense windows, reject incapacitated parry and recheck delayed callbacks; V21D: Grey Heartland attack IDs, bounded pre-hit snapshots and fight summaries; queued experimental parries including possible second hits, cooldown/window/lifecycle checks; distant hits do not automatically disable fleeing; V21C: Grey Heartland flees only from what fleeing solves (Crit attacks, and learned 65%+ ones like Cast/SpearDriveThrust); Spear2 stays with the hub Auto Parry; FormationSeal (hit at 60 studs after a 74-stud teleport) is parried at its real damage time and the hub Auto Parry no longer spends the parry early on it; an attack that hits the Auto 40+ studs away is marked no-flee; V21B: Grey Heartland: a dangerous boss attack that starts while the Auto is already far also keeps it far until it lands (SpearCrit started at 45 studs during the Spear2 dodge and hit 99% when the Auto came back); overlapping dodges keep the longest; V21A: Grey Heartland learns how late each boss attack lands and whether it hits twice (FormationSeal: ~1s late and again ~2s later) and stays 60 studs away for all of it; full-HP retreat 55+ studs from every enemy; distance to the boss logged at each big hit; V20Z: Grey Heartland: any boss Act with Crit in the name is dodged from the first time; the full-HP retreat goes to a ground plate 40+ studs from every living enemy (it stood still among 4 husks and died); Auto turned on inside the dungeon keeps going inside (it teleported to the door and lost the run); boss attributes logged in full and Posture in each attack line; V20Y: Grey Heartland boss attacks read from the NPC Act/ActT/ActW attributes (each attack logged with name, time to hit, distance, Parryable); a 30%+ hit learns its Act (saved to greyheartland_golpes.txt) and that Act starting within 40 studs makes the Auto step out to 45 studs until it lands; part log restarts for each big boss; boss heals and max HP growth logged; V20X: Grey Heartland retreat waits for full HP (98%+) before fighting again (Wuyan hit 85% and the V20W went back at 17%); it only gives up when HP does not rise at all for 20s; the wait is logged with the boss HP; V20W: tab 13 is GREY HEARTLAND (The Grey Heartland; replaces the V20V STORMCLIFF tab, wrong name): Auto on the Heart Demon engine with the story door known (GreyingHollow, Follow the screaming into the fog, difficulty in the dialog, no circle), inside it follows the grey road on the ground plates when nothing is near and waits at a standing barrier, plus the recorder; V20U: no retreat while the game says no healing (Withered Qi without ward) and no retreat in the Sunken Pagoda (boss reaches 30 studs); KeyTrial in touch mode (Tap the seal): a harmless key switches back to keyboard and the strike taps the Core; V20T: Sunken Pagoda KeyTrial: strike with Space when each Ring shrinks onto the Core (by name; the Core pulsing or the sheet animating no longer hides it), once per ring pass, score logged at each strike; cutscene skip looks at every MurimCutscene screen and the 3rd try holds Space; V20S: Sunken Pagoda fixes: KeyTrial open only when its TrialSheet panel is visible (a leftover Dim froze the Auto in front of the boss), standing still in a KeyTrial at most 15s and only with HP 40%+, cutscenes skipped (Toque/Segure para pular) and not counted as no-damage time, a mob set aside is attacked again when it is the only one, nothing within 150 studs = goes to the nearest mob within 320, idle rescans every 2s; KeyTrial strike aims at Core; V20R: BUDDHA tab = Auto Sunken Pagoda on the Heart Demon engine (profile: gate, circle right after the prompt, rooms, loot filter, boss door circle, Go again), boss bell prompt (Strike the bell), KeyTrial screen logged and tried (ring meets seal = strike), separate difficulty/repeat; recorder kept; V20Q: new BUDDHA tab = recorder + log (prompts you trigger, buttons you click, teleports and where you land, HUD, NPCs and kills, hits with who was near, drops, new screens, quick map after each teleport; Map here, Mark moment, Save TXT); nothing automatic yet; V20P: Heart Demon retreat ends when the boss is almost dead (under 15%, own HP 20%+) or when it does not heal (8s without +10% HP, then 15s without retreat); V20O: Heart Demon defense before loot; heal to 90% without timeout or low-boss-HP override; ignore artifact/weapon effects; preserve back-facing during dodges; V20N: Heart Demon boss line attack: new long thin parts from the boss through the player = instant sidestep (1.5s, no attack); retreat never stays in front of the boss (sideways when it faces me); every new part in the boss fight logged; V20M: Heart Demon shadow (Your Heart Demon) attacked first, back turned to the boss during the mirror; NPC list refreshed every 1s inside; no retreat when the boss is under 12% and HP 30%+; big damage logs nearby mobs and boss animations; picked loot logged with rarity/enchant; V20L: Heart Demon repeat (MurimRunEnd Go again / Sair, toggle like Halloween), never Climb out of the Abyss, retreat at 60% until 90% toward the arena middle (edge being eaten = 20 studs inside), artifact logged and paused in mirror/retreat, no player targets while Heart Demon is on; V20K: Heart Demon boss: Heart Mirror = back turned to the boss and no attacks; retreat at low HP; mobs in the void / without damage skipped; boss door fired 1.5s after reaching the circle and the circle kept after it opens; big damage logged; V20J: Heart Demon fall fix: loot only with floor under the drop and not 30+ studs below, upright teleport onto the floor (no item rotation), loot teleports logged, fall guard brings the character back to the last floor; V20I: Heart Demon loot = Halloween logic (Murim_Drops within 120 studs, shouldLootItem also for chests, chest retry timers, collected before fighting, teleport on top + touch + every prompt of the drop); V20H: Heart Demon loot uses the same item filter as the farm (Settings > Filtro de itens: chosen rarity and up + enchant/heaven grade/colored/currency/quest/keys; never another player personal loot), chests always, skipped items logged; V20G: Heart Demon boss door: stands in the circle in front of the doors, fires Enter the Heart Chamber from there and waits (no loot) until it opens; own HP in the fight log; player list/quest guide out of the HUD log; V20F: Heart Demon waits up to 30s standing in the circle after the difficulty (SpiritCircle checked against the spot that entered in the 11:48 TXT); game teleport right after our placement still counts; V20E: Heart Demon difficulty like Halloween (Normal/Hard/Hardcore in the tab, chosen in the MurimDialog), gate prompt not refired while the dialog is open, chat ignored; V20D: Heart Demon entrance = only the Heart-Demon prompt near the verified gate (16461,129,-491); wrong saved spot ignored; V20C: new Heart Demon tab (The Heart-Demon Abyss): Auto teleports to the entrance prompt, fires it and the dialog, inside fights/uses prompts and records the quest HUD; log field in the tab, Save TXT/Copy, auto TXT every 2 min; V20B: A03 sends the Paper Effigy seen also during HP pauses, A04 keeps 55 studs from the Watchman (facing or not) and leaves him before crossing the open exit, A05 jump off (server pulls back), A04 death shows the most dangerous Watchman reading of the last 3s, raid lost by leaving the arena shown as PERDIDA; V20A: full log at the top of the TXT (errors with traceback, one line per raid, deaths with the 8s before, boss fights with no-damage gaps, HP pauses, time stopped), raid loop survives errors, HP pause that does not heal is cancelled, A07 keeps fighting the same ghost, A05 lights the lamp first and jumps to A06 (Top76) with fallback, A09 does not walk while the Matriarch is alive, farm boss chest and loot filter from Top76; V19Z: A09 walks (no teleport) until the Matriarch appears, manual movement logged; V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
+print("[Boxer_fighter_Test V2] V21R: tab 14 HALLOWEEN PT2 = recorder for The Nine-Step Funeral (entry, steps, prompts, attributes, NPCs, boss); V21Q: A05 no longer stops in front of the Proprietress (route point on a stool: skip at 2.8 studs like the step) and A09 steps go by verified teleport when MoveTo does not move; V21P: A04 shrine lit at once with fireproximityprompt and a quick strike when the shrine is behind the Watchman (the last shrine sat inside his patrol for 80s and he killed); V21O: Halloween A08 exit seen open once counts as open (it went back to Open=false 1s later and the Auto waited 60s at a door the player walked through); V21N: boss farm has no low-HP retreat (it fights until it falls); knocked down = no teleport until it dies or gets up; while waiting for a boss it stays in place instead of sinking through the floor; V21M: boss farm never gives up on a boss (open world bosses do not reset); when I fall at 0 HP it waits for the death without teleporting, then 2s after the respawn it waits 3s 150 studs from the boss so the map loads, then attacks again; V21L: boss farm skips a boss for 10 min after 3 deaths against it (turning Auto Boss on again retries it), waits for the new body after a death before going back, and logs when the character has no body (last position, last farm action, void height); V21K: Boss tab works alone (Auto Boss starts the farm loop and Parar turns it off), a selected boss counts as up unless its timer shows a countdown, retreats to heal below 45% HP in boss fights, and the boss farm writes its own log lines (FarmChefe); V21J: the Auto answers the arrow KeyTrial of the Grey Heartland boss ult (presses the highlighted arrow in order: arrow keys, or the touch pad buttons in touch mode, switching if a press does not advance); V21I: Grey Heartland flees 45 studs from a FormationSeal that draws no red circle (all 8 big hits of the first clear came from those, some twice ~2s apart) until the double burst passes, and logs every new part of that cast; V21H: Grey Heartland steps out of the red ground circle (FormationSeal hits whoever stays inside it, at any distance from the boss) and waits outside until it bursts; V21G: immediate retreat for learned 90%+ hits, monitor retreat position throughout the defense window, avoid duplicate dead-boss summaries; V21F: attack through early windup; flee 0.45s before predicted impact, preserving distant/overlapping danger and late alerts; V21E: coordinate queued and generic parry, pause attacks/artifacts during defense windows, reject incapacitated parry and recheck delayed callbacks; V21D: Grey Heartland attack IDs, bounded pre-hit snapshots and fight summaries; queued experimental parries including possible second hits, cooldown/window/lifecycle checks; distant hits do not automatically disable fleeing; V21C: Grey Heartland flees only from what fleeing solves (Crit attacks, and learned 65%+ ones like Cast/SpearDriveThrust); Spear2 stays with the hub Auto Parry; FormationSeal (hit at 60 studs after a 74-stud teleport) is parried at its real damage time and the hub Auto Parry no longer spends the parry early on it; an attack that hits the Auto 40+ studs away is marked no-flee; V21B: Grey Heartland: a dangerous boss attack that starts while the Auto is already far also keeps it far until it lands (SpearCrit started at 45 studs during the Spear2 dodge and hit 99% when the Auto came back); overlapping dodges keep the longest; V21A: Grey Heartland learns how late each boss attack lands and whether it hits twice (FormationSeal: ~1s late and again ~2s later) and stays 60 studs away for all of it; full-HP retreat 55+ studs from every enemy; distance to the boss logged at each big hit; V20Z: Grey Heartland: any boss Act with Crit in the name is dodged from the first time; the full-HP retreat goes to a ground plate 40+ studs from every living enemy (it stood still among 4 husks and died); Auto turned on inside the dungeon keeps going inside (it teleported to the door and lost the run); boss attributes logged in full and Posture in each attack line; V20Y: Grey Heartland boss attacks read from the NPC Act/ActT/ActW attributes (each attack logged with name, time to hit, distance, Parryable); a 30%+ hit learns its Act (saved to greyheartland_golpes.txt) and that Act starting within 40 studs makes the Auto step out to 45 studs until it lands; part log restarts for each big boss; boss heals and max HP growth logged; V20X: Grey Heartland retreat waits for full HP (98%+) before fighting again (Wuyan hit 85% and the V20W went back at 17%); it only gives up when HP does not rise at all for 20s; the wait is logged with the boss HP; V20W: tab 13 is GREY HEARTLAND (The Grey Heartland; replaces the V20V STORMCLIFF tab, wrong name): Auto on the Heart Demon engine with the story door known (GreyingHollow, Follow the screaming into the fog, difficulty in the dialog, no circle), inside it follows the grey road on the ground plates when nothing is near and waits at a standing barrier, plus the recorder; V20U: no retreat while the game says no healing (Withered Qi without ward) and no retreat in the Sunken Pagoda (boss reaches 30 studs); KeyTrial in touch mode (Tap the seal): a harmless key switches back to keyboard and the strike taps the Core; V20T: Sunken Pagoda KeyTrial: strike with Space when each Ring shrinks onto the Core (by name; the Core pulsing or the sheet animating no longer hides it), once per ring pass, score logged at each strike; cutscene skip looks at every MurimCutscene screen and the 3rd try holds Space; V20S: Sunken Pagoda fixes: KeyTrial open only when its TrialSheet panel is visible (a leftover Dim froze the Auto in front of the boss), standing still in a KeyTrial at most 15s and only with HP 40%+, cutscenes skipped (Toque/Segure para pular) and not counted as no-damage time, a mob set aside is attacked again when it is the only one, nothing within 150 studs = goes to the nearest mob within 320, idle rescans every 2s; KeyTrial strike aims at Core; V20R: BUDDHA tab = Auto Sunken Pagoda on the Heart Demon engine (profile: gate, circle right after the prompt, rooms, loot filter, boss door circle, Go again), boss bell prompt (Strike the bell), KeyTrial screen logged and tried (ring meets seal = strike), separate difficulty/repeat; recorder kept; V20Q: new BUDDHA tab = recorder + log (prompts you trigger, buttons you click, teleports and where you land, HUD, NPCs and kills, hits with who was near, drops, new screens, quick map after each teleport; Map here, Mark moment, Save TXT); nothing automatic yet; V20P: Heart Demon retreat ends when the boss is almost dead (under 15%, own HP 20%+) or when it does not heal (8s without +10% HP, then 15s without retreat); V20O: Heart Demon defense before loot; heal to 90% without timeout or low-boss-HP override; ignore artifact/weapon effects; preserve back-facing during dodges; V20N: Heart Demon boss line attack: new long thin parts from the boss through the player = instant sidestep (1.5s, no attack); retreat never stays in front of the boss (sideways when it faces me); every new part in the boss fight logged; V20M: Heart Demon shadow (Your Heart Demon) attacked first, back turned to the boss during the mirror; NPC list refreshed every 1s inside; no retreat when the boss is under 12% and HP 30%+; big damage logs nearby mobs and boss animations; picked loot logged with rarity/enchant; V20L: Heart Demon repeat (MurimRunEnd Go again / Sair, toggle like Halloween), never Climb out of the Abyss, retreat at 60% until 90% toward the arena middle (edge being eaten = 20 studs inside), artifact logged and paused in mirror/retreat, no player targets while Heart Demon is on; V20K: Heart Demon boss: Heart Mirror = back turned to the boss and no attacks; retreat at low HP; mobs in the void / without damage skipped; boss door fired 1.5s after reaching the circle and the circle kept after it opens; big damage logged; V20J: Heart Demon fall fix: loot only with floor under the drop and not 30+ studs below, upright teleport onto the floor (no item rotation), loot teleports logged, fall guard brings the character back to the last floor; V20I: Heart Demon loot = Halloween logic (Murim_Drops within 120 studs, shouldLootItem also for chests, chest retry timers, collected before fighting, teleport on top + touch + every prompt of the drop); V20H: Heart Demon loot uses the same item filter as the farm (Settings > Filtro de itens: chosen rarity and up + enchant/heaven grade/colored/currency/quest/keys; never another player personal loot), chests always, skipped items logged; V20G: Heart Demon boss door: stands in the circle in front of the doors, fires Enter the Heart Chamber from there and waits (no loot) until it opens; own HP in the fight log; player list/quest guide out of the HUD log; V20F: Heart Demon waits up to 30s standing in the circle after the difficulty (SpiritCircle checked against the spot that entered in the 11:48 TXT); game teleport right after our placement still counts; V20E: Heart Demon difficulty like Halloween (Normal/Hard/Hardcore in the tab, chosen in the MurimDialog), gate prompt not refired while the dialog is open, chat ignored; V20D: Heart Demon entrance = only the Heart-Demon prompt near the verified gate (16461,129,-491); wrong saved spot ignored; V20C: new Heart Demon tab (The Heart-Demon Abyss): Auto teleports to the entrance prompt, fires it and the dialog, inside fights/uses prompts and records the quest HUD; log field in the tab, Save TXT/Copy, auto TXT every 2 min; V20B: A03 sends the Paper Effigy seen also during HP pauses, A04 keeps 55 studs from the Watchman (facing or not) and leaves him before crossing the open exit, A05 jump off (server pulls back), A04 death shows the most dangerous Watchman reading of the last 3s, raid lost by leaving the arena shown as PERDIDA; V20A: full log at the top of the TXT (errors with traceback, one line per raid, deaths with the 8s before, boss fights with no-damage gaps, HP pauses, time stopped), raid loop survives errors, HP pause that does not heal is cancelled, A07 keeps fighting the same ghost, A05 lights the lamp first and jumps to A06 (Top76) with fallback, A09 does not walk while the Matriarch is alive, farm boss chest and loot filter from Top76; V19Z: A09 walks (no teleport) until the Matriarch appears, manual movement logged; V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -122,7 +122,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V21Q | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V21R | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -14327,6 +14327,9 @@ MURIM_BD.words={"buddha","buda","budda","temple","templo","pagoda","pagode","mon
     "luohan","vajra","dharma","shaolin","abbot","abade","nirvana","mantra","stone palm","stonepalm","佛","寺","塔"}
 MURIM_BD.spotWords={"circle","circulo","plate","gate","door","seal","altar","portal","stele","entrance","entry","statue","bell"}
 MURIM_BD.greyWords={"grey heartland","greyheartland","heartland","greying","grey road","greyroad","madman","screaming"}
+-- V21R: Halloween Pt2 = The Nine-Step Funeral (Pine Sword Gate). Terceira saida do gravador: "pt2".
+MURIM_BD.pt2Words={"nine-step","nine step","ninestep","funeral","pallbearer","mourn","coffin","casket","hearse","pine sword","pinesword","halloween","hallowpt2","葬"}
+MURIM_BD.pt2={lines={},autoStarted=false,deep=setmetatable({},{__mode="k"})}
 -- V20R: o log do Auto da Pagoda (motor MURIM_HD com o perfil "pagoda") cai neste mesmo campo.
 if MURIM_HD and MURIM_HD.profiles and MURIM_HD.profiles.pagoda then MURIM_HD.profiles.pagoda.lines=MURIM_BD.lines end
 function MURIM_BD.autoOn()
@@ -14343,7 +14346,7 @@ function MURIM_BD.sinkKey()
     end
     return MURIM_BD.sink or "buddha"
 end
-function MURIM_BD.sinkName() return MURIM_BD.sinkKey()=="grey" and "Grey Heartland" or "Buddha" end
+function MURIM_BD.sinkName() return ({grey="Grey Heartland",pt2="Halloween Pt2"})[MURIM_BD.sinkKey()] or "Buddha" end
 function MURIM_BD.log(level,msg,minInterval,key)
     local text=tostring(msg):gsub("[\r\n]+"," "):sub(1,700)
     if (minInterval or 0)>0 then
@@ -14352,11 +14355,12 @@ function MURIM_BD.log(level,msg,minInterval,key)
         if now-(MURIM_BD.lastSeen[k] or -1e9)<minInterval then return end
         MURIM_BD.lastSeen[k]=now
     end
-    local grey=MURIM_BD.sinkKey()=="grey" and MURIM_HD and MURIM_HD.profiles and MURIM_HD.profiles.grey
-    local list=grey and grey.lines or MURIM_BD.lines
+    local pt2=MURIM_BD.sinkKey()=="pt2" and MURIM_BD.pt2 -- V21R
+    local grey=not pt2 and MURIM_BD.sinkKey()=="grey" and MURIM_HD and MURIM_HD.profiles and MURIM_HD.profiles.grey
+    local list=pt2 and pt2.lines or grey and grey.lines or MURIM_BD.lines
     list[#list+1]=string.format("[%s] [%s] %s",os.date("%H:%M:%S"),tostring(level),text)
     if #list>500 then table.remove(list,1) end
-    MURIM_TRACE.add(level,grey and "GreyHeartland" or "Buddha",text)
+    MURIM_TRACE.add(level,pt2 and "HalloweenPt2" or grey and "GreyHeartland" or "Buddha",text)
 end
 function MURIM_BD.push(list,item,max)
     list[#list+1]=item
@@ -14382,7 +14386,7 @@ end
 function MURIM_BD.hasWord(text,list)
     local low=tostring(text or ""):lower()
     if low=="" then return nil end
-    for _,w in ipairs(list or (MURIM_BD.sinkKey()=="grey" and MURIM_BD.greyWords or MURIM_BD.words)) do
+    for _,w in ipairs(list or (MURIM_BD.sinkKey()=="pt2" and MURIM_BD.pt2Words or MURIM_BD.sinkKey()=="grey" and MURIM_BD.greyWords or MURIM_BD.words)) do
         if low:find(w,1,true) then return w end
     end
     return nil
@@ -14795,7 +14799,7 @@ function MURIM_BD.map(full)
     for i,o in ipairs(named) do
         if i>30 then break end
         local pos=MURIM_BD.pivot(o)
-        MURIM_BD.log("INFO",string.format("MAPA nome da Buddha/templo: %s (%s) em %s (%.0f studs), %d filhos",o:GetFullName(),o.ClassName,
+        MURIM_BD.log("INFO",string.format("MAPA nome da dungeon: %s (%s) em %s (%.0f studs), %d filhos",o:GetFullName(),o.ClassName,
             MURIM_BD.fmt(pos),pos and (pos-here).Magnitude or -1,#o:GetChildren()),0)
     end
     for i,c in ipairs(signs) do
@@ -15183,7 +15187,7 @@ end
 function MURIM_BD.autoSave(now)
     if type(writefile)~="function" or now-MURIM_BD.lastAutoSave<120 then return end
     MURIM_BD.lastAutoSave=now
-    local file="MurimHubLogs/murim_"..(MURIM_BD.sinkKey()=="grey" and "greyheartland" or "buddha").."_auto.txt"
+    local file="MurimHubLogs/murim_"..(({grey="greyheartland",pt2="halloweenpt2"})[MURIM_BD.sinkKey()] or "buddha").."_auto.txt"
     local ok,err=pcall(function()
         if type(makefolder)=="function" and (type(isfolder)~="function" or not isfolder("MurimHubLogs")) then makefolder("MurimHubLogs") end
         writefile(file,MURIM_TRACE.dump())
@@ -15277,7 +15281,7 @@ end
 function MURIM_BD.dump()
     if not MURIM_BD.startedAt then return "" end
     local s=MURIM_BD.stats
-    local out={string.format("[%s: gravacao %s (desde %s) | %s | marcas %d]",MURIM_BD.sinkKey()=="grey" and "GREY HEARTLAND (gravador)" or "BUDDHA",MURIM_BD.rec and "LIGADA" or "desligada",MURIM_BD.startedAt,
+    local out={string.format("[%s: gravacao %s (desde %s) | %s | marcas %d]",({grey="GREY HEARTLAND (gravador)",pt2="HALLOWEEN PT2 / NINE-STEP FUNERAL (gravador)"})[MURIM_BD.sinkKey()] or "BUDDHA",MURIM_BD.rec and "LIGADA" or "desligada",MURIM_BD.startedAt,
             tostring(MURIM_BD.state),MURIM_BD.marks),
         string.format("prompts acionados %d, prompts na tela %d, cliques %d, teleportes %d, NPCs vistos %d, derrotados %d, golpes de 10%%+ %d, mortes %d, drops %d, telas novas %d, mapas %d",
             s.prompts,s.shown,s.clicks,s.jumps,s.npcs,s.kills,s.hits,s.deaths,s.drops,s.guis,s.maps)}
@@ -16509,6 +16513,240 @@ function MURIM_GH.install(host)
         ..((gp and gp.gate) and hd.fmt(gp.gate) or "?")..") + gravador | golpes aprendidos: "..MURIM_GH.dangerText())
 end
 
+-- V21R (usuario 23/11 "halloweenpt2" + print + TXT 19:28-19:39): The Nine-Step Funeral, no Pine Sword Gate: circulo com
+-- o dialogo "A dungeon for your party: nine steps down, one master at the end" (Normal / Duro / Incondicional, Comecar).
+-- O mapa e o censo da Halloween so conhecem HallowGate e responderam "Raid=NAO ENCONTRADA" com o jogador dentro
+-- (X ~46000, Z 3091-3651, Y 703; Barricade, Funeral Attendant, Pallbearer Shade em Murim_NPCs). Como a BUDDHA e a GREY
+-- HEARTLAND comecaram: o jogador joga a mao com a gravacao ligada e o TXT mostra entrada, degraus, prompts, portas, NPCs
+-- e o mestre do fim. Mapa fundo: todos os prompts do modelo da dungeon e as pecas com atributos (sozinho na primeira vez
+-- que o modelo aparece, 4s depois, e no botao). Nada aqui aciona prompt, clica ou move o personagem.
+function MURIM_BD.pt2Log(level,msg)
+    local text=tostring(msg):gsub("[\r\n]+"," "):sub(1,600)
+    local list=MURIM_BD.pt2.lines
+    list[#list+1]=string.format("[%s] [%s] %s",os.date("%H:%M:%S"),tostring(level),text)
+    if #list>500 then table.remove(list,1) end
+    MURIM_TRACE.add(level,"HalloweenPt2",text)
+end
+function MURIM_BD.pt2Deep(area,here,why)
+    local prompts,attrs,nPrompts,nAttrs={},{},0,0
+    local all=area:GetDescendants()
+    for _,o in ipairs(all) do
+        if o:IsA("ProximityPrompt") then
+            nPrompts+=1
+            if #prompts<80 then
+                local info,pos=MURIM_BD.promptInfo(o)
+                prompts[#prompts+1]=string.format("%s (%.0f studs)",info,pos and (pos-here).Magnitude or -1)
+            end
+        elseif o:IsA("Model") or o:IsA("BasePart") or o:IsA("Folder") or o:IsA("Configuration") then
+            local ok,a=pcall(function() return o:GetAttributes() end)
+            if ok and a and next(a) then
+                nAttrs+=1
+                if #attrs<80 then
+                    local kv={}
+                    for k,v in pairs(a) do
+                        if #kv>=8 then kv[#kv+1]="..." break end
+                        kv[#kv+1]=tostring(k).."="..tostring(v)
+                    end
+                    table.sort(kv)
+                    local pos=MURIM_BD.pivot(o)
+                    attrs[#attrs+1]=string.format("%s %s %s",o:GetFullName(),MURIM_BD.fmt(pos),table.concat(kv,","))
+                end
+            end
+        end
+    end
+    local pos=MURIM_BD.pivot(area)
+    MURIM_BD.log("EVIDENCIA",string.format("MAPA FUNDO (%s) %s: %d objetos, %d prompts, %d com atributos | modelo em %s, eu em %s",
+        tostring(why),area:GetFullName(),#all,nPrompts,nAttrs,MURIM_BD.fmt(pos),MURIM_BD.fmt(here)),0)
+    MURIM_BD.logList("EVIDENCIA","MAPA FUNDO prompts",prompts)
+    MURIM_BD.logList("EVIDENCIA","MAPA FUNDO atributos",attrs)
+    MURIM_BD.structure(area,here)
+end
+-- Modelo da dungeon perto (Workspace.Raids.* ou Lairs): mapa fundo uma vez por modelo, 4s depois de aparecer.
+function MURIM_BD.pt2Watch(now)
+    if not MURIM_BD.rec or MURIM_BD.sinkKey()~="pt2" then return end
+    local root=MURIM_BD.root()
+    if not root then return end
+    local _,area,d=MURIM_BD.where(root.Position)
+    local p=MURIM_BD.pt2
+    if not area or d>600 then p.seen=nil return end
+    if p.deep[area] then return end
+    if p.seen~=area then p.seen=area;p.seenAt=now return end
+    if now-p.seenAt<4 then return end
+    p.deep[area]=true
+    MURIM_BD.pt2Deep(area,root.Position,"modelo novo perto")
+end
+function MURIM_BD.pt2Copy()
+    return MURIM_BD.dump().."[HALLOWEEN PT2: ultimas linhas]\n"..table.concat(MURIM_BD.pt2.lines,"\n")
+end
+function MURIM_BD.pt2Save()
+    if type(writefile)~="function" then return false,"executor sem writefile" end
+    local path="MurimHubLogs/murim_halloweenpt2_"..os.date("%Y%m%d_%H%M%S")..".txt"
+    local ok,err=pcall(function()
+        if type(makefolder)=="function" and (type(isfolder)~="function" or not isfolder("MurimHubLogs")) then makefolder("MurimHubLogs") end
+        writefile(path,MURIM_TRACE.dump())
+    end)
+    return ok,ok and path or tostring(err)
+end
+-- Aba 14: gravador da Nine-Step Funeral (liga sozinho na primeira vez que a aba abre), mapa, marca, TXT e campo de log.
+function MURIM_BD.pt2Install(host)
+    local page=host.makePage("HalloweenPt2",14,"🎃 HALLOWEEN PT2")
+    local p=MURIM_BD.pt2
+    if host.gui then host.gui.Destroying:Connect(function() p.destroyed=true end) end
+    local body=Instance.new("ScrollingFrame")
+    body.Name="Content"
+    body.Size=UDim2.fromScale(1,1)
+    body.BackgroundTransparency=1
+    body.BorderSizePixel=0
+    body.ScrollBarThickness=6
+    body.ScrollingDirection=Enum.ScrollingDirection.Y
+    body.CanvasSize=UDim2.fromOffset(0,460)
+    body.Parent=page
+    local function node(class,x,y,w,h,text,color)
+        local o=Instance.new(class)
+        o.Position=UDim2.new(x,x>0 and 4 or 10,0,y)
+        o.Size=UDim2.new(w,w<1 and -14 or -20,0,h)
+        o.Text=text
+        o.TextWrapped=true
+        o.TextSize=12
+        o.Font=Enum.Font.GothamBold
+        o.TextColor3=Color3.fromRGB(240,244,252)
+        o.BorderSizePixel=0
+        if color then o.BackgroundColor3=color else o.BackgroundTransparency=1 end
+        o.Parent=body
+        if class=="TextButton" then Instance.new("UICorner",o).CornerRadius=UDim.new(0,7) end
+        return o
+    end
+    local title=node("TextLabel",0,6,1,22,"🎃 HALLOWEEN PT2 • The Nine-Step Funeral • Gravador (V21R)")
+    title.TextXAlignment=Enum.TextXAlignment.Left
+    local help=node("TextLabel",0,30,1,44,"Jogue a dungeon do jeito normal com a gravacao ligada (entrada no Pine Sword Gate, dificuldade, Comecar, os 9 degraus, o mestre do fim). Use Marcar momento nas partes importantes e mande o TXT.",nil)
+    help.TextXAlignment=Enum.TextXAlignment.Left
+    help.TextYAlignment=Enum.TextYAlignment.Top
+    help.Font=Enum.Font.Gotham
+    help.TextSize=11
+    help.TextColor3=Color3.fromRGB(190,205,225)
+    local toggle=node("TextButton",0,80,0.5,32,"",Color3.fromRGB(120,50,60))
+    local function paint()
+        local on=MURIM_BD.rec and MURIM_BD.sinkKey()=="pt2"
+        toggle.Text=on and "🔴 Gravar: LIGADO" or (MURIM_BD.rec and "🔴 Gravando em outra aba" or "⚪ Gravar: DESLIGADO")
+        toggle.BackgroundColor3=on and Color3.fromRGB(40,120,75) or Color3.fromRGB(120,50,60)
+    end
+    paint()
+    local map=node("TextButton",0.5,80,0.5,32,"🗺️ Mapear aqui",Color3.fromRGB(55,85,140))
+    local mark=node("TextButton",0,116,0.5,32,"📍 Marcar momento",Color3.fromRGB(150,105,40))
+    local save=node("TextButton",0.5,116,0.5,32,"💾 Salvar TXT",Color3.fromRGB(45,110,70))
+    local copy=node("TextButton",0,152,1,32,"📋 Copiar log",Color3.fromRGB(70,70,110))
+    local status=node("TextLabel",0,188,1,38,"",nil)
+    status.TextXAlignment=Enum.TextXAlignment.Left
+    status.TextYAlignment=Enum.TextYAlignment.Top
+    status.TextColor3=Color3.fromRGB(240,200,90)
+    status.TextSize=11
+    local field=Instance.new("ScrollingFrame")
+    field.Name="HalloweenPt2Log"
+    field.Position=UDim2.new(0,10,0,230)
+    field.Size=UDim2.new(1,-20,0,220)
+    field.BackgroundColor3=Color3.fromRGB(14,17,26)
+    field.BorderSizePixel=0
+    field.ScrollBarThickness=4
+    field.CanvasSize=UDim2.new(0,0,0,0)
+    field.AutomaticCanvasSize=Enum.AutomaticSize.Y
+    field.Parent=body
+    Instance.new("UICorner",field).CornerRadius=UDim.new(0,6)
+    local function fit()
+        local h=math.max(220,page.AbsoluteSize.Y-238)
+        field.Size=UDim2.new(1,-20,0,h)
+        body.CanvasSize=UDim2.fromOffset(0,230+h+8)
+    end
+    fit()
+    page:GetPropertyChangedSignal("AbsoluteSize"):Connect(fit)
+    local text=Instance.new("TextLabel")
+    text.Position=UDim2.new(0,6,0,4)
+    text.Size=UDim2.new(1,-12,0,0)
+    text.AutomaticSize=Enum.AutomaticSize.Y
+    text.BackgroundTransparency=1
+    text.TextWrapped=true
+    text.TextXAlignment=Enum.TextXAlignment.Left
+    text.TextYAlignment=Enum.TextYAlignment.Top
+    text.Font=Enum.Font.Code
+    text.TextSize=11
+    text.TextColor3=Color3.fromRGB(190,205,225)
+    text.Text="Log da Halloween Pt2 aparece aqui."
+    text.Parent=field
+    toggle.Activated:Connect(function()
+        local mine=MURIM_BD.sinkKey()=="pt2"
+        MURIM_BD.sink="pt2"
+        if MURIM_BD.rec and not mine then
+            MURIM_BD.log("ACAO","Gravacao agora escreve na aba HALLOWEEN PT2",0)
+        else
+            MURIM_BD.setRec(not MURIM_BD.rec)
+        end
+        paint()
+    end)
+    -- Aberta = o gravador escreve aqui; a gravacao liga sozinha na primeira vez.
+    page:GetPropertyChangedSignal("Visible"):Connect(function()
+        if not page.Visible then return end
+        MURIM_BD.sink="pt2"
+        if not p.autoStarted then
+            p.autoStarted=true
+            MURIM_BD.setRec(true)
+            paint()
+        end
+    end)
+    map.Activated:Connect(function()
+        map.Text="🗺️ Mapeando..."
+        MURIM_BD.sink="pt2"
+        MURIM_LOG.try("HalloweenPt2 mapa",MURIM_BD.map,true)
+        MURIM_LOG.try("HalloweenPt2 mapa fundo",function()
+            local root=MURIM_BD.root()
+            if not root then return end
+            local whereText,area,d=MURIM_BD.where(root.Position)
+            if area and d<=3000 then
+                p.deep[area]=true
+                MURIM_BD.pt2Deep(area,root.Position,"botao, "..whereText)
+            else
+                MURIM_BD.log("AVISO","MAPA FUNDO: nenhum modelo em Workspace.Raids/Lairs perto ("..tostring(whereText)..")",0)
+            end
+        end)
+        map.Text="🗺️ Mapear aqui"
+    end)
+    mark.Activated:Connect(function()
+        MURIM_BD.sink="pt2"
+        local n=MURIM_BD.mark()
+        mark.Text="📍 Marcar momento ("..n..")"
+    end)
+    save.Activated:Connect(function()
+        local ok,info=MURIM_BD.pt2Save()
+        MURIM_BD.pt2Log(ok and "INFO" or "AVISO",ok and ("TXT salvo: "..info) or ("Nao salvou: "..info))
+    end)
+    copy.Activated:Connect(function()
+        local clip=setclipboard or toclipboard
+        local ok=clip and pcall(clip,MURIM_BD.pt2Copy())
+        MURIM_BD.pt2Log(ok and "INFO" or "AVISO",ok and "Log da Halloween Pt2 copiado" or "Executor sem setclipboard: use Salvar TXT")
+    end)
+    task.spawn(function()
+        local shown=-1
+        while page.Parent and not p.destroyed do
+            MURIM_LOG.try("HalloweenPt2 mapa fundo automatico",MURIM_BD.pt2Watch,os.clock())
+            if page.Visible then
+                paint()
+                status.Text="Gravacao "..((MURIM_BD.rec and MURIM_BD.sinkKey()=="pt2") and "ON" or "OFF").." • "..tostring(MURIM_BD.state)
+                    .."\nTXT automatico a cada 2 min: MurimHubLogs/murim_halloweenpt2_auto.txt"
+                local list=p.lines
+                if #list~=shown or list[#list]~=p.lastShown then
+                    shown=#list
+                    p.lastShown=list[#list]
+                    local first=math.max(1,#list-79)
+                    text.Text=#list>0 and table.concat(list,"\n",first,#list) or "Log da Halloween Pt2 aparece aqui."
+                    task.defer(function()
+                        field.CanvasPosition=Vector2.new(0,math.max(0,field.AbsoluteCanvasSize.Y-field.AbsoluteSize.Y))
+                    end)
+                end
+            end
+            task.wait(1)
+        end
+    end)
+    MURIM_BD.pt2Log("INFO","Aba HALLOWEEN PT2 instalada (14 abas): gravador da The Nine-Step Funeral. A gravacao liga ao abrir a aba.")
+end
+
 local function installMobileTabNavigation(host)
     local gui = host and host.gui
     local frame = gui and gui:FindFirstChild("MainFrame")
@@ -16523,7 +16761,7 @@ local function installMobileTabNavigation(host)
     bar.Active = true
     -- Desativa a rolagem elástica nativa, usando gesto manual que não retorna.
     bar.ScrollingEnabled = false
-    bar.CanvasSize = UDim2.fromOffset(math.max(13 * STEP + 8, bar.CanvasSize.X.Offset), 0) -- V20C: aba 11 Heart Demon; V20Q: aba 12 BUDDHA; V20W: aba 13 GREY HEARTLAND
+    bar.CanvasSize = UDim2.fromOffset(math.max(14 * STEP + 8, bar.CanvasSize.X.Offset), 0) -- V20C: aba 11 Heart Demon; V20Q: aba 12 BUDDHA; V20W: aba 13 GREY HEARTLAND; V21R: aba 14 HALLOWEEN PT2
 
     local function setOffset(value)
         local limit = math.max(0, bar.CanvasSize.X.Offset - bar.AbsoluteSize.X)
@@ -17497,13 +17735,14 @@ if not logsOK then warn("[Murim V18R] Aba Logs: " .. tostring(logsError)) end
 MURIM_LOG.try("HeartDemon instalar", MURIM_HD.install, hub)
 MURIM_LOG.try("Buddha instalar", MURIM_BD.install, hub)
 MURIM_LOG.try("GreyHeartland instalar", MURIM_GH.install, hub)
+MURIM_LOG.try("HalloweenPt2 instalar", MURIM_BD.pt2Install, hub) -- V21R
 local navOK, navError = pcall(installMobileTabNavigation, hub)
 if not navOK then warn("[Murim PTBR V4] Erro na navegacao mobile: " .. tostring(navError)) end
 report("Menu principal aberto • carregando Alquimia / Forja / Avanço", false)
 task.spawn(function()
     local ok, reason = xpcall(function() mountWorkshop(hub) end, function(e) return tostring(e) end)
     if ok then
-        report("Pronto para usar • 13 abas (V21Q: A05 nao para mais na frente da NPC; A09 vai ate a Matriarca)", false)
+        report("Pronto para usar • 14 abas (V21R: aba HALLOWEEN PT2 grava a Nine-Step Funeral)", false)
         task.delay(3, finishNotice)
     else
         report("Falha ao carregar o módulo de minijogos: " .. tostring(reason), true)
