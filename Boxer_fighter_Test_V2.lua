@@ -47,7 +47,7 @@ local source = [====[
 local report, finishNotice = ...
 -- V18T: chunk independente, LocalPlayer do loader nao existe neste escopo.
 local player = game:GetService("Players").LocalPlayer
-print("[Boxer_fighter_Test V2] V22E: Wuyan ult rings: after the first ring hits, stay 2s where it already burst instead of retreating into the outer ring (killed twice); ring parts logged for 8s; V22D: Grey Heartland back to 4 studs behind the target (the V22A farm position got the player killed); keeps the 0.1s Top76 attack rate; V22C: the farm never teleports to a target hidden under the map (below the void height): a hidden boss is awaited at its saved spot, a hidden mob is skipped; V22B: every dungeon (Heart Demon, Buddha, Grey, Warden) attacks every 0.1s like the Top76 farm (was 4 per second); V22A: Grey Heartland fights like the mob farm too (above/below the target at the Settings distance, held every frame, attack every 0.1s); dodges, circles, parry, KeyTrial and the full-HP retreat unchanged; V21Z: Rootward layer 4: reflections are finished only inside a lake lantern light; retreat spots stay inside the current layer and need firm floor around; retreat ends at 85% there (bosses heal while you wait); V21Y: Rootward Stair (WARDEN) fights like the mob farm (above/below the mob at the Settings distance, held every frame, attack every 0.1s); nothing within 150 studs for 3s = go down to the next known layer; each layer logs its lanterns/braziers; V21X: Rootward Stair (WARDEN): the full-HP retreat finds the dungeon floor (flat parts + own trail) instead of standing among the mobs; nothing within 150 studs = go down to the next layer (up to 100 studs lower); knocked also by the Knocked server time; V21W: knocked down or dead in a dungeon/raid = no teleport, attack or dodge until up or respawned (2s still after respawn); a dungeon turned on stops any farm and the boss trip always stops it; a jump only counts as entering near the dungeon arrival; tab 15 WARDEN = Auto for The Rootward Stair; V21V: The Stair-Bell Warden is a known boss (it went to the mob list when alive on a new server); every boss seen on the game boss board is saved as a boss for next time; V21U: dungeon engine never freezes on a map-load request that does not return (it froze 5h17 after a death in the Grey Heartland): the request waits at most 2.5s, a watchdog rebuilds a stuck engine loop, a new character counts as death; V21T: boss trip between runs waits for the ground drops the item filter wants (150 studs, up to 30s); V21S: Auto Boss together with a dungeon (Raid, Heart Demon, Buddha, Grey) kills marked bosses between runs; false alarm = that boss waits 10 min; V21R: tab 14 HALLOWEEN PT2 = recorder for The Nine-Step Funeral (entry, steps, prompts, attributes, NPCs, boss); V21Q: A05 no longer stops in front of the Proprietress (route point on a stool: skip at 2.8 studs like the step) and A09 steps go by verified teleport when MoveTo does not move; V21P: A04 shrine lit at once with fireproximityprompt and a quick strike when the shrine is behind the Watchman (the last shrine sat inside his patrol for 80s and he killed); V21O: Halloween A08 exit seen open once counts as open (it went back to Open=false 1s later and the Auto waited 60s at a door the player walked through); V21N: boss farm has no low-HP retreat (it fights until it falls); knocked down = no teleport until it dies or gets up; while waiting for a boss it stays in place instead of sinking through the floor; V21M: boss farm never gives up on a boss (open world bosses do not reset); when I fall at 0 HP it waits for the death without teleporting, then 2s after the respawn it waits 3s 150 studs from the boss so the map loads, then attacks again; V21L: boss farm skips a boss for 10 min after 3 deaths against it (turning Auto Boss on again retries it), waits for the new body after a death before going back, and logs when the character has no body (last position, last farm action, void height); V21K: Boss tab works alone (Auto Boss starts the farm loop and Parar turns it off), a selected boss counts as up unless its timer shows a countdown, retreats to heal below 45% HP in boss fights, and the boss farm writes its own log lines (FarmChefe); V21J: the Auto answers the arrow KeyTrial of the Grey Heartland boss ult (presses the highlighted arrow in order: arrow keys, or the touch pad buttons in touch mode, switching if a press does not advance); V21I: Grey Heartland flees 45 studs from a FormationSeal that draws no red circle (all 8 big hits of the first clear came from those, some twice ~2s apart) until the double burst passes, and logs every new part of that cast; V21H: Grey Heartland steps out of the red ground circle (FormationSeal hits whoever stays inside it, at any distance from the boss) and waits outside until it bursts; V21G: immediate retreat for learned 90%+ hits, monitor retreat position throughout the defense window, avoid duplicate dead-boss summaries; V21F: attack through early windup; flee 0.45s before predicted impact, preserving distant/overlapping danger and late alerts; V21E: coordinate queued and generic parry, pause attacks/artifacts during defense windows, reject incapacitated parry and recheck delayed callbacks; V21D: Grey Heartland attack IDs, bounded pre-hit snapshots and fight summaries; queued experimental parries including possible second hits, cooldown/window/lifecycle checks; distant hits do not automatically disable fleeing; V21C: Grey Heartland flees only from what fleeing solves (Crit attacks, and learned 65%+ ones like Cast/SpearDriveThrust); Spear2 stays with the hub Auto Parry; FormationSeal (hit at 60 studs after a 74-stud teleport) is parried at its real damage time and the hub Auto Parry no longer spends the parry early on it; an attack that hits the Auto 40+ studs away is marked no-flee; V21B: Grey Heartland: a dangerous boss attack that starts while the Auto is already far also keeps it far until it lands (SpearCrit started at 45 studs during the Spear2 dodge and hit 99% when the Auto came back); overlapping dodges keep the longest; V21A: Grey Heartland learns how late each boss attack lands and whether it hits twice (FormationSeal: ~1s late and again ~2s later) and stays 60 studs away for all of it; full-HP retreat 55+ studs from every enemy; distance to the boss logged at each big hit; V20Z: Grey Heartland: any boss Act with Crit in the name is dodged from the first time; the full-HP retreat goes to a ground plate 40+ studs from every living enemy (it stood still among 4 husks and died); Auto turned on inside the dungeon keeps going inside (it teleported to the door and lost the run); boss attributes logged in full and Posture in each attack line; V20Y: Grey Heartland boss attacks read from the NPC Act/ActT/ActW attributes (each attack logged with name, time to hit, distance, Parryable); a 30%+ hit learns its Act (saved to greyheartland_golpes.txt) and that Act starting within 40 studs makes the Auto step out to 45 studs until it lands; part log restarts for each big boss; boss heals and max HP growth logged; V20X: Grey Heartland retreat waits for full HP (98%+) before fighting again (Wuyan hit 85% and the V20W went back at 17%); it only gives up when HP does not rise at all for 20s; the wait is logged with the boss HP; V20W: tab 13 is GREY HEARTLAND (The Grey Heartland; replaces the V20V STORMCLIFF tab, wrong name): Auto on the Heart Demon engine with the story door known (GreyingHollow, Follow the screaming into the fog, difficulty in the dialog, no circle), inside it follows the grey road on the ground plates when nothing is near and waits at a standing barrier, plus the recorder; V20U: no retreat while the game says no healing (Withered Qi without ward) and no retreat in the Sunken Pagoda (boss reaches 30 studs); KeyTrial in touch mode (Tap the seal): a harmless key switches back to keyboard and the strike taps the Core; V20T: Sunken Pagoda KeyTrial: strike with Space when each Ring shrinks onto the Core (by name; the Core pulsing or the sheet animating no longer hides it), once per ring pass, score logged at each strike; cutscene skip looks at every MurimCutscene screen and the 3rd try holds Space; V20S: Sunken Pagoda fixes: KeyTrial open only when its TrialSheet panel is visible (a leftover Dim froze the Auto in front of the boss), standing still in a KeyTrial at most 15s and only with HP 40%+, cutscenes skipped (Toque/Segure para pular) and not counted as no-damage time, a mob set aside is attacked again when it is the only one, nothing within 150 studs = goes to the nearest mob within 320, idle rescans every 2s; KeyTrial strike aims at Core; V20R: BUDDHA tab = Auto Sunken Pagoda on the Heart Demon engine (profile: gate, circle right after the prompt, rooms, loot filter, boss door circle, Go again), boss bell prompt (Strike the bell), KeyTrial screen logged and tried (ring meets seal = strike), separate difficulty/repeat; recorder kept; V20Q: new BUDDHA tab = recorder + log (prompts you trigger, buttons you click, teleports and where you land, HUD, NPCs and kills, hits with who was near, drops, new screens, quick map after each teleport; Map here, Mark moment, Save TXT); nothing automatic yet; V20P: Heart Demon retreat ends when the boss is almost dead (under 15%, own HP 20%+) or when it does not heal (8s without +10% HP, then 15s without retreat); V20O: Heart Demon defense before loot; heal to 90% without timeout or low-boss-HP override; ignore artifact/weapon effects; preserve back-facing during dodges; V20N: Heart Demon boss line attack: new long thin parts from the boss through the player = instant sidestep (1.5s, no attack); retreat never stays in front of the boss (sideways when it faces me); every new part in the boss fight logged; V20M: Heart Demon shadow (Your Heart Demon) attacked first, back turned to the boss during the mirror; NPC list refreshed every 1s inside; no retreat when the boss is under 12% and HP 30%+; big damage logs nearby mobs and boss animations; picked loot logged with rarity/enchant; V20L: Heart Demon repeat (MurimRunEnd Go again / Sair, toggle like Halloween), never Climb out of the Abyss, retreat at 60% until 90% toward the arena middle (edge being eaten = 20 studs inside), artifact logged and paused in mirror/retreat, no player targets while Heart Demon is on; V20K: Heart Demon boss: Heart Mirror = back turned to the boss and no attacks; retreat at low HP; mobs in the void / without damage skipped; boss door fired 1.5s after reaching the circle and the circle kept after it opens; big damage logged; V20J: Heart Demon fall fix: loot only with floor under the drop and not 30+ studs below, upright teleport onto the floor (no item rotation), loot teleports logged, fall guard brings the character back to the last floor; V20I: Heart Demon loot = Halloween logic (Murim_Drops within 120 studs, shouldLootItem also for chests, chest retry timers, collected before fighting, teleport on top + touch + every prompt of the drop); V20H: Heart Demon loot uses the same item filter as the farm (Settings > Filtro de itens: chosen rarity and up + enchant/heaven grade/colored/currency/quest/keys; never another player personal loot), chests always, skipped items logged; V20G: Heart Demon boss door: stands in the circle in front of the doors, fires Enter the Heart Chamber from there and waits (no loot) until it opens; own HP in the fight log; player list/quest guide out of the HUD log; V20F: Heart Demon waits up to 30s standing in the circle after the difficulty (SpiritCircle checked against the spot that entered in the 11:48 TXT); game teleport right after our placement still counts; V20E: Heart Demon difficulty like Halloween (Normal/Hard/Hardcore in the tab, chosen in the MurimDialog), gate prompt not refired while the dialog is open, chat ignored; V20D: Heart Demon entrance = only the Heart-Demon prompt near the verified gate (16461,129,-491); wrong saved spot ignored; V20C: new Heart Demon tab (The Heart-Demon Abyss): Auto teleports to the entrance prompt, fires it and the dialog, inside fights/uses prompts and records the quest HUD; log field in the tab, Save TXT/Copy, auto TXT every 2 min; V20B: A03 sends the Paper Effigy seen also during HP pauses, A04 keeps 55 studs from the Watchman (facing or not) and leaves him before crossing the open exit, A05 jump off (server pulls back), A04 death shows the most dangerous Watchman reading of the last 3s, raid lost by leaving the arena shown as PERDIDA; V20A: full log at the top of the TXT (errors with traceback, one line per raid, deaths with the 8s before, boss fights with no-damage gaps, HP pauses, time stopped), raid loop survives errors, HP pause that does not heal is cancelled, A07 keeps fighting the same ghost, A05 lights the lamp first and jumps to A06 (Top76) with fallback, A09 does not walk while the Matriarch is alive, farm boss chest and loot filter from Top76; V19Z: A09 walks (no teleport) until the Matriarch appears, manual movement logged; V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
+print("[Boxer_fighter_Test V2] V22F: Wuyan ult: go 56 studs away as soon as the ult text shows and wait there until the arrows (2nd burst hits 5-50 studs, never 52-55); retreat teleports at once when the spot is near and loaded; late FormationSeal still flees; V22E: Wuyan ult rings: after the first ring hits, stay 2s where it already burst instead of retreating into the outer ring (killed twice); ring parts logged for 8s; V22D: Grey Heartland back to 4 studs behind the target (the V22A farm position got the player killed); keeps the 0.1s Top76 attack rate; V22C: the farm never teleports to a target hidden under the map (below the void height): a hidden boss is awaited at its saved spot, a hidden mob is skipped; V22B: every dungeon (Heart Demon, Buddha, Grey, Warden) attacks every 0.1s like the Top76 farm (was 4 per second); V22A: Grey Heartland fights like the mob farm too (above/below the target at the Settings distance, held every frame, attack every 0.1s); dodges, circles, parry, KeyTrial and the full-HP retreat unchanged; V21Z: Rootward layer 4: reflections are finished only inside a lake lantern light; retreat spots stay inside the current layer and need firm floor around; retreat ends at 85% there (bosses heal while you wait); V21Y: Rootward Stair (WARDEN) fights like the mob farm (above/below the mob at the Settings distance, held every frame, attack every 0.1s); nothing within 150 studs for 3s = go down to the next known layer; each layer logs its lanterns/braziers; V21X: Rootward Stair (WARDEN): the full-HP retreat finds the dungeon floor (flat parts + own trail) instead of standing among the mobs; nothing within 150 studs = go down to the next layer (up to 100 studs lower); knocked also by the Knocked server time; V21W: knocked down or dead in a dungeon/raid = no teleport, attack or dodge until up or respawned (2s still after respawn); a dungeon turned on stops any farm and the boss trip always stops it; a jump only counts as entering near the dungeon arrival; tab 15 WARDEN = Auto for The Rootward Stair; V21V: The Stair-Bell Warden is a known boss (it went to the mob list when alive on a new server); every boss seen on the game boss board is saved as a boss for next time; V21U: dungeon engine never freezes on a map-load request that does not return (it froze 5h17 after a death in the Grey Heartland): the request waits at most 2.5s, a watchdog rebuilds a stuck engine loop, a new character counts as death; V21T: boss trip between runs waits for the ground drops the item filter wants (150 studs, up to 30s); V21S: Auto Boss together with a dungeon (Raid, Heart Demon, Buddha, Grey) kills marked bosses between runs; false alarm = that boss waits 10 min; V21R: tab 14 HALLOWEEN PT2 = recorder for The Nine-Step Funeral (entry, steps, prompts, attributes, NPCs, boss); V21Q: A05 no longer stops in front of the Proprietress (route point on a stool: skip at 2.8 studs like the step) and A09 steps go by verified teleport when MoveTo does not move; V21P: A04 shrine lit at once with fireproximityprompt and a quick strike when the shrine is behind the Watchman (the last shrine sat inside his patrol for 80s and he killed); V21O: Halloween A08 exit seen open once counts as open (it went back to Open=false 1s later and the Auto waited 60s at a door the player walked through); V21N: boss farm has no low-HP retreat (it fights until it falls); knocked down = no teleport until it dies or gets up; while waiting for a boss it stays in place instead of sinking through the floor; V21M: boss farm never gives up on a boss (open world bosses do not reset); when I fall at 0 HP it waits for the death without teleporting, then 2s after the respawn it waits 3s 150 studs from the boss so the map loads, then attacks again; V21L: boss farm skips a boss for 10 min after 3 deaths against it (turning Auto Boss on again retries it), waits for the new body after a death before going back, and logs when the character has no body (last position, last farm action, void height); V21K: Boss tab works alone (Auto Boss starts the farm loop and Parar turns it off), a selected boss counts as up unless its timer shows a countdown, retreats to heal below 45% HP in boss fights, and the boss farm writes its own log lines (FarmChefe); V21J: the Auto answers the arrow KeyTrial of the Grey Heartland boss ult (presses the highlighted arrow in order: arrow keys, or the touch pad buttons in touch mode, switching if a press does not advance); V21I: Grey Heartland flees 45 studs from a FormationSeal that draws no red circle (all 8 big hits of the first clear came from those, some twice ~2s apart) until the double burst passes, and logs every new part of that cast; V21H: Grey Heartland steps out of the red ground circle (FormationSeal hits whoever stays inside it, at any distance from the boss) and waits outside until it bursts; V21G: immediate retreat for learned 90%+ hits, monitor retreat position throughout the defense window, avoid duplicate dead-boss summaries; V21F: attack through early windup; flee 0.45s before predicted impact, preserving distant/overlapping danger and late alerts; V21E: coordinate queued and generic parry, pause attacks/artifacts during defense windows, reject incapacitated parry and recheck delayed callbacks; V21D: Grey Heartland attack IDs, bounded pre-hit snapshots and fight summaries; queued experimental parries including possible second hits, cooldown/window/lifecycle checks; distant hits do not automatically disable fleeing; V21C: Grey Heartland flees only from what fleeing solves (Crit attacks, and learned 65%+ ones like Cast/SpearDriveThrust); Spear2 stays with the hub Auto Parry; FormationSeal (hit at 60 studs after a 74-stud teleport) is parried at its real damage time and the hub Auto Parry no longer spends the parry early on it; an attack that hits the Auto 40+ studs away is marked no-flee; V21B: Grey Heartland: a dangerous boss attack that starts while the Auto is already far also keeps it far until it lands (SpearCrit started at 45 studs during the Spear2 dodge and hit 99% when the Auto came back); overlapping dodges keep the longest; V21A: Grey Heartland learns how late each boss attack lands and whether it hits twice (FormationSeal: ~1s late and again ~2s later) and stays 60 studs away for all of it; full-HP retreat 55+ studs from every enemy; distance to the boss logged at each big hit; V20Z: Grey Heartland: any boss Act with Crit in the name is dodged from the first time; the full-HP retreat goes to a ground plate 40+ studs from every living enemy (it stood still among 4 husks and died); Auto turned on inside the dungeon keeps going inside (it teleported to the door and lost the run); boss attributes logged in full and Posture in each attack line; V20Y: Grey Heartland boss attacks read from the NPC Act/ActT/ActW attributes (each attack logged with name, time to hit, distance, Parryable); a 30%+ hit learns its Act (saved to greyheartland_golpes.txt) and that Act starting within 40 studs makes the Auto step out to 45 studs until it lands; part log restarts for each big boss; boss heals and max HP growth logged; V20X: Grey Heartland retreat waits for full HP (98%+) before fighting again (Wuyan hit 85% and the V20W went back at 17%); it only gives up when HP does not rise at all for 20s; the wait is logged with the boss HP; V20W: tab 13 is GREY HEARTLAND (The Grey Heartland; replaces the V20V STORMCLIFF tab, wrong name): Auto on the Heart Demon engine with the story door known (GreyingHollow, Follow the screaming into the fog, difficulty in the dialog, no circle), inside it follows the grey road on the ground plates when nothing is near and waits at a standing barrier, plus the recorder; V20U: no retreat while the game says no healing (Withered Qi without ward) and no retreat in the Sunken Pagoda (boss reaches 30 studs); KeyTrial in touch mode (Tap the seal): a harmless key switches back to keyboard and the strike taps the Core; V20T: Sunken Pagoda KeyTrial: strike with Space when each Ring shrinks onto the Core (by name; the Core pulsing or the sheet animating no longer hides it), once per ring pass, score logged at each strike; cutscene skip looks at every MurimCutscene screen and the 3rd try holds Space; V20S: Sunken Pagoda fixes: KeyTrial open only when its TrialSheet panel is visible (a leftover Dim froze the Auto in front of the boss), standing still in a KeyTrial at most 15s and only with HP 40%+, cutscenes skipped (Toque/Segure para pular) and not counted as no-damage time, a mob set aside is attacked again when it is the only one, nothing within 150 studs = goes to the nearest mob within 320, idle rescans every 2s; KeyTrial strike aims at Core; V20R: BUDDHA tab = Auto Sunken Pagoda on the Heart Demon engine (profile: gate, circle right after the prompt, rooms, loot filter, boss door circle, Go again), boss bell prompt (Strike the bell), KeyTrial screen logged and tried (ring meets seal = strike), separate difficulty/repeat; recorder kept; V20Q: new BUDDHA tab = recorder + log (prompts you trigger, buttons you click, teleports and where you land, HUD, NPCs and kills, hits with who was near, drops, new screens, quick map after each teleport; Map here, Mark moment, Save TXT); nothing automatic yet; V20P: Heart Demon retreat ends when the boss is almost dead (under 15%, own HP 20%+) or when it does not heal (8s without +10% HP, then 15s without retreat); V20O: Heart Demon defense before loot; heal to 90% without timeout or low-boss-HP override; ignore artifact/weapon effects; preserve back-facing during dodges; V20N: Heart Demon boss line attack: new long thin parts from the boss through the player = instant sidestep (1.5s, no attack); retreat never stays in front of the boss (sideways when it faces me); every new part in the boss fight logged; V20M: Heart Demon shadow (Your Heart Demon) attacked first, back turned to the boss during the mirror; NPC list refreshed every 1s inside; no retreat when the boss is under 12% and HP 30%+; big damage logs nearby mobs and boss animations; picked loot logged with rarity/enchant; V20L: Heart Demon repeat (MurimRunEnd Go again / Sair, toggle like Halloween), never Climb out of the Abyss, retreat at 60% until 90% toward the arena middle (edge being eaten = 20 studs inside), artifact logged and paused in mirror/retreat, no player targets while Heart Demon is on; V20K: Heart Demon boss: Heart Mirror = back turned to the boss and no attacks; retreat at low HP; mobs in the void / without damage skipped; boss door fired 1.5s after reaching the circle and the circle kept after it opens; big damage logged; V20J: Heart Demon fall fix: loot only with floor under the drop and not 30+ studs below, upright teleport onto the floor (no item rotation), loot teleports logged, fall guard brings the character back to the last floor; V20I: Heart Demon loot = Halloween logic (Murim_Drops within 120 studs, shouldLootItem also for chests, chest retry timers, collected before fighting, teleport on top + touch + every prompt of the drop); V20H: Heart Demon loot uses the same item filter as the farm (Settings > Filtro de itens: chosen rarity and up + enchant/heaven grade/colored/currency/quest/keys; never another player personal loot), chests always, skipped items logged; V20G: Heart Demon boss door: stands in the circle in front of the doors, fires Enter the Heart Chamber from there and waits (no loot) until it opens; own HP in the fight log; player list/quest guide out of the HUD log; V20F: Heart Demon waits up to 30s standing in the circle after the difficulty (SpiritCircle checked against the spot that entered in the 11:48 TXT); game teleport right after our placement still counts; V20E: Heart Demon difficulty like Halloween (Normal/Hard/Hardcore in the tab, chosen in the MurimDialog), gate prompt not refired while the dialog is open, chat ignored; V20D: Heart Demon entrance = only the Heart-Demon prompt near the verified gate (16461,129,-491); wrong saved spot ignored; V20C: new Heart Demon tab (The Heart-Demon Abyss): Auto teleports to the entrance prompt, fires it and the dialog, inside fights/uses prompts and records the quest HUD; log field in the tab, Save TXT/Copy, auto TXT every 2 min; V20B: A03 sends the Paper Effigy seen also during HP pauses, A04 keeps 55 studs from the Watchman (facing or not) and leaves him before crossing the open exit, A05 jump off (server pulls back), A04 death shows the most dangerous Watchman reading of the last 3s, raid lost by leaving the arena shown as PERDIDA; V20A: full log at the top of the TXT (errors with traceback, one line per raid, deaths with the 8s before, boss fights with no-damage gaps, HP pauses, time stopped), raid loop survives errors, HP pause that does not heal is cancelled, A07 keeps fighting the same ghost, A05 lights the lamp first and jumps to A06 (Top76) with fallback, A09 does not walk while the Matriarch is alive, farm boss chest and loot filter from Top76; V19Z: A09 walks (no teleport) until the Matriarch appears, manual movement logged; V19Y: A08 food from the altar Want attribute, no Sit after the exit opens, crossing down to A09; V19X: A04 Watchman facing you within 50 studs counts as seen even behind props, hold aborts when he turns, deaths logged; V19W: log lines up to 1000 chars, [PROGRESSO] and [OFERENDAS A08] sections at the top of the TXT; V19V: A08 offerings wait until the ghosts are dead (40s cap); V19U: A08 tries the food each altar accepted in the 22:01 and 23:35 logs first (1 orange, 2 tea, 3 peach, 4 bun), dossier of altars/papers/foods and what changes on the character after each take/lay; V19T: A07 low HP keeps fighting while a ghost is within 20 studs (pause only with no foe near), A06 decoration rings out of the parry log; V19S: A08 log fixed, offering accepted when the altar prompt goes away, hold falls back to the executor prompt fire, 6s no-damage pause from A07; V19R: A07/A08/final exit; A07 lands on each brazier's own landing (top one first) and refills the lantern there; G on VentOpen (test); A05 back to the door from V19P; V19L A03/Tailor/log; V19K raid; ult from V19J; A04 from V19F")
 -- Boxer_fighter_Test V2: supplied farm GUI + Alchemy / Forge / Cultivation.
 -- Diagnostico interno: nao grava chaves, HWID, URLs ou credenciais.
 -- O log permanece na memoria ate a sessao terminar; gravacao e opcional.
@@ -122,7 +122,7 @@ function MURIM_TRACE.section(lines,budget)
     return table.concat(out,"\n")
 end
 function MURIM_TRACE.dump(maxBytes)
-    local header = "Boxer_fighter_Test V2 | Diagnostico V22E | " .. os.date("%Y-%m-%d %H:%M:%S")
+    local header = "Boxer_fighter_Test V2 | Diagnostico V22F | " .. os.date("%Y-%m-%d %H:%M:%S")
         .. "\nEtapa: " .. MURIM_TRACE.stage
         .. "\nProximo teste sugerido (hipotese): " .. tostring(MURIM_TRACE.nextAction)
         .. "\n" .. (type(MURIM_TRACE.extraStatus)=="function" and MURIM_TRACE.extraStatus() or "Auto A01: estado nao carregado")
@@ -12729,11 +12729,20 @@ end
 -- Teleporte com chao conferido (raycast), 3 studs do alvo do lado em que o personagem esta.
 function MURIM_HD.goTo(root,pos,label)
     if not root or not pos then return false end
-    -- V21U: carregar o mapa espera no maximo 2,5s (TXT 24/11 00:29: o motor ficou 5h17 parado aqui depois de eu morrer).
-    MURIM_HD.step="carregando o mapa em "..MURIM_HD.fmt(pos).." ("..tostring(label)..")"
-    local streamed,streamWhy=MURIM_LOG.stream(pos,2)
-    if not streamed then
-        MURIM_HD.log("AVISO",string.format("Carregar o mapa em %s (%s): %s; sigo sem esperar",MURIM_HD.fmt(pos),tostring(label),tostring(streamWhy)),10,"stream-"..tostring(label))
+    -- V22F (TXT 24/11 22:23): desde 21:29 o pedido do mapa nunca respondia e cada recuo ficava 2,5s parado do lado do
+    -- Wuyan (67 vezes); 22:20 morri no 2o estouro do FormationSeal e 22:07 no 2o anel do ult nessa espera. Destino a ate
+    -- 150 studs com chao achado = ja carregado: teleporta na hora.
+    local nearParams=RaycastParams.new()
+    nearParams.FilterType=Enum.RaycastFilterType.Exclude
+    nearParams.FilterDescendantsInstances={root.Parent}
+    local loaded=(pos-root.Position).Magnitude<=150 and workspace:Raycast(pos+Vector3.new(0,12,0),Vector3.new(0,-60,0),nearParams)~=nil
+    if not loaded then
+        -- V21U: carregar o mapa espera no maximo 2,5s (TXT 24/11 00:29: o motor ficou 5h17 parado aqui depois de eu morrer).
+        MURIM_HD.step="carregando o mapa em "..MURIM_HD.fmt(pos).." ("..tostring(label)..")"
+        local streamed,streamWhy=MURIM_LOG.stream(pos,2)
+        if not streamed then
+            MURIM_HD.log("AVISO",string.format("Carregar o mapa em %s (%s): %s; sigo sem esperar",MURIM_HD.fmt(pos),tostring(label),tostring(streamWhy)),10,"stream-"..tostring(label))
+        end
     end
     if root.Parent==nil or root.Parent~=player.Character then
         MURIM_HD.log("AVISO","Teleporte ("..tostring(label)..") cancelado: o personagem mudou enquanto o mapa carregava (morreu)",0)
@@ -14605,34 +14614,105 @@ function MURIM_HD.watchParts(on)
         MURIM_HD.partConn=nil
     end
 end
--- V22E: ult do Wuyan "Nine Folds of Hunger" (aneis que estouram um depois do outro). Primeiro anel acertou (30%+ do HP de
--- uma vez com o texto do ult na tela, ate 9s depois dele) = 2s parado ali, sem recuo e sem ataque: nos 2 casos de morte o
--- recuo levou a ~50 studs e o anel de fora estourou la 1s depois. Pecas novas do ult no log por 8s.
+-- V22F: ult do Wuyan "Nine Folds of Hunger" (37 ults dos TXTs, posicoes das amostras ANTES DO DANO): o Wuyan fica parado
+-- e sao dois estouros. 1o (4-5s depois da tela): centro, 3-6 studs dele. 2o (1,7s depois): de ~5 a ~50 studs (acertou a
+-- 5.5, 12, 44, 45, 48 e 49 = as 4 mortes do ult); 52-55 nunca levou (17 de 17). A V22E (parado 2s onde o 1o acertou)
+-- teria morrido como as 22:07. Agora: texto do ult na tela = vai na hora para 56 studs dele (chao firme em volta) e fica
+-- la sem atacar ate o KeyTrial das setas abrir (no maximo 10s); golpe de 30%+ la vai para o log com a distancia.
 MURIM_HD.ultWords={"rings burst","halo grows","nine folds"}
-function MURIM_HD.ultHold(root,now)
+MURIM_HD.ultDist=56
+function MURIM_HD.ultSpot(root,bp)
+    local params=RaycastParams.new()
+    params.FilterType=Enum.RaycastFilterType.Exclude
+    params.RespectCanCollide=true
+    local skip={root.Parent}
+    local npcs=workspace:FindFirstChild("Murim_NPCs")
+    if npcs then skip[#skip+1]=npcs end
+    params.FilterDescendantsInstances=skip
+    local here=root.Position
+    for _,r in ipairs({MURIM_HD.ultDist,MURIM_HD.ultDist+3,MURIM_HD.ultDist-2}) do
+        local best,bd=nil,math.huge
+        for i=0,23 do
+            local a=i*math.pi/12
+            local p=Vector3.new(bp.X+math.cos(a)*r,bp.Y,bp.Z+math.sin(a)*r)
+            local hit=workspace:Raycast(p+Vector3.new(0,25,0),Vector3.new(0,-60,0),params)
+            local inst=hit and hit.Instance
+            if inst and inst:IsA("BasePart") and inst.CanCollide and hit.Material~=Enum.Material.Water and math.abs(hit.Position.Y-bp.Y)<=15
+                and MURIM_GH.solidAround(hit.Position,params) then
+                local d=(hit.Position-here).Magnitude
+                if d<bd then best,bd=hit.Position+Vector3.new(0,3.2,0),d end
+            end
+        end
+        if best then return best end
+    end
+    return nil
+end
+function MURIM_HD.ultHolding(now)
+    local u=MURIM_HD.ult
+    return u~=nil and not u.done and u.spot~=nil and now-u.at<=10
+end
+function MURIM_HD.ultAway(root,now)
     local t=MURIM_HD.ultText()
     local u=MURIM_HD.ult
-    if t and MURIM_HD.hasWord(t,MURIM_HD.ultWords) and (not u or now-u.at>20) then
-        u={at=now}
-        MURIM_HD.ult=u
-        MURIM_HD.sealSpy={untilT=now+8,n=0,max=40,label="ult (aneis)"}
-        MURIM_HD.log("EVIDENCIA","Ult com aneis na tela: "..tostring(t):sub(1,120).." | pecas novas no log por 8s",0)
-    end
-    if not u or now-u.at>9 then return false end
     local hum=root.Parent and root.Parent:FindFirstChildOfClass("Humanoid")
-    if not hum or not hum.MaxHealth or hum.MaxHealth<=0 then return false end
-    local hp=hum.Health
-    if u.hp and not u.hitAt and u.hp-hp>=hum.MaxHealth*0.3 then
-        u.hitAt=now
-        MURIM_HD.log("DECISAO",string.format("Anel do ult acertou (%.0f -> %.0f, %.1fs depois do texto) em %s: fico parado 2s aqui (este anel ja estourou; o de fora estoura depois)",
-            u.hp,hp,now-u.at,MURIM_HD.fmt(root.Position)),0)
+    if t and MURIM_HD.hasWord(t,MURIM_HD.ultWords) and (not u or now-u.at>20) then
+        u={at=now,boss=MURIM_HD.bossNow,hits=0,hp=hum and hum.Health}
+        MURIM_HD.ult=u
+        MURIM_HD.sealSpy={untilT=now+10,n=0,max=60,label="ult (aneis)"}
+        MURIM_HD.log("EVIDENCIA","Ult com aneis na tela: "..tostring(t):sub(1,120).." | pecas novas no log por 10s",0)
     end
-    u.hp=hp
-    if u.hitAt and now-u.hitAt<2 then
-        MURIM_HD.state="dentro: ult, parado onde o anel ja estourou"
+    if not u or u.done then return false end
+    if MURIM_BD and MURIM_BD.trialCheck then MURIM_BD.trialCheck(now) end
+    local boss=u.boss
+    local bh=boss and boss.Parent and boss:FindFirstChildOfClass("Humanoid")
+    local bpart=boss and (boss:FindFirstChild("HumanoidRootPart") or boss.PrimaryPart)
+    local trial=MURIM_BD and MURIM_BD.trial
+    local bp=bpart and bpart.Position
+    local myD=bp and Vector3.new(root.Position.X-bp.X,0,root.Position.Z-bp.Z).Magnitude
+    if trial or now-u.at>10 or not bh or bh.Health<=0 or not bp then
+        u.done=true
+        MURIM_HD.log("INFO",string.format("Ult com aneis: fim da espera longe (%s) depois de %.1fs, eu a %s studs do chefe; %s",
+            trial and "KeyTrial abriu" or (now-u.at>10 and "10s" or "chefe sumiu ou morreu"),now-u.at,myD and string.format("%.0f",myD) or "?",
+            u.hits>0 and (u.hits.." golpe(s) de 30%+ na espera") or "nenhum golpe de 30%+ na espera"),0)
+        return false
+    end
+    if hum and hum.MaxHealth and hum.MaxHealth>0 then
+        if u.hp and u.hp-hum.Health>=hum.MaxHealth*0.3 then
+            u.hits+=1
+            MURIM_HD.log("EVIDENCIA",string.format("Anel do ult acertou na espera: %.0f -> %.0f, %.1fs depois do texto, eu a %.1f studs do chefe em %s (%s)",
+                u.hp,hum.Health,now-u.at,myD,MURIM_HD.fmt(root.Position),u.spot and "no ponto longe" or "antes de chegar"),0)
+        end
+        u.hp=hum.Health
+    end
+    root.AssemblyLinearVelocity=Vector3.zero
+    if myD>=52 and myD<=64 then
+        if not u.spot then
+            MURIM_HD.log("ACAO",string.format("Ult com aneis (%.1fs depois do texto): ja estou a %.0f studs do chefe em %s; espero aqui",now-u.at,myD,MURIM_HD.fmt(root.Position)),0)
+        end
+        u.spot=root.Position -- longe (tambem se o circulo vermelho me mexeu): fico aqui
+        MURIM_HD.state=string.format("dentro: ult com aneis, esperando a %.0f studs do chefe",myD)
         return true
     end
-    return false
+    if now-(u.moveAt or -1e9)<0.3 then return true end
+    u.moveAt=now
+    local spot=MURIM_HD.ultSpot(root,bp)
+    if not spot then
+        MURIM_HD.log("AVISO","Ult com aneis: nenhum chao firme a 54-59 studs do chefe; me afasto de costas a "..MURIM_HD.ultDist,10,"ult-sem-ponto")
+        MURIM_HD.backTo(root,boss,now,"ult (aneis)",MURIM_HD.ultDist)
+        local np=root.Position
+        if Vector3.new(np.X-bp.X,0,np.Z-bp.Z).Magnitude>=52 then u.spot=np end
+        return true
+    end
+    local from=root.Position
+    root.CFrame=CFrame.new(spot,Vector3.new(bp.X,spot.Y,bp.Z))
+    root.AssemblyLinearVelocity=Vector3.zero
+    MURIM_HD.ownTeleportAt=now
+    MURIM_HD.ownTeleportTo=spot
+    u.spot=spot
+    MURIM_HD.log("ACAO",string.format("Ult com aneis (%.1fs depois do texto): vou de %s (%.0f studs do chefe) para %s, %.0f studs dele; o 2o estouro pega de 5 a ~50 e nunca pegou 52-55",
+        now-u.at,MURIM_HD.fmt(from),myD,MURIM_HD.fmt(spot),Vector3.new(spot.X-bp.X,0,spot.Z-bp.Z).Magnitude),0)
+    MURIM_HD.state="dentro: ult com aneis, indo para 56 studs do chefe"
+    return true
 end
 function MURIM_HD.insideTick(root,now)
     MURIM_HD.lock=nil -- V21Y: so fica preso ao mob se esta volta atacar
@@ -14646,7 +14726,7 @@ function MURIM_HD.insideTick(root,now)
     local bigH=big and big:FindFirstChildOfClass("Humanoid")
     MURIM_HD.bossNow=(bigH and bigH.MaxHealth>=5000) and big or nil
     MURIM_HD.watchParts(MURIM_HD.bossNow~=nil)
-    if MURIM_HD.profile.actDodge and MURIM_HD.ultHold(root,now) then return end -- V22E: ult do Wuyan, parado 2s depois do primeiro anel
+    if MURIM_HD.profile.actDodge and MURIM_HD.ultAway(root,now) then return end -- V22F: ult do Wuyan = espera a 56 studs ate o KeyTrial
     -- V20Y: Grey Heartland: fugindo de um golpe perigoso do chefe (aprendido pelo Act) = fica a 45 studs ate passar.
     if MURIM_HD.profile.actDodge and MURIM_GH and MURIM_GH.fleeTick(root,now) then return end
     if MURIM_HD.dodge and now<=MURIM_HD.dodge.untilT then
@@ -17114,6 +17194,9 @@ function MURIM_GH.actStep()
     MURIM_GH.lastHp=hum.Health
     if last and last-hum.Health>=hum.MaxHealth*0.3 then MURIM_GH.blame((last-hum.Health)/hum.MaxHealth,now,boss,root) end
     MURIM_GH.parryStep(now,char,hum)
+    -- V22F: esperando o ult do Wuyan a 56 studs, nenhuma fuga me tira de la (45 studs = dentro do 2o estouro).
+    local ultHold=MURIM_HD.ultHolding and MURIM_HD.ultHolding(now)
+    if ultHold then MURIM_GH.flee=nil end
     MURIM_GH.maintainFlee(root,now)
     -- V21H: a cada quadro, depois da fuga: dentro de um circulo vermelho = sai dele.
     MURIM_HD.zoneFix(root,now)
@@ -17162,17 +17245,19 @@ function MURIM_GH.actStep()
         local f=MURIM_GH.planFlee(boss,name,now,eta,dl,tw,dist,d)
         hd.log("DECISAO",string.format("Golpe %s: continuo atacando por %.2fs antes da fuga; margem %.2fs; defesa ate %.2fs (distancia atual %.0f)",
             name,math.max(0,f.startAt-now),MURIM_GH.fleeLead,f.untilT-now,d),0)
-        if now>=f.startAt then MURIM_GH.fleeTick(root,now) end
+        if now>=f.startAt and not ultHold then MURIM_GH.fleeTick(root,now) end
     end
     -- V21I (TXT 15/11 18:23): o circulo vermelho do FormationSeal chega antes do Act. Sem circulo nenhum no ultimo 1s,
     -- o golpe pegou o Auto colado no chefe (8 de 8 golpes grandes), as vezes duas vezes ~2,2s depois. Foge para 45 studs
     -- (como do Cast, que nunca acertou na fuga) ate ~4s depois do comeco; os circulos que aparecerem continuam valendo.
-    if name=="FormationSeal" and eta>-0.2 and d<120 and not MURIM_HD.recentSeal(now) then
+    -- V22F (TXT 24/11 22:20:23): o Act chegou 0,63s atrasado (previstoEm -0.23), a fuga nao saiu e explodiu 2x a 4 studs
+    -- (44% + 44%). Explode ~1,1s depois do previsto: foge enquanto a explosao ainda nao veio.
+    if name=="FormationSeal" and eta+math.max(dl,1.1)>0.2 and d<120 and not MURIM_HD.recentSeal(now) then
         MURIM_HD.sealSpy={untilT=now+1.5,n=0}
         local f=MURIM_GH.planFlee(boss,name,now,eta,math.max(dl,1.1),2.2,MURIM_GH.safeDist,d)
         hd.log("DECISAO",string.format("FormationSeal sem circulo vermelho a vista: fujo para %.0f studs por %.1fs (pode explodir duas vezes, ~2s entre elas)",
             f.dist,f.untilT-now),0)
-        if now>=f.startAt then MURIM_GH.fleeTick(root,now) end
+        if now>=f.startAt and not ultHold then MURIM_GH.fleeTick(root,now) end
     end
 end
 -- V20Z: personagem ja dentro (perto do chao da dungeon) quando o Auto liga: marca dentro e a estrada mede da chegada.
@@ -18905,7 +18990,7 @@ report("Menu principal aberto • carregando Alquimia / Forja / Avanço", false)
 task.spawn(function()
     local ok, reason = xpcall(function() mountWorkshop(hub) end, function(e) return tostring(e) end)
     if ok then
-        report("Pronto para usar • 15 abas (V22E: ult do Wuyan: parado 2s depois do primeiro anel)", false)
+        report("Pronto para usar • 15 abas (V22F: ult do Wuyan: espera a 56 studs; recuo na hora)", false)
         task.delay(3, finishNotice)
     else
         report("Falha ao carregar o módulo de minijogos: " .. tostring(reason), true)
